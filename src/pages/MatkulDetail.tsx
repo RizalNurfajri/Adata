@@ -5,8 +5,7 @@ import TabSwitcher from '@/components/TabSwitcher'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
-import { ArrowLeft, BookOpen, Laptop } from 'lucide-react'
-import { Input } from '@/components/ui/input' // ✅ Tambahan
+import { ArrowLeft, BookOpen, Laptop, FileText } from 'lucide-react'
 
 interface MatkulStats {
   teoriCount: number
@@ -24,9 +23,6 @@ export default function MatkulDetail() {
     totalMaterials: 0
   })
   const [loading, setLoading] = useState(true)
-
-  const [searchTeori, setSearchTeori] = useState('') // ✅ Tambahan
-  const [searchPraktikum, setSearchPraktikum] = useState('') // ✅ Tambahan
 
   useEffect(() => {
     loadStats()
@@ -90,7 +86,7 @@ export default function MatkulDetail() {
               <p className="text-muted-foreground mb-6">
                 Ringkasan materi yang tersedia untuk {matkul}
               </p>
-
+              
               {loading ? (
                 <div className="text-muted-foreground">Memuat...</div>
               ) : (
@@ -117,14 +113,8 @@ export default function MatkulDetail() {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <Card className="group hover:shadow-lg transition-all duration-200">
             <CardContent className="pt-6">
-              <Input
-                placeholder="Cari materi Teori..."
-                value={searchTeori}
-                onChange={(e) => setSearchTeori(e.target.value)}
-                className="mb-4"
-              />
               <Link 
-                to={`/semester/${semester}/${encodeURIComponent(matkul)}/Teori?search=${encodeURIComponent(searchTeori)}`}
+                to={`/semester/${semester}/${encodeURIComponent(matkul)}/Teori`}
                 className="block text-center"
               >
                 <BookOpen className="h-12 w-12 mx-auto text-blue-500 mb-4 group-hover:scale-110 transition-transform" />
@@ -141,14 +131,8 @@ export default function MatkulDetail() {
 
           <Card className="group hover:shadow-lg transition-all duration-200">
             <CardContent className="pt-6">
-              <Input
-                placeholder="Cari materi Praktikum..."
-                value={searchPraktikum}
-                onChange={(e) => setSearchPraktikum(e.target.value)}
-                className="mb-4"
-              />
               <Link 
-                to={`/semester/${semester}/${encodeURIComponent(matkul)}/Praktikum?search=${encodeURIComponent(searchPraktikum)}`}
+                to={`/semester/${semester}/${encodeURIComponent(matkul)}/Praktikum`}
                 className="block text-center"
               >
                 <Laptop className="h-12 w-12 mx-auto text-green-500 mb-4 group-hover:scale-110 transition-transform" />
