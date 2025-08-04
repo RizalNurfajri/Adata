@@ -94,12 +94,6 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                   </Button>
                 </div>
               ) : (
-                <div className="space-x-2">
-                  <Link to="/login">
-                    <Button variant="outline" size="sm">Masuk</Button>
-                  </Link>
-                  <Link to="/register">
-                    <Button size="sm">Daftar</Button>
                   </Link>
                 </div>
               )}
