@@ -77,7 +77,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
             </div>
 
             <div className="flex items-center space-x-4">
-              {user ? (
+              {user && (
                 <div className="flex items-center space-x-2">
                   <div className="flex items-center space-x-2 text-sm">
                     <User className="h-4 w-4" />
@@ -92,9 +92,6 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                     <LogOut className="h-4 w-4 mr-1" />
                     Keluar
                   </Button>
-                </div>
-              ) : (
-                  </Link>
                 </div>
               )}
             </div>
