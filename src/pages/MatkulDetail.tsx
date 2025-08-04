@@ -5,12 +5,18 @@ import TabSwitcher from '@/components/TabSwitcher'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
-import { ArrowLeft, BookOpen, Laptop, FileText } from 'lucide-react'
+import { ArrowLeft, BookOpen, Laptop, Search } from 'lucide-react'
 
 interface MatkulStats {
   teoriCount: number
   praktikumCount: number
   totalMaterials: number
+}
+
+interface Material {
+  id: string
+  judul: string
+  tipe: string
 }
 
 export default function MatkulDetail() {
@@ -22,6 +28,8 @@ export default function MatkulDetail() {
     praktikumCount: 0,
     totalMaterials: 0
   })
+  const [materials, setMaterials] = useState<Material[]>([])
+  const [searchQuery, setSearchQuery] = useState('')
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
@@ -32,7 +40,7 @@ export default function MatkulDetail() {
     try {
       const { data, error } = await supabase
         .from('materials')
-        .select('tipe')
+        .select('id, judul, tipe')
         .eq('semester', semester)
         .eq('matkul', matkul)
 
@@ -41,6 +49,7 @@ export default function MatkulDetail() {
       const teoriCount = data?.filter(item => item.tipe === 'Teori').length || 0
       const praktikumCount = data?.filter(item => item.tipe === 'Praktikum').length || 0
 
+      setMaterials(data || [])
       setStats({
         teoriCount,
         praktikumCount,
@@ -53,10 +62,14 @@ export default function MatkulDetail() {
     }
   }
 
+  const filteredMaterials = materials.filter(m =>
+    m.judul.toLowerCase().includes(searchQuery.toLowerCase())
+  )
+
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between flex-wrap gap-4">
         <div className="flex items-center space-x-4">
           <Button asChild variant="outline" size="sm">
             <Link to={`/semester/${semester}`}>
@@ -66,11 +79,21 @@ export default function MatkulDetail() {
           </Button>
           <div>
             <h1 className="text-3xl font-bold">{matkul}</h1>
-            <p className="text-muted-foreground">
-              Semester {semester}
-            </p>
+            <p className="text-muted-foreground">Semester {semester}</p>
           </div>
         </div>
+      </div>
+
+      {/* Search Input */}
+      <div className="max-w-md relative">
+        <Search className="absolute left-3 top-3 h-5 w-5 text-muted-foreground" />
+        <input
+          type="text"
+          placeholder="Cari judul materi..."
+          value={searchQuery}
+          onChange={e => setSearchQuery(e.target.value)}
+          className="pl-10 pr-4 py-2 w-full rounded-md border bg-neutral-900 border-neutral-700 text-white placeholder-gray-400 focus:ring-2 focus:ring-[#e94560]"
+        />
       </div>
 
       {/* Tab Switcher */}
@@ -84,9 +107,9 @@ export default function MatkulDetail() {
               <BookOpen className="h-12 w-12 mx-auto text-primary mb-4" />
               <h3 className="text-xl font-medium mb-2">Overview Mata Kuliah</h3>
               <p className="text-muted-foreground mb-6">
-                Ringkasan materi yang tersedia untuk {matkul}
+                Ringkasan materi untuk <strong>{matkul}</strong>
               </p>
-              
+
               {loading ? (
                 <div className="text-muted-foreground">Memuat...</div>
               ) : (
@@ -108,6 +131,26 @@ export default function MatkulDetail() {
             </div>
           </CardContent>
         </Card>
+
+        {/* Search Result (optional) */}
+        {searchQuery && (
+          <div>
+            <h2 className="text-lg font-semibold mb-2">
+              Hasil pencarian untuk: <span className="text-[#e94560]">{searchQuery}</span>
+            </h2>
+            <ul className="list-disc pl-5 text-sm text-muted-foreground space-y-1">
+              {filteredMaterials.length > 0 ? (
+                filteredMaterials.map((m) => (
+                  <li key={m.id}>
+                    {m.judul} <Badge className="ml-2" variant="outline">{m.tipe}</Badge>
+                  </li>
+                ))
+              ) : (
+                <li>Tidak ditemukan materi</li>
+              )}
+            </ul>
+          </div>
+        )}
 
         {/* Quick Access */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
