@@ -21,7 +21,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
           <div className="flex justify-between items-center h-16">
             <div className="flex items-center space-x-4">
               <Link to="/" className="flex items-center space-x-2">
-                <BookOpen className="h-6 w-6 text-primary" />
+                <img src="/img/logo.png" alt="Adata" className="h-6 w-6" />
                 <span className="text-xl font-bold text-foreground">Adata</span>
               </Link>
               
