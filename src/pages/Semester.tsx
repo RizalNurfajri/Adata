@@ -91,7 +91,7 @@ export default function Semester() {
           <Search className="h-4 w-4 text-muted-foreground" />
           <Input
             type="text"
-            placeholder="Cari mata kuliah..."
+            placeholder="Cari mata kuliah"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             className="w-full max-w-xs"
