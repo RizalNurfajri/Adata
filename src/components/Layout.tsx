@@ -1,7 +1,8 @@
 import { Link, useLocation } from 'react-router-dom'
 import { useAuth } from '@/hooks/useAuth'
 import { Button } from '@/components/ui/button'
-import { LogOut, User, BookOpen, Plus } from 'lucide-react'
+import { LogOut, User, Plus } from 'lucide-react'
+import ThemeToggle from '@/components/ThemeToggle'
 
 export default function Layout({ children }: { children: React.ReactNode }) {
   const { user, profile, signOut } = useAuth()
@@ -24,14 +25,14 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                 <img src="/logo.png" alt="Adata" className="h-6 w-6" />
                 <span className="text-xl font-bold text-foreground">Adata</span>
               </Link>
-              
+
               {user && (
                 <div className="hidden md:flex space-x-4">
                   <Link
                     to="/"
                     className={`px-3 py-2 rounded-md text-sm font-medium transition-colors ${
-                      isActive('/') 
-                        ? 'bg-primary text-primary-foreground' 
+                      isActive('/')
+                        ? 'bg-primary text-primary-foreground'
                         : 'text-muted-foreground hover:text-foreground hover:bg-accent'
                     }`}
                   >
@@ -40,8 +41,8 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                   <Link
                     to="/dashboard"
                     className={`px-3 py-2 rounded-md text-sm font-medium transition-colors ${
-                      isActive('/dashboard') 
-                        ? 'bg-primary text-primary-foreground' 
+                      isActive('/dashboard')
+                        ? 'bg-primary text-primary-foreground'
                         : 'text-muted-foreground hover:text-foreground hover:bg-accent'
                     }`}
                   >
@@ -52,8 +53,8 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                       <Link
                         to="/tambah"
                         className={`px-3 py-2 rounded-md text-sm font-medium transition-colors ${
-                          isActive('/tambah') 
-                            ? 'bg-primary text-primary-foreground' 
+                          isActive('/tambah')
+                            ? 'bg-primary text-primary-foreground'
                             : 'text-muted-foreground hover:text-foreground hover:bg-accent'
                         }`}
                       >
@@ -63,8 +64,8 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                       <Link
                         to="/admin/dashboard"
                         className={`px-3 py-2 rounded-md text-sm font-medium transition-colors ${
-                          isActive('/admin/dashboard') 
-                            ? 'bg-primary text-primary-foreground' 
+                          isActive('/admin/dashboard')
+                            ? 'bg-primary text-primary-foreground'
                             : 'text-muted-foreground hover:text-foreground hover:bg-accent'
                         }`}
                       >
@@ -77,6 +78,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
             </div>
 
             <div className="flex items-center space-x-4">
+              <ThemeToggle />
               {user && (
                 <div className="flex items-center space-x-2">
                   <div className="flex items-center space-x-2 text-sm">
