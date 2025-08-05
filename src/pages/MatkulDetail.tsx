@@ -5,8 +5,12 @@ import TabSwitcher from '@/components/TabSwitcher'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
+<<<<<<< HEAD
 import { Input } from '@/components/ui/input'
 import { ArrowLeft, Laptop, Search, Calendar, Code } from 'lucide-react'
+=======
+import { ArrowLeft, BookOpen, Laptop } from 'lucide-react'
+>>>>>>> ad5d25312e8b6d5dc00877d40014be94ecb46c67
 
 interface Material {
   id: string
@@ -18,6 +22,7 @@ interface Material {
   matkul: string
 }
 
+<<<<<<< HEAD
 export default function MateriPraktikum() {
   const { id: semesterParam, matkul: matkulParam } = useParams()
   const semester = parseInt(semesterParam || '1')
@@ -25,28 +30,58 @@ export default function MateriPraktikum() {
   const [materials, setMaterials] = useState<Material[]>([])
   const [filteredMaterials, setFilteredMaterials] = useState<Material[]>([])
   const [searchQuery, setSearchQuery] = useState('')
+=======
+export default function MatkulDetail() {
+  const { id: semesterParam, matkul: matkulParam, tipe } = useParams()
+  const semester = parseInt(semesterParam || '1')
+  const matkul = decodeURIComponent(matkulParam || '')
+  const activeTab = tipe || 'overview'
+  
+  const [searchTerm, setSearchTerm] = useState('')
+  const [stats, setStats] = useState<MatkulStats>({
+    teoriCount: 0,
+    praktikumCount: 0,
+    totalMaterials: 0
+  })
+>>>>>>> ad5d25312e8b6d5dc00877d40014be94ecb46c67
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    loadMaterials()
+    loadStats()
   }, [semester, matkul])
 
+<<<<<<< HEAD
   useEffect(() => {
     filterMaterials()
   }, [materials, searchQuery])
 
   const loadMaterials = async () => {
+=======
+  const loadStats = async () => {
+>>>>>>> ad5d25312e8b6d5dc00877d40014be94ecb46c67
     try {
       const { data, error } = await supabase
         .from('materials')
-        .select('*')
+        .select('tipe')
         .eq('semester', semester)
         .eq('matkul', matkul)
         .eq('tipe', 'Praktikum')
         .order('tanggal', { ascending: false })
 
       if (error) throw error
+<<<<<<< HEAD
       setMaterials(data || [])
+=======
+
+      const teoriCount = data?.filter(item => item.tipe === 'Teori').length || 0
+      const praktikumCount = data?.filter(item => item.tipe === 'Praktikum').length || 0
+
+      setStats({
+        teoriCount,
+        praktikumCount,
+        totalMaterials: teoriCount + praktikumCount
+      })
+>>>>>>> ad5d25312e8b6d5dc00877d40014be94ecb46c67
     } catch (error) {
       console.error('Error loading materials:', error)
     } finally {
@@ -97,8 +132,9 @@ export default function MateriPraktikum() {
       </div>
 
       {/* Tab Switcher */}
-      <TabSwitcher semester={semester.toString()} matkul={matkul} />
+      <TabSwitcher semester={semester.toString()} matkul={matkul} currentTipe={tipe} />
 
+<<<<<<< HEAD
       {/* Search Bar */}
       <Card>
         <CardContent className="pt-6">
@@ -118,6 +154,57 @@ export default function MateriPraktikum() {
       <div className="space-y-4">
         {loading ? (
           <Card>
+=======
+      {/* Input Search muncul hanya saat Teori atau Praktikum */}
+      {(activeTab === 'Teori' || activeTab === 'Praktikum') && (
+        <div className="mb-4">
+          <input
+            type="text"
+            placeholder={`Cari materi ${activeTab.toLowerCase()}...`}
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="w-full p-2 border border-gray-300 rounded-md dark:bg-background dark:text-white"
+          />
+        </div>
+      )}
+
+      {/* Overview Content */}
+      <div className="space-y-6">
+        <Card>
+          <CardContent className="pt-6">
+            <div className="text-center">
+              <BookOpen className="h-12 w-12 mx-auto text-primary mb-4" />
+              <h3 className="text-xl font-medium mb-2">Overview Mata Kuliah</h3>
+              <p className="text-muted-foreground mb-6">
+                Ringkasan materi yang tersedia untuk {matkul}
+              </p>
+
+              {loading ? (
+                <div className="text-muted-foreground">Memuat...</div>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 max-w-md mx-auto">
+                  <div className="text-center">
+                    <div className="text-2xl font-bold text-primary">{stats.totalMaterials}</div>
+                    <div className="text-sm text-muted-foreground">Total Materi</div>
+                  </div>
+                  <div className="text-center">
+                    <div className="text-2xl font-bold text-blue-500">{stats.teoriCount}</div>
+                    <div className="text-sm text-muted-foreground">Materi Teori</div>
+                  </div>
+                  <div className="text-center">
+                    <div className="text-2xl font-bold text-green-500">{stats.praktikumCount}</div>
+                    <div className="text-sm text-muted-foreground">Materi Praktikum</div>
+                  </div>
+                </div>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Quick Access */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <Card className="group hover:shadow-lg transition-all duration-200">
+>>>>>>> ad5d25312e8b6d5dc00877d40014be94ecb46c67
             <CardContent className="pt-6">
               <div className="text-center text-muted-foreground">
                 Memuat materi...
@@ -138,6 +225,7 @@ export default function MateriPraktikum() {
                     : 'Materi praktikum untuk mata kuliah ini belum tersedia'
                   }
                 </p>
+<<<<<<< HEAD
                 {searchQuery && (
                   <Button
                     variant="outline"
@@ -203,6 +291,15 @@ export default function MateriPraktikum() {
             </div>
           </>
         )}
+=======
+                <Badge variant="outline">
+                  {stats.praktikumCount} materi tersedia
+                </Badge>
+              </Link>
+            </CardContent>
+          </Card>
+        </div>
+>>>>>>> ad5d25312e8b6d5dc00877d40014be94ecb46c67
       </div>
     </div>
   )
