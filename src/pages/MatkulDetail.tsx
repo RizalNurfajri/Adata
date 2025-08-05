@@ -23,20 +23,24 @@ export default function MatkulDetail() {
     totalMaterials: 0
   })
   const [loading, setLoading] = useState(true)
+  const [materials, setMaterials] = useState<any[]>([])
+  const [searchQuery, setSearchQuery] = useState('')
 
   useEffect(() => {
-    loadStats()
+    loadMaterials()
   }, [semester, matkul])
 
-  const loadStats = async () => {
+  const loadMaterials = async () => {
     try {
       const { data, error } = await supabase
         .from('materials')
-        .select('tipe')
+        .select('*')
         .eq('semester', semester)
         .eq('matkul', matkul)
 
       if (error) throw error
+
+      setMaterials(data || [])
 
       const teoriCount = data?.filter(item => item.tipe === 'Teori').length || 0
       const praktikumCount = data?.filter(item => item.tipe === 'Praktikum').length || 0
@@ -75,6 +79,17 @@ export default function MatkulDetail() {
 
       {/* Tab Switcher */}
       <TabSwitcher semester={semester.toString()} matkul={matkul} />
+
+      {/* Search Box */}
+      <div className="max-w-md mx-auto">
+        <input
+          type="text"
+          placeholder="Cari materi..."
+          className="w-full p-2 border rounded-md dark:bg-zinc-800 dark:border-zinc-700"
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+        />
+      </div>
 
       {/* Overview Content */}
       <div className="space-y-6">
@@ -147,6 +162,41 @@ export default function MatkulDetail() {
             </CardContent>
           </Card>
         </div>
+
+        {/* Search Results */}
+        {searchQuery && (
+          <div className="mt-8">
+            <h2 className="text-xl font-semibold mb-4">Hasil Pencarian</h2>
+            {loading ? (
+              <p className="text-muted-foreground">Memuat data...</p>
+            ) : (
+              <div className="space-y-4">
+                {materials
+                  .filter(item =>
+                    item.judul.toLowerCase().includes(searchQuery.toLowerCase())
+                  )
+                  .map(item => (
+                    <Card key={item.id}>
+                      <CardContent className="p-4">
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <h3 className="font-semibold">{item.judul}</h3>
+                            <p className="text-sm text-muted-foreground">{item.tipe}</p>
+                          </div>
+                          <Badge>{item.tipe}</Badge>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))}
+                {materials.filter(item =>
+                  item.judul.toLowerCase().includes(searchQuery.toLowerCase())
+                ).length === 0 && (
+                  <p className="text-muted-foreground">Tidak ada materi yang cocok.</p>
+                )}
+              </div>
+            )}
+          </div>
+        )}
       </div>
     </div>
   )
