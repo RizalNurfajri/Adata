@@ -5,30 +5,35 @@ import TabSwitcher from '@/components/TabSwitcher'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
-import { ArrowLeft, BookOpen, Laptop, FileText } from 'lucide-react'
+import { Input } from '@/components/ui/input'
+import { ArrowLeft, Laptop, Search, Calendar, Code } from 'lucide-react'
 
-interface MatkulStats {
-  teoriCount: number
-  praktikumCount: number
-  totalMaterials: number
+interface Material {
+  id: string
+  judul: string
+  deskripsi?: string
+  tanggal: string
+  tipe: string
+  semester: number
+  matkul: string
 }
 
-export default function MatkulDetail() {
+export default function MateriPraktikum() {
   const { id: semesterParam, matkul: matkulParam } = useParams()
   const semester = parseInt(semesterParam || '1')
   const matkul = decodeURIComponent(matkulParam || '')
-  const [stats, setStats] = useState<MatkulStats>({
-    teoriCount: 0,
-    praktikumCount: 0,
-    totalMaterials: 0
-  })
-  const [loading, setLoading] = useState(true)
-  const [materials, setMaterials] = useState<any[]>([])
+  const [materials, setMaterials] = useState<Material[]>([])
+  const [filteredMaterials, setFilteredMaterials] = useState<Material[]>([])
   const [searchQuery, setSearchQuery] = useState('')
+  const [loading, setLoading] = useState(true)
 
   useEffect(() => {
     loadMaterials()
   }, [semester, matkul])
+
+  useEffect(() => {
+    filterMaterials()
+  }, [materials, searchQuery])
 
   const loadMaterials = async () => {
     try {
@@ -37,24 +42,38 @@ export default function MatkulDetail() {
         .select('*')
         .eq('semester', semester)
         .eq('matkul', matkul)
+        .eq('tipe', 'Praktikum')
+        .order('tanggal', { ascending: false })
 
       if (error) throw error
-
       setMaterials(data || [])
-
-      const teoriCount = data?.filter(item => item.tipe === 'Teori').length || 0
-      const praktikumCount = data?.filter(item => item.tipe === 'Praktikum').length || 0
-
-      setStats({
-        teoriCount,
-        praktikumCount,
-        totalMaterials: teoriCount + praktikumCount
-      })
     } catch (error) {
-      console.error('Error loading stats:', error)
+      console.error('Error loading materials:', error)
     } finally {
       setLoading(false)
     }
+  }
+
+  const filterMaterials = () => {
+    if (!searchQuery.trim()) {
+      setFilteredMaterials(materials)
+      return
+    }
+
+    const query = searchQuery.toLowerCase()
+    const filtered = materials.filter(material =>
+      material.judul.toLowerCase().includes(query) ||
+      material.deskripsi?.toLowerCase().includes(query)
+    )
+    setFilteredMaterials(filtered)
+  }
+
+  const formatDate = (dateString: string) => {
+    return new Date(dateString).toLocaleDateString('id-ID', {
+      day: 'numeric',
+      month: 'long',
+      year: 'numeric'
+    })
   }
 
   return (
@@ -63,7 +82,7 @@ export default function MatkulDetail() {
       <div className="flex items-center justify-between">
         <div className="flex items-center space-x-4">
           <Button asChild variant="outline" size="sm">
-            <Link to={`/semester/${semester}`}>
+            <Link to={`/semester/${semester}/${encodeURIComponent(matkul)}`}>
               <ArrowLeft className="h-4 w-4 mr-2" />
               Kembali
             </Link>
@@ -71,7 +90,7 @@ export default function MatkulDetail() {
           <div>
             <h1 className="text-3xl font-bold">{matkul}</h1>
             <p className="text-muted-foreground">
-              Semester {semester}
+              Semester {semester} - Materi Praktikum
             </p>
           </div>
         </div>
@@ -80,122 +99,109 @@ export default function MatkulDetail() {
       {/* Tab Switcher */}
       <TabSwitcher semester={semester.toString()} matkul={matkul} />
 
-      {/* Search Box */}
-      <div className="max-w-md mx-auto">
-        <input
-          type="text"
-          placeholder="Cari materi..."
-          className="w-full p-2 border rounded-md dark:bg-zinc-800 dark:border-zinc-700"
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-        />
-      </div>
+      {/* Search Bar */}
+      <Card>
+        <CardContent className="pt-6">
+          <div className="relative max-w-md">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
+            <Input
+              placeholder="Cari materi praktikum..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="pl-10"
+            />
+          </div>
+        </CardContent>
+      </Card>
 
-      {/* Overview Content */}
-      <div className="space-y-6">
-        <Card>
-          <CardContent className="pt-6">
-            <div className="text-center">
-              <BookOpen className="h-12 w-12 mx-auto text-primary mb-4" />
-              <h3 className="text-xl font-medium mb-2">Overview Mata Kuliah</h3>
-              <p className="text-muted-foreground mb-6">
-                Ringkasan materi yang tersedia untuk {matkul}
-              </p>
-              
-              {loading ? (
-                <div className="text-muted-foreground">Memuat...</div>
-              ) : (
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 max-w-md mx-auto">
-                  <div className="text-center">
-                    <div className="text-2xl font-bold text-primary">{stats.totalMaterials}</div>
-                    <div className="text-sm text-muted-foreground">Total Materi</div>
-                  </div>
-                  <div className="text-center">
-                    <div className="text-2xl font-bold text-blue-500">{stats.teoriCount}</div>
-                    <div className="text-sm text-muted-foreground">Materi Teori</div>
-                  </div>
-                  <div className="text-center">
-                    <div className="text-2xl font-bold text-green-500">{stats.praktikumCount}</div>
-                    <div className="text-sm text-muted-foreground">Materi Praktikum</div>
-                  </div>
-                </div>
-              )}
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Quick Access */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <Card className="group hover:shadow-lg transition-all duration-200">
+      {/* Materials List */}
+      <div className="space-y-4">
+        {loading ? (
+          <Card>
             <CardContent className="pt-6">
-              <Link 
-                to={`/semester/${semester}/${encodeURIComponent(matkul)}/Teori`}
-                className="block text-center"
-              >
-                <BookOpen className="h-12 w-12 mx-auto text-blue-500 mb-4 group-hover:scale-110 transition-transform" />
-                <h3 className="text-lg font-medium mb-2">Materi Teori</h3>
-                <p className="text-sm text-muted-foreground mb-4">
-                  Akses semua materi teori untuk mata kuliah ini
-                </p>
-                <Badge variant="secondary">
-                  {stats.teoriCount} materi tersedia
-                </Badge>
-              </Link>
+              <div className="text-center text-muted-foreground">
+                Memuat materi...
+              </div>
             </CardContent>
           </Card>
-
-          <Card className="group hover:shadow-lg transition-all duration-200">
+        ) : filteredMaterials.length === 0 ? (
+          <Card>
             <CardContent className="pt-6">
-              <Link 
-                to={`/semester/${semester}/${encodeURIComponent(matkul)}/Praktikum`}
-                className="block text-center"
-              >
-                <Laptop className="h-12 w-12 mx-auto text-green-500 mb-4 group-hover:scale-110 transition-transform" />
-                <h3 className="text-lg font-medium mb-2">Materi Praktikum</h3>
-                <p className="text-sm text-muted-foreground mb-4">
-                  Akses semua materi praktikum untuk mata kuliah ini
+              <div className="text-center">
+                <Laptop className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
+                <h3 className="text-lg font-medium mb-2">
+                  {searchQuery ? 'Tidak ada hasil pencarian' : 'Belum ada materi praktikum'}
+                </h3>
+                <p className="text-muted-foreground">
+                  {searchQuery 
+                    ? `Tidak ditemukan materi dengan kata kunci "${searchQuery}"`
+                    : 'Materi praktikum untuk mata kuliah ini belum tersedia'
+                  }
                 </p>
-                <Badge variant="outline">
-                  {stats.praktikumCount} materi tersedia
-                </Badge>
-              </Link>
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Search Results */}
-        {searchQuery && (
-          <div className="mt-8">
-            <h2 className="text-xl font-semibold mb-4">Hasil Pencarian</h2>
-            {loading ? (
-              <p className="text-muted-foreground">Memuat data...</p>
-            ) : (
-              <div className="space-y-4">
-                {materials
-                  .filter(item =>
-                    item.judul.toLowerCase().includes(searchQuery.toLowerCase())
-                  )
-                  .map(item => (
-                    <Card key={item.id}>
-                      <CardContent className="p-4">
-                        <div className="flex items-center justify-between">
-                          <div>
-                            <h3 className="font-semibold">{item.judul}</h3>
-                            <p className="text-sm text-muted-foreground">{item.tipe}</p>
-                          </div>
-                          <Badge>{item.tipe}</Badge>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  ))}
-                {materials.filter(item =>
-                  item.judul.toLowerCase().includes(searchQuery.toLowerCase())
-                ).length === 0 && (
-                  <p className="text-muted-foreground">Tidak ada materi yang cocok.</p>
+                {searchQuery && (
+                  <Button
+                    variant="outline"
+                    onClick={() => setSearchQuery('')}
+                    className="mt-4"
+                  >
+                    Hapus pencarian
+                  </Button>
                 )}
               </div>
+            </CardContent>
+          </Card>
+        ) : (
+          <>
+            {searchQuery && (
+              <div className="flex items-center justify-between">
+                <p className="text-sm text-muted-foreground">
+                  Ditemukan {filteredMaterials.length} materi untuk "{searchQuery}"
+                </p>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setSearchQuery('')}
+                >
+                  Hapus pencarian
+                </Button>
+              </div>
             )}
-          </div>
+            
+            <div className="grid gap-4">
+              {filteredMaterials.map((material) => (
+                <Card key={material.id} className="hover:shadow-md transition-shadow">
+                  <CardContent className="pt-6">
+                    <div className="flex items-start justify-between">
+                      <div className="flex-1">
+                        <div className="flex items-center space-x-2 mb-2">
+                          <Code className="h-4 w-4 text-green-500" />
+                          <h3 className="font-medium">{material.judul}</h3>
+                          <Badge variant="outline">Praktikum</Badge>
+                        </div>
+                        
+                        {material.deskripsi && (
+                          <p className="text-sm text-muted-foreground mb-3">
+                            {material.deskripsi}
+                          </p>
+                        )}
+                        
+                        <div className="flex items-center text-sm text-muted-foreground">
+                          <Calendar className="h-4 w-4 mr-1" />
+                          {formatDate(material.tanggal)}
+                        </div>
+                      </div>
+                      
+                      <div className="ml-4">
+                        <Button size="sm">
+                          Lihat Detail
+                        </Button>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          </>
         )}
       </div>
     </div>
