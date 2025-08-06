@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-import { ExternalLink, Edit, Trash2, Calendar, DownloadCloud } from 'lucide-react'
+import { ExternalLink, Edit, Trash2, Calendar, Download } from 'lucide-react'
 import { useAuth } from '@/hooks/useAuth'
 import { supabase } from '@/integrations/supabase/client'
 import { toast } from '@/hooks/use-toast'
@@ -91,10 +91,10 @@ export default function MaterialCard({ material, onDeleted }: MaterialCardProps)
         <div className="flex flex-wrap gap-2">
           {material.link && (
             <>
-              {/* Tombol View */}
+              {/* Tombol Lihat (preview PDF via Google Docs Viewer) */}
               <Button asChild variant="outline" size="sm">
                 <a
-                  href={material.link}
+                  href={`https://docs.google.com/gview?url=${encodeURIComponent(material.link)}&embedded=true`}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="flex items-center"
@@ -111,7 +111,7 @@ export default function MaterialCard({ material, onDeleted }: MaterialCardProps)
                   download
                   className="flex items-center"
                 >
-                  <DownloadCloud className="h-4 w-4 mr-1" />
+                  <Download className="h-4 w-4 mr-1" />
                   Download
                 </a>
               </Button>
