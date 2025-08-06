@@ -5,7 +5,7 @@ import TabSwitcher from '@/components/TabSwitcher'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
-import { ArrowLeft, BookOpen, Laptop } from 'lucide-react'
+import { ArrowLeft, BookOpen, Laptop, FileText } from 'lucide-react'
 
 interface MatkulStats {
   teoriCount: number
@@ -17,17 +17,12 @@ export default function MatkulDetail() {
   const { id: semesterParam, matkul: matkulParam } = useParams()
   const semester = parseInt(semesterParam || '1')
   const matkul = decodeURIComponent(matkulParam || '')
-
   const [stats, setStats] = useState<MatkulStats>({
     teoriCount: 0,
     praktikumCount: 0,
     totalMaterials: 0
   })
-
   const [loading, setLoading] = useState(true)
-  const [searchTerm, setSearchTerm] = useState('')
-  const [allMaterials, setAllMaterials] = useState<any[]>([])
-  const [filteredMaterials, setFilteredMaterials] = useState<any[]>([])
 
   useEffect(() => {
     loadStats()
@@ -37,7 +32,7 @@ export default function MatkulDetail() {
     try {
       const { data, error } = await supabase
         .from('materials')
-        .select('*')
+        .select('tipe')
         .eq('semester', semester)
         .eq('matkul', matkul)
 
@@ -51,23 +46,11 @@ export default function MatkulDetail() {
         praktikumCount,
         totalMaterials: teoriCount + praktikumCount
       })
-
-      setAllMaterials(data || [])
-      setFilteredMaterials(data || [])
     } catch (error) {
       console.error('Error loading stats:', error)
     } finally {
       setLoading(false)
     }
-  }
-
-  const handleSearch = (term: string) => {
-    setSearchTerm(term)
-    const filtered = allMaterials.filter(item =>
-      item.judul?.toLowerCase().includes(term.toLowerCase()) ||
-      item.deskripsi?.toLowerCase().includes(term.toLowerCase())
-    )
-    setFilteredMaterials(filtered)
   }
 
   return (
@@ -83,7 +66,9 @@ export default function MatkulDetail() {
           </Button>
           <div>
             <h1 className="text-3xl font-bold">{matkul}</h1>
-            <p className="text-muted-foreground">Semester {semester}</p>
+            <p className="text-muted-foreground">
+              Semester {semester}
+            </p>
           </div>
         </div>
       </div>
@@ -101,7 +86,7 @@ export default function MatkulDetail() {
               <p className="text-muted-foreground mb-6">
                 Ringkasan materi yang tersedia untuk {matkul}
               </p>
-
+              
               {loading ? (
                 <div className="text-muted-foreground">Memuat...</div>
               ) : (
@@ -128,7 +113,7 @@ export default function MatkulDetail() {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <Card className="group hover:shadow-lg transition-all duration-200">
             <CardContent className="pt-6">
-              <Link
+              <Link 
                 to={`/semester/${semester}/${encodeURIComponent(matkul)}/Teori`}
                 className="block text-center"
               >
@@ -137,14 +122,16 @@ export default function MatkulDetail() {
                 <p className="text-sm text-muted-foreground mb-4">
                   Akses semua materi teori untuk mata kuliah ini
                 </p>
-                <Badge variant="secondary">{stats.teoriCount} materi tersedia</Badge>
+                <Badge variant="secondary">
+                  {stats.teoriCount} materi tersedia
+                </Badge>
               </Link>
             </CardContent>
           </Card>
 
           <Card className="group hover:shadow-lg transition-all duration-200">
             <CardContent className="pt-6">
-              <Link
+              <Link 
                 to={`/semester/${semester}/${encodeURIComponent(matkul)}/Praktikum`}
                 className="block text-center"
               >
@@ -153,45 +140,12 @@ export default function MatkulDetail() {
                 <p className="text-sm text-muted-foreground mb-4">
                   Akses semua materi praktikum untuk mata kuliah ini
                 </p>
-                <Badge variant="outline">{stats.praktikumCount} materi tersedia</Badge>
+                <Badge variant="outline">
+                  {stats.praktikumCount} materi tersedia
+                </Badge>
               </Link>
             </CardContent>
           </Card>
-        </div>
-
-        {/* Search Input */}
-        <div className="mt-4">
-          <input
-            type="text"
-            placeholder="Cari materi teori atau praktikum..."
-            className="w-full px-4 py-2 border rounded-md dark:bg-gray-900"
-            value={searchTerm}
-            onChange={(e) => handleSearch(e.target.value)}
-          />
-        </div>
-
-        {/* Filtered Material List */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {filteredMaterials.length === 0 && !loading ? (
-            <p className="text-muted-foreground">Tidak ada materi ditemukan.</p>
-          ) : (
-            filteredMaterials.map((item, index) => (
-              <Card key={index}>
-                <CardContent className="p-4 space-y-2">
-                  <div className="text-xl font-semibold">{item.judul}</div>
-                  <p className="text-sm text-muted-foreground">{item.deskripsi}</p>
-                  <Badge variant={item.tipe === 'Teori' ? 'default' : 'outline'}>
-                    {item.tipe}
-                  </Badge>
-                  <div className="text-xs text-gray-500">{new Date(item.created_at).toLocaleDateString('id-ID', {
-                    day: 'numeric',
-                    month: 'long',
-                    year: 'numeric'
-                  })}</div>
-                </CardContent>
-              </Card>
-            ))
-          )}
         </div>
       </div>
     </div>
