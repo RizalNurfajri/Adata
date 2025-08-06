@@ -9,6 +9,7 @@ import { Label } from '@/components/ui/label'
 import { supabase } from '@/integrations/supabase/client'
 import { toast } from '@/hooks/use-toast'
 import { Loader2 } from 'lucide-react'
+import { getUserRole } from '@/lib/utils'
 
 interface Material {
   id?: string
@@ -36,8 +37,15 @@ export default function MaterialForm({ materialId, isEdit = false }: MaterialFor
     tipe: 'Teori',
     link: ''
   })
+  const [pdfFile, setPdfFile] = useState<File | null>(null)
+  const [role, setRole] = useState<string | null>(null)
 
-  // Load material data for editing
+  // Ambil role user
+  useEffect(() => {
+    getUserRole().then((r) => setRole(r))
+  }, [])
+
+  // Load material data untuk edit
   useEffect(() => {
     if (isEdit && materialId) {
       loadMaterial()
@@ -72,11 +80,38 @@ export default function MaterialForm({ materialId, isEdit = false }: MaterialFor
     }
   }
 
+  const handleUploadPDF = async () => {
+    if (!pdfFile) return null
+
+    const fileExt = pdfFile.name.split('.').pop()
+    const fileName = `${Date.now()}.${fileExt}`
+    const filePath = `${fileName}`
+
+    const { error } = await supabase.storage
+      .from('materi-pdf')
+      .upload(filePath, pdfFile)
+
+    if (error) throw error
+
+    const { data } = supabase.storage
+      .from('materi-pdf')
+      .getPublicUrl(filePath)
+
+    return data.publicUrl
+  }
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setLoading(true)
 
     try {
+      if (pdfFile && role === 'admin') {
+        const uploadedUrl = await handleUploadPDF()
+        if (uploadedUrl) {
+          formData.link = uploadedUrl
+        }
+      }
+
       if (isEdit && materialId) {
         const { error } = await supabase
           .from('materials')
@@ -225,21 +260,24 @@ export default function MaterialForm({ materialId, isEdit = false }: MaterialFor
             />
           </div>
 
+          {role === 'admin' && (
+            <div className="space-y-2">
+              <Label htmlFor="pdf">Upload PDF</Label>
+              <Input
+                id="pdf"
+                type="file"
+                accept="application/pdf"
+                onChange={(e) => setPdfFile(e.target.files?.[0] ?? null)}
+              />
+            </div>
+          )}
+
           <div className="flex space-x-4">
-            <Button
-              type="submit"
-              disabled={loading}
-              className="flex-1"
-            >
+            <Button type="submit" disabled={loading} className="flex-1">
               {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               {isEdit ? 'Perbarui Materi' : 'Tambah Materi'}
             </Button>
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => navigate(-1)}
-              disabled={loading}
-            >
+            <Button type="button" variant="outline" onClick={() => navigate(-1)} disabled={loading}>
               Batal
             </Button>
           </div>
