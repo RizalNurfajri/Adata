@@ -13,18 +13,25 @@ export async function uploadToStorage(file: File): Promise<string | null> {
   const fileName = `${Date.now()}.${fileExt}`
   const filePath = `${fileName}`
 
-  // Upload file
-  const { error: uploadError } = await supabase.storage
+  const uploadResult = await supabase.storage
     .from('materi-pdf')
     .upload(filePath, file, {
       cacheControl: '3600',
       upsert: false,
     })
 
-  if (uploadError) {
-    console.error('Upload error:', uploadError.message)
+  if (uploadResult.error) {
+    console.error('Upload error:', uploadResult.error.message)
     return null
   }
+
+  const urlResult = supabase.storage
+    .from('materi-pdf')
+    .getPublicUrl(filePath)
+
+  return urlResult?.data?.publicUrl ?? null
+}
+
 
   // Ambil public URL
   const { data: urlData, error: urlError } = supabase.storage
