@@ -29,49 +29,49 @@ export default function MaterialCard({ material, onDeleted }: MaterialCardProps)
   const [isDeleting, setIsDeleting] = useState(false)
 
   const handleDelete = async () => {
-  if (!confirm('Apakah Anda yakin ingin menghapus materi ini?')) return
+    if (!confirm('Apakah Anda yakin ingin menghapus materi ini?')) return
 
-  setIsDeleting(true)
-  try {
-    // Ekstrak path file dari URL
-    const filePath = material.link?.split('/').pop() ?? ''
+    setIsDeleting(true)
+    try {
+      // Ambil nama file dari URL
+      const filePath = material.link?.split('/').pop() ?? ''
 
-    // 1. Hapus file dari storage jika ada
-    if (filePath) {
-      const { error: storageError } = await supabase.storage
-        .from('materi-pdf')
-        .remove([filePath])
+      // Hapus file dari storage jika ada
+      if (filePath) {
+        const { error: storageError } = await supabase
+          .storage
+          .from('materi-pdf')
+          .remove([filePath])
 
-      if (storageError) {
-        console.warn('Gagal menghapus file dari storage:', storageError.message)
+        if (storageError) {
+          console.warn('Gagal hapus file dari storage:', storageError.message)
+        }
       }
+
+      // Hapus dari database
+      const { error } = await supabase
+        .from('materials')
+        .delete()
+        .eq('id', material.id)
+
+      if (error) throw error
+
+      toast({
+        title: 'Berhasil',
+        description: 'Materi berhasil dihapus',
+      })
+
+      onDeleted?.()
+    } catch (error) {
+      toast({
+        title: 'Error',
+        description: 'Gagal menghapus materi',
+        variant: 'destructive',
+      })
+    } finally {
+      setIsDeleting(false)
     }
-
-    // 2. Hapus data dari tabel
-    const { error } = await supabase
-      .from('materials')
-      .delete()
-      .eq('id', material.id)
-
-    if (error) throw error
-
-    toast({
-      title: 'Berhasil',
-      description: 'Materi berhasil dihapus',
-    })
-
-    onDeleted?.()
-  } catch (error) {
-    toast({
-      title: 'Error',
-      description: 'Gagal menghapus materi',
-      variant: 'destructive',
-    })
-  } finally {
-    setIsDeleting(false)
   }
-}
-
 
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString('id-ID', {
