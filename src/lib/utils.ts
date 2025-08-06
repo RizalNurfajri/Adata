@@ -2,17 +2,7 @@ import { clsx, type ClassValue } from "clsx"
 import { twMerge } from "tailwind-merge"
 import { supabase } from "@/integrations/supabase/client"
 
-// Utility untuk menggabungkan class Tailwind
-export function cn(...inputs: ClassValue[]) {
-  return twMerge(clsx(inputs))
-}
-
-// Upload file PDF ke Supabase Storage
-import { clsx, type ClassValue } from "clsx"
-import { twMerge } from "tailwind-merge"
-import { supabase } from "@/integrations/supabase/client"
-
-// Utility untuk merge class Tailwind
+// ✅ Fungsi ini cukup ditulis sekali saja
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
 }
@@ -52,6 +42,5 @@ export async function getUserRole(): Promise<string | null> {
   if (error || !session) return null
 
   const role = session.user.user_metadata?.role
-
   return role || null
 }
