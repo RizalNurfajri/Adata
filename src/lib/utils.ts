@@ -2,37 +2,44 @@ import { clsx, type ClassValue } from "clsx"
 import { twMerge } from "tailwind-merge"
 import { supabase } from "@/integrations/supabase/client"
 
-// ✅ Fungsi ini cukup ditulis sekali saja
+// ✅ Utility: Tailwind class merger
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
 }
 
-// Upload file PDF ke Supabase Storage dan return public URL
+// ✅ Upload file PDF ke Supabase Storage dan ambil public URL
 export async function uploadToStorage(file: File): Promise<string | null> {
   const fileExt = file.name.split('.').pop()
   const fileName = `${Date.now()}.${fileExt}`
   const filePath = `${fileName}`
 
-  const { error } = await supabase.storage
+  // Upload file
+  const { error: uploadError } = await supabase.storage
     .from('materi-pdf')
     .upload(filePath, file, {
       cacheControl: '3600',
       upsert: false,
     })
 
-  if (error) {
-    console.error('Upload error:', error.message)
+  if (uploadError) {
+    console.error('Upload error:', uploadError.message)
     return null
   }
 
-  const { data: urlData } = supabase.storage
+  // Ambil public URL
+  const { data: urlData, error: urlError } = supabase.storage
     .from('materi-pdf')
     .getPublicUrl(filePath)
+
+  if (urlError) {
+    console.error('URL generation error:', urlError.message)
+    return null
+  }
 
   return urlData?.publicUrl ?? null
 }
 
-// Ambil role user dari session Supabase
+// ✅ Ambil role user dari session Supabase
 export async function getUserRole(): Promise<string | null> {
   const {
     data: { session },
