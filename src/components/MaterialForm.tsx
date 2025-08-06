@@ -50,6 +50,18 @@ export default function MaterialForm() {
         uploadedLink = url
       }
 
+await supabase.from('materials').insert([
+  {
+    judul: formData.title,
+    deskripsi: formData.description,
+    matkul: formData.subject,
+    semester: parseInt(formData.semester.split(' ')[1]), // "Semester 1" → 1
+    tipe: formData.type,
+    link: uploadedLink
+  }
+])
+
+
       if (error) throw error
 
       toast({
