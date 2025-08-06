@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -10,7 +10,12 @@ import { uploadToStorage } from '@/lib/utils'
 import { supabase } from '@/integrations/supabase/client'
 import { Loader2 } from 'lucide-react'
 
-export default function MaterialForm() {
+interface MaterialFormProps {
+  isEdit?: boolean
+  materialId?: string
+}
+
+export default function MaterialForm({ isEdit = false, materialId }: MaterialFormProps) {
   const navigate = useNavigate()
   const [loading, setLoading] = useState(false)
   const [formData, setFormData] = useState({
@@ -22,6 +27,38 @@ export default function MaterialForm() {
     link: ''
   })
   const [file, setFile] = useState<File | null>(null)
+
+  useEffect(() => {
+    const fetchMaterial = async () => {
+      if (isEdit && materialId) {
+        const { data, error } = await supabase
+          .from('materials')
+          .select('*')
+          .eq('id', materialId)
+          .single()
+
+        if (error || !data) {
+          toast({
+            title: 'Error',
+            description: 'Gagal memuat data materi',
+            variant: 'destructive',
+          })
+          return
+        }
+
+        setFormData({
+          title: data.judul,
+          description: data.deskripsi ?? '',
+          subject: data.matkul,
+          semester: `Semester ${data.semester}`,
+          type: data.tipe,
+          link: data.link ?? '',
+        })
+      }
+    }
+
+    fetchMaterial()
+  }, [isEdit, materialId])
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target
@@ -42,25 +79,25 @@ export default function MaterialForm() {
     setLoading(true)
 
     try {
-      // 🚫 Cek apakah judul sudah ada
-      const { data: existing, error: checkError } = await supabase
-        .from('materials')
-        .select('judul')
-        .eq('judul', formData.title)
-        .maybeSingle()
+      if (!isEdit) {
+        const { data: existing, error: checkError } = await supabase
+          .from('materials')
+          .select('judul')
+          .eq('judul', formData.title)
+          .maybeSingle()
 
-      if (checkError) throw checkError
-      if (existing) {
-        toast({
-          title: 'Judul sudah ada',
-          description: 'Materi dengan judul ini sudah ditambahkan sebelumnya.',
-          variant: 'destructive',
-        })
-        setLoading(false)
-        return
+        if (checkError) throw checkError
+        if (existing) {
+          toast({
+            title: 'Judul sudah ada',
+            description: 'Materi dengan judul ini sudah ditambahkan sebelumnya.',
+            variant: 'destructive',
+          })
+          setLoading(false)
+          return
+        }
       }
 
-      // 📦 Upload file jika ada
       let uploadedLink = formData.link
       if (file) {
         const url = await uploadToStorage(file)
@@ -68,30 +105,45 @@ export default function MaterialForm() {
         uploadedLink = url
       }
 
-      // ✅ Insert data
-      const { error } = await supabase.from('materials').insert([
-        {
-          judul: formData.title,
-          deskripsi: formData.description,
-          matkul: formData.subject,
-          semester: parseInt(formData.semester.split(' ')[1]),
-          tipe: formData.type,
-          link: uploadedLink
-        }
-      ])
+      if (isEdit && materialId) {
+        const { error } = await supabase
+          .from('materials')
+          .update({
+            judul: formData.title,
+            deskripsi: formData.description,
+            matkul: formData.subject,
+            semester: parseInt(formData.semester.split(' ')[1]),
+            tipe: formData.type,
+            link: uploadedLink
+          })
+          .eq('id', materialId)
 
-      if (error) throw error
+        if (error) throw error
+      } else {
+        const { error } = await supabase
+          .from('materials')
+          .insert([{
+            judul: formData.title,
+            deskripsi: formData.description,
+            matkul: formData.subject,
+            semester: parseInt(formData.semester.split(' ')[1]),
+            tipe: formData.type,
+            link: uploadedLink
+          }])
+
+        if (error) throw error
+      }
 
       toast({
         title: 'Sukses',
-        description: 'Materi berhasil ditambahkan',
+        description: isEdit ? 'Materi berhasil diperbarui' : 'Materi berhasil ditambahkan',
       })
 
       navigate('/admin/dashboard')
     } catch (err: any) {
       toast({
         title: 'Error',
-        description: err.message || 'Terjadi kesalahan saat menambahkan materi',
+        description: err.message || 'Terjadi kesalahan saat memproses data',
         variant: 'destructive',
       })
     } finally {
@@ -101,7 +153,7 @@ export default function MaterialForm() {
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6 bg-background p-6 rounded-lg border max-w-xl mx-auto">
-      <h2 className="text-xl font-semibold">Tambah Materi Baru</h2>
+      <h2 className="text-xl font-semibold">{isEdit ? 'Edit Materi' : 'Tambah Materi Baru'}</h2>
 
       {/* Judul */}
       <div>
@@ -162,7 +214,7 @@ export default function MaterialForm() {
       <div className="flex gap-4 justify-end">
         <Button type="submit" disabled={loading}>
           {loading && <Loader2 className="animate-spin mr-2 h-4 w-4" />}
-          Tambah Materi
+          {isEdit ? 'Simpan Perubahan' : 'Tambah Materi'}
         </Button>
         <Button type="button" variant="outline" onClick={() => navigate('/admin/dashboard')}>
           Batal
