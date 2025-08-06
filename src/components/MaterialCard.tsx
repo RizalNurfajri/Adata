@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-import { ExternalLink, Edit, Trash2, Calendar } from 'lucide-react'
+import { ExternalLink, Edit, Trash2, Calendar, DownloadCloud } from 'lucide-react'
 import { useAuth } from '@/hooks/useAuth'
 import { supabase } from '@/integrations/supabase/client'
 import { toast } from '@/hooks/use-toast'
@@ -30,7 +30,7 @@ export default function MaterialCard({ material, onDeleted }: MaterialCardProps)
 
   const handleDelete = async () => {
     if (!confirm('Apakah Anda yakin ingin menghapus materi ini?')) return
-    
+
     setIsDeleting(true)
     try {
       const { error } = await supabase
@@ -44,7 +44,7 @@ export default function MaterialCard({ material, onDeleted }: MaterialCardProps)
         title: 'Berhasil',
         description: 'Materi berhasil dihapus',
       })
-      
+
       onDeleted?.()
     } catch (error) {
       toast({
@@ -87,22 +87,37 @@ export default function MaterialCard({ material, onDeleted }: MaterialCardProps)
             {material.deskripsi}
           </p>
         )}
-        
+
         <div className="flex flex-wrap gap-2">
           {material.link && (
-            <Button asChild variant="outline" size="sm">
-              <a 
-                href={material.link} 
-                target="_blank" 
-                rel="noopener noreferrer"
-                className="flex items-center"
-              >
-                <ExternalLink className="h-4 w-4 mr-1" />
-                Buka Link
-              </a>
-            </Button>
+            <>
+              {/* Tombol View */}
+              <Button asChild variant="outline" size="sm">
+                <a
+                  href={material.link}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center"
+                >
+                  <ExternalLink className="h-4 w-4 mr-1" />
+                  Lihat
+                </a>
+              </Button>
+
+              {/* Tombol Download */}
+              <Button asChild variant="outline" size="sm">
+                <a
+                  href={material.link}
+                  download
+                  className="flex items-center"
+                >
+                  <DownloadCloud className="h-4 w-4 mr-1" />
+                  Download
+                </a>
+              </Button>
+            </>
           )}
-          
+
           {profile?.role === 'admin' && (
             <>
               <Button asChild variant="outline" size="sm">
