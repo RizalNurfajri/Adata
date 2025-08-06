@@ -100,7 +100,7 @@ export default function MaterialForm({ isEdit = false, materialId }: MaterialFor
 
       let uploadedLink = formData.link
       if (file) {
-        const url = await uploadToStorage(file)
+        const url = await uploadWithOriginalName(file) 
         if (!url) throw new Error('Gagal upload file PDF')
         uploadedLink = url
       }
