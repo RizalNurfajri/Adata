@@ -50,17 +50,6 @@ export default function MaterialForm() {
         uploadedLink = url
       }
 
-      const { error } = await supabase.from('materials').insert([
-        {
-          title: formData.title,
-          description: formData.description,
-          subject: formData.subject,
-          semester: formData.semester,
-          type: formData.type,
-          link: uploadedLink
-        }
-      ])
-
       if (error) throw error
 
       toast({
