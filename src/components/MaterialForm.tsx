@@ -159,12 +159,6 @@ export default function MaterialForm() {
         <p className="text-sm text-muted-foreground mt-1">Atau isi link manual di bawah jika tidak upload</p>
       </div>
 
-      {/* Link PDF */}
-      <div>
-        <Label>Link PDF/Materi</Label>
-        <Input name="link" value={formData.link} onChange={handleChange} placeholder="https://example.com/materi.pdf (opsional)" />
-      </div>
-
       {/* Tombol */}
       <div className="flex gap-4 justify-end">
         <Button type="submit" disabled={loading}>
