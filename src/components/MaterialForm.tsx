@@ -156,7 +156,6 @@ export default function MaterialForm() {
       <div>
         <Label>Upload File PDF</Label>
         <Input type="file" accept=".pdf" onChange={handleFileChange} />
-        <p className="text-sm text-muted-foreground mt-1">Atau isi link manual di bawah jika tidak upload</p>
       </div>
 
       {/* Tombol */}
