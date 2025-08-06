@@ -9,15 +9,14 @@ export function cn(...inputs: ClassValue[]) {
 
 // ✅ Upload file PDF ke Supabase Storage dan return public URL
 export async function uploadToStorage(file: File): Promise<string | null> {
-  const fileExt = file.name.split('.').pop()
-  const fileName = `${Date.now()}.${fileExt}`
-  const filePath = `${fileName}`
+  const fileName = file.name // gunakan nama asli file
+  const filePath = `pdf/${fileName}` // simpan di folder `pdf/`
 
   const uploadResult = await supabase.storage
     .from('materi-pdf')
     .upload(filePath, file, {
       cacheControl: '3600',
-      upsert: false,
+      upsert: true, // true agar file dengan nama sama bisa diganti
     })
 
   if (uploadResult.error) {
@@ -30,6 +29,20 @@ export async function uploadToStorage(file: File): Promise<string | null> {
     .getPublicUrl(filePath)
 
   return urlResult.data?.publicUrl ?? null
+}
+
+// ✅ Hapus file dari Supabase Storage berdasarkan path
+export async function deleteFromStorage(filePath: string): Promise<boolean> {
+  const { error } = await supabase.storage
+    .from('materi-pdf')
+    .remove([filePath]) // path relatif, contoh: 'pdf/file.pdf'
+
+  if (error) {
+    console.error('Delete error:', error.message)
+    return false
+  }
+
+  return true
 }
 
 // ✅ Ambil role user dari session Supabase
