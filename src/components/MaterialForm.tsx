@@ -44,23 +44,24 @@ export default function MaterialForm() {
     try {
       let uploadedLink = formData.link
 
+      // Upload file ke Supabase Storage
       if (file) {
         const url = await uploadToStorage(file)
         if (!url) throw new Error('Gagal upload file PDF')
         uploadedLink = url
       }
 
-await supabase.from('materials').insert([
-  {
-    judul: formData.title,
-    deskripsi: formData.description,
-    matkul: formData.subject,
-    semester: parseInt(formData.semester.split(' ')[1]), // "Semester 1" → 1
-    tipe: formData.type,
-    link: uploadedLink
-  }
-])
-
+      // Insert data ke tabel "materials"
+      const { error } = await supabase.from('materials').insert([
+        {
+          judul: formData.title,
+          deskripsi: formData.description,
+          matkul: formData.subject,
+          semester: parseInt(formData.semester.split(' ')[1]), // "Semester 1" -> 1
+          tipe: formData.type,
+          link: uploadedLink
+        }
+      ])
 
       if (error) throw error
 
