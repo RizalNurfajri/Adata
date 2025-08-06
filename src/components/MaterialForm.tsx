@@ -42,22 +42,39 @@ export default function MaterialForm() {
     setLoading(true)
 
     try {
-      let uploadedLink = formData.link
+      // 🚫 Cek apakah judul sudah ada
+      const { data: existing, error: checkError } = await supabase
+        .from('materials')
+        .select('judul')
+        .eq('judul', formData.title)
+        .maybeSingle()
 
-      // Upload file ke Supabase Storage
+      if (checkError) throw checkError
+      if (existing) {
+        toast({
+          title: 'Judul sudah ada',
+          description: 'Materi dengan judul ini sudah ditambahkan sebelumnya.',
+          variant: 'destructive',
+        })
+        setLoading(false)
+        return
+      }
+
+      // 📦 Upload file jika ada
+      let uploadedLink = formData.link
       if (file) {
         const url = await uploadToStorage(file)
         if (!url) throw new Error('Gagal upload file PDF')
         uploadedLink = url
       }
 
-      // Insert data ke tabel "materials"
+      // ✅ Insert data
       const { error } = await supabase.from('materials').insert([
         {
           judul: formData.title,
           deskripsi: formData.description,
           matkul: formData.subject,
-          semester: parseInt(formData.semester.split(' ')[1]), // "Semester 1" -> 1
+          semester: parseInt(formData.semester.split(' ')[1]),
           tipe: formData.type,
           link: uploadedLink
         }
