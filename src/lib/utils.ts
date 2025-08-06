@@ -6,6 +6,7 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
 }
 
+// Upload file PDF ke Supabase Storage
 export async function uploadToStorage(file: File): Promise<string | null> {
   const fileExt = file.name.split('.').pop()
   const fileName = `${Date.now()}.${fileExt}`
@@ -22,15 +23,24 @@ export async function uploadToStorage(file: File): Promise<string | null> {
     console.error('Upload error:', error.message)
     return null
   }
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
-
-  return user?.user_metadata?.role || null
 
   const { data: urlData } = supabase.storage
     .from('materi-pdf')
     .getPublicUrl(filePath)
 
   return urlData.publicUrl
+}
+
+// Ambil role user dari session Supabase
+export async function getUserRole(): Promise<string | null> {
+  const {
+    data: { session },
+    error,
+  } = await supabase.auth.getSession()
+
+  if (error || !session) return null
+
+  const role = session.user.user_metadata?.role
+
+  return role || null
 }
