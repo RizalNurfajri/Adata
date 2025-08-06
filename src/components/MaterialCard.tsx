@@ -33,22 +33,6 @@ export default function MaterialCard({ material, onDeleted }: MaterialCardProps)
 
     setIsDeleting(true)
     try {
-      // Ambil nama file dari URL
-      const filePath = material.link?.split('/').pop() ?? ''
-
-      // Hapus file dari storage jika ada
-      if (filePath) {
-        const { error: storageError } = await supabase
-          .storage
-          .from('materi-pdf')
-          .remove([filePath])
-
-        if (storageError) {
-          console.warn('Gagal hapus file dari storage:', storageError.message)
-        }
-      }
-
-      // Hapus dari database
       const { error } = await supabase
         .from('materials')
         .delete()
