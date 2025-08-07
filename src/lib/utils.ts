@@ -8,28 +8,38 @@ export function cn(...inputs: ClassValue[]) {
 }
 
 // ✅ Upload file PDF ke Supabase Storage dan return public URL
-export async function uploadToStorage(file: File): Promise<string | null> {
-  const fileExt = file.name.split('.').pop()
-  const fileName = `${Date.now()}.${fileExt}`
-  const filePath = `${fileName}`
+export async function deleteFromStorage(publicUrl: string): Promise<boolean> {
+  try {
+    const url = new URL(publicUrl)
+    const fullPath = decodeURIComponent(url.pathname)
 
-  const uploadResult = await supabase.storage
-    .from('materi-pdf')
-    .upload(filePath, file, {
-      cacheControl: '3600',
-      upsert: false,
-    })
+    // Contoh: /storage/v1/object/public/materi-pdf/file.pdf
+    const prefix = '/storage/v1/object/public/'
+    const pathStartIndex = fullPath.indexOf(prefix)
 
-  if (uploadResult.error) {
-    console.error('Upload error:', uploadResult.error.message)
-    return null
+    if (pathStartIndex === -1) {
+      console.error('Public URL tidak valid:', publicUrl)
+      return false
+    }
+
+    const fullStoragePath = fullPath.slice(pathStartIndex + prefix.length) // hasil: materi-pdf/file.pdf
+    const [bucketName, ...fileParts] = fullStoragePath.split('/')
+    const filePath = fileParts.join('/')
+
+    const { error } = await supabase.storage
+      .from(bucketName)
+      .remove([filePath])
+
+    if (error) {
+      console.error('Delete error:', error.message)
+      return false
+    }
+
+    return true
+  } catch (err) {
+    console.error('Invalid public URL:', err)
+    return false
   }
-
-  const urlResult = supabase.storage
-    .from('materi-pdf')
-    .getPublicUrl(filePath)
-
-  return urlResult.data?.publicUrl ?? null
 }
 
 // ✅ Ambil role user dari session Supabase
