@@ -6,7 +6,7 @@ import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { toast } from '@/hooks/use-toast'
-import { uploadToStorage } from '@/lib/utils'
+import { uploadToStorage, deleteFromStorage, deleteFromStorageAlternative } from '@/lib/utils'
 import { supabase } from '@/integrations/supabase/client'
 import { Loader2 } from 'lucide-react'
 
@@ -18,6 +18,7 @@ interface MaterialFormProps {
 export default function MaterialForm({ isEdit = false, materialId }: MaterialFormProps) {
   const navigate = useNavigate()
   const [loading, setLoading] = useState(false)
+  const [originalLink, setOriginalLink] = useState<string>('')
   const [formData, setFormData] = useState({
     title: '',
     description: '',
@@ -46,6 +47,7 @@ export default function MaterialForm({ isEdit = false, materialId }: MaterialFor
           return
         }
 
+        setOriginalLink(data.link || '')
         setFormData({
           title: data.judul,
           description: data.deskripsi ?? '',
@@ -74,6 +76,29 @@ export default function MaterialForm({ isEdit = false, materialId }: MaterialFor
     setFile(selectedFile)
   }
 
+  const deleteOldFile = async (fileUrl: string): Promise<boolean> => {
+    if (!fileUrl) return true
+    
+    console.log('Attempting to delete old file:', fileUrl)
+    
+    // Try the main method first
+    let deleted = await deleteFromStorage(fileUrl)
+    
+    // If main method fails, try alternative method
+    if (!deleted) {
+      console.log('Main delete method failed, trying alternative...')
+      deleted = await deleteFromStorageAlternative(fileUrl)
+    }
+    
+    if (!deleted) {
+      console.warn('Failed to delete old file from storage:', fileUrl)
+    } else {
+      console.log('Old file successfully deleted from storage')
+    }
+    
+    return deleted
+  }
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setLoading(true)
@@ -99,10 +124,18 @@ export default function MaterialForm({ isEdit = false, materialId }: MaterialFor
       }
 
       let uploadedLink = formData.link
+      
+      // If user selected a new file
       if (file) {
+        // Upload new file
         const url = await uploadToStorage(file)
         if (!url) throw new Error('Gagal upload file PDF')
         uploadedLink = url
+
+        // If editing and there was an old file, delete it
+        if (isEdit && originalLink && originalLink !== uploadedLink) {
+          await deleteOldFile(originalLink)
+        }
       }
 
       if (isEdit && materialId) {
@@ -141,6 +174,7 @@ export default function MaterialForm({ isEdit = false, materialId }: MaterialFor
 
       navigate('/admin/dashboard')
     } catch (err: any) {
+      console.error('Submit error:', err)
       toast({
         title: 'Error',
         description: err.message || 'Terjadi kesalahan saat memproses data',
@@ -206,7 +240,14 @@ export default function MaterialForm({ isEdit = false, materialId }: MaterialFor
 
       {/* Upload PDF */}
       <div>
-        <Label>Upload File PDF</Label>
+        <Label>
+          {isEdit ? 'Upload File PDF Baru (Opsional)' : 'Upload File PDF'}
+          {isEdit && originalLink && (
+            <span className="block text-xs text-muted-foreground mt-1">
+              File saat ini akan diganti jika Anda upload file baru
+            </span>
+          )}
+        </Label>
         <Input type="file" accept=".pdf" onChange={handleFileChange} />
       </div>
 
