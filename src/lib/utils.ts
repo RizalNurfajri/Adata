@@ -6,10 +6,26 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
 }
 
-export async function uploadToStorage(file: File): Promise<string | null> {
+export async function uploadToStorage(file: File, matkul?: string, tipe?: string): Promise<string | null> {
   try {
-    // Menggunakan nama file asli
-    const filePath = file.name
+    let filePath: string
+
+    if (matkul && tipe) {
+      // Sanitasi nama mata kuliah dan tipe untuk folder
+      const sanitizedMatkul = matkul
+        .toLowerCase()
+        .replace(/[^a-zA-Z0-9\s]/g, '') // Hapus karakter khusus
+        .replace(/\s+/g, '-') // Ganti spasi dengan dash
+        .trim()
+
+      const sanitizedTipe = tipe.toLowerCase()
+
+      // Struktur: matkul/tipe/namafile
+      filePath = `${sanitizedMatkul}/${sanitizedTipe}/${file.name}`
+    } else {
+      // Fallback ke nama file asli jika tidak ada parameter
+      filePath = file.name
+    }
 
     const uploadResult = await supabase.storage
       .from('materi-pdf')
@@ -81,17 +97,42 @@ async function deleteByBruteForceSearch(publicUrl: string): Promise<boolean> {
     const fullFileName = urlParts[urlParts.length - 1]
     const fileName = decodeURIComponent(fullFileName)
 
+    // Cari di semua folder dan subfolder
     const { data: files, error } = await supabase.storage
       .from('materi-pdf')
       .list('', { limit: 1000 })
 
     if (error) return false
 
-    const exactMatch = files?.find(file => file.name === fileName)
-    if (exactMatch) {
+    // Fungsi rekursif untuk mencari file dalam semua subfolder
+    const searchInFolder = async (folderPath: string = ''): Promise<string | null> => {
+      const { data: folderFiles } = await supabase.storage
+        .from('materi-pdf')
+        .list(folderPath, { limit: 1000 })
+
+      if (folderFiles) {
+        for (const file of folderFiles) {
+          const currentPath = folderPath ? `${folderPath}/${file.name}` : file.name
+          
+          if (file.name === fileName) {
+            return currentPath
+          }
+          
+          // Jika ini adalah folder, cari di dalamnya
+          if (file.id === null) { // folder biasanya memiliki id null
+            const found = await searchInFolder(currentPath)
+            if (found) return found
+          }
+        }
+      }
+      return null
+    }
+
+    const foundPath = await searchInFolder()
+    if (foundPath) {
       const { error: deleteError } = await supabase.storage
         .from('materi-pdf')
-        .remove([exactMatch.name])
+        .remove([foundPath])
 
       if (!deleteError) return true
     }
@@ -129,11 +170,33 @@ export async function deleteFromStorageEnhanced(publicUrl: string): Promise<bool
 
 export async function cleanupOrphanedFiles(): Promise<void> {
   try {
-    const { data: storageFiles, error: storageError } = await supabase.storage
-      .from('materi-pdf')
-      .list('', { limit: 1000 })
+    // Fungsi rekursif untuk mendapatkan semua file dari semua folder
+    const getAllFiles = async (folderPath: string = ''): Promise<string[]> => {
+      const allFiles: string[] = []
+      
+      const { data: items, error } = await supabase.storage
+        .from('materi-pdf')
+        .list(folderPath, { limit: 1000 })
 
-    if (storageError) return
+      if (error || !items) return allFiles
+
+      for (const item of items) {
+        const currentPath = folderPath ? `${folderPath}/${item.name}` : item.name
+        
+        if (item.id === null) {
+          // Ini adalah folder, cari file di dalamnya
+          const subFiles = await getAllFiles(currentPath)
+          allFiles.push(...subFiles)
+        } else {
+          // Ini adalah file
+          allFiles.push(currentPath)
+        }
+      }
+      
+      return allFiles
+    }
+
+    const storageFiles = await getAllFiles()
 
     const { data: dbMaterials, error: dbError } = await supabase
       .from('materials')
@@ -142,29 +205,38 @@ export async function cleanupOrphanedFiles(): Promise<void> {
 
     if (dbError) return
 
-    const dbFileNames = new Set(
+    const dbFilePaths = new Set(
       dbMaterials?.map(material => {
         if (material.link) {
-          const urlParts = material.link.split('/')
-          return decodeURIComponent(urlParts[urlParts.length - 1])
+          // Extract file path dari URL
+          const match = material.link.match(/\/storage\/v1\/object\/public\/materi-pdf\/(.+)$/)
+          return match ? decodeURIComponent(match[1]) : null
         }
         return null
       }).filter(Boolean) || []
     )
 
-    const orphanedFiles = storageFiles?.filter(file => 
-      !dbFileNames.has(file.name)
-    ) || []
+    const orphanedFiles = storageFiles.filter(filePath => 
+      !dbFilePaths.has(filePath)
+    )
+
+    console.log('Orphaned files found:', orphanedFiles)
 
     // Uncomment jika ingin menghapus orphaned files
     /*
-    for (const file of orphanedFiles) {
+    for (const filePath of orphanedFiles) {
       const { error } = await supabase.storage
         .from('materi-pdf')
-        .remove([file.name])
+        .remove([filePath])
+      
+      if (!error) {
+        console.log('Deleted orphaned file:', filePath)
+      }
     }
     */
-  } catch {}
+  } catch (error) {
+    console.error('Error in cleanup:', error)
+  }
 }
 
 export async function deleteFromStorage(publicUrl: string): Promise<boolean> {

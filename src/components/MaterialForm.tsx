@@ -115,7 +115,8 @@ export default function MaterialForm({ isEdit = false, materialId }: MaterialFor
       let uploadedLink = formData.link
 
       if (file) {
-        const url = await uploadToStorage(file)
+        // Pass mata kuliah dan tipe ke fungsi upload untuk struktur folder
+        const url = await uploadToStorage(file, formData.subject, formData.type)
         if (!url) throw new Error('Gagal upload file PDF')
         uploadedLink = url
 
@@ -187,7 +188,10 @@ export default function MaterialForm({ isEdit = false, materialId }: MaterialFor
       <div className="flex gap-4">
         <div className="flex-1">
           <Label>Mata Kuliah</Label>
-          <Input name="subject" value={formData.subject} onChange={handleChange} placeholder="Contoh: Matematika Diskrit" required />
+          <Input name="subject" value={formData.subject} onChange={handleChange} placeholder="Contoh: Jaringan Komputer" required />
+          <p className="text-xs text-muted-foreground mt-1">
+            File akan disimpan di folder: {formData.subject ? formData.subject.toLowerCase().replace(/[^a-zA-Z0-9\s]/g, '').replace(/\s+/g, '-') : 'mata-kuliah'}/{formData.type.toLowerCase()}
+          </p>
         </div>
         <div className="w-40">
           <Label>Semester</Label>
