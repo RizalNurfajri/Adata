@@ -7,13 +7,13 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
 }
 
-// ✅ Upload file PDF ke Supabase Storage dan return public URL
+// ✅ Hapus file PDF dari Supabase Storage berdasarkan public URL
 export async function deleteFromStorage(publicUrl: string): Promise<boolean> {
   try {
     const url = new URL(publicUrl)
     const fullPath = decodeURIComponent(url.pathname)
 
-    // Contoh: /storage/v1/object/public/materi-pdf/file.pdf
+    // Contoh path: /storage/v1/object/public/materi-pdf/pdf/namafile.pdf
     const prefix = '/storage/v1/object/public/'
     const pathStartIndex = fullPath.indexOf(prefix)
 
@@ -22,7 +22,7 @@ export async function deleteFromStorage(publicUrl: string): Promise<boolean> {
       return false
     }
 
-    const fullStoragePath = fullPath.slice(pathStartIndex + prefix.length) // hasil: materi-pdf/file.pdf
+    const fullStoragePath = fullPath.slice(pathStartIndex + prefix.length) // hasil: materi-pdf/pdf/namafile.pdf
     const [bucketName, ...fileParts] = fullStoragePath.split('/')
     const filePath = fileParts.join('/')
 
@@ -50,27 +50,4 @@ export async function getUserRole(): Promise<string | null> {
 
   const role = data.session.user.user_metadata?.role
   return role || null
-}
-
-// ✅ Hapus file PDF dari Supabase Storage berdasarkan public URL
-export async function deleteFromStorage(publicUrl: string): Promise<boolean> {
-  try {
-    const url = new URL(publicUrl)
-    const pathParts = url.pathname.split('/')
-    const fileName = pathParts[pathParts.length - 1] // ambil nama file aja
-
-    const { error } = await supabase.storage
-      .from('materi-pdf')
-      .remove([fileName])
-
-    if (error) {
-      console.error('Delete error:', error.message)
-      return false
-    }
-
-    return true
-  } catch (err) {
-    console.error('Invalid public URL:', err)
-    return false
-  }
 }
