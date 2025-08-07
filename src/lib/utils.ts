@@ -41,3 +41,26 @@ export async function getUserRole(): Promise<string | null> {
   const role = data.session.user.user_metadata?.role
   return role || null
 }
+
+// ✅ Hapus file PDF dari Supabase Storage berdasarkan public URL
+export async function deleteFromStorage(publicUrl: string): Promise<boolean> {
+  try {
+    const url = new URL(publicUrl)
+    const pathParts = url.pathname.split('/')
+    const fileName = pathParts[pathParts.length - 1] // ambil nama file aja
+
+    const { error } = await supabase.storage
+      .from('materi-pdf')
+      .remove([fileName])
+
+    if (error) {
+      console.error('Delete error:', error.message)
+      return false
+    }
+
+    return true
+  } catch (err) {
+    console.error('Invalid public URL:', err)
+    return false
+  }
+}

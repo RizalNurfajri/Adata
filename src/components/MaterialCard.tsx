@@ -7,6 +7,7 @@ import { useAuth } from '@/hooks/useAuth'
 import { supabase } from '@/integrations/supabase/client'
 import { toast } from '@/hooks/use-toast'
 import { Link } from 'react-router-dom'
+import { deleteFromStorage } from '@/lib/utils'
 
 interface Material {
   id: string
@@ -28,34 +29,40 @@ export default function MaterialCard({ material, onDeleted }: MaterialCardProps)
   const { profile } = useAuth()
   const [isDeleting, setIsDeleting] = useState(false)
 
-  const handleDelete = async () => {
-    if (!confirm('Apakah Anda yakin ingin menghapus materi ini?')) return
+const handleDelete = async () => {
+  if (!confirm('Apakah Anda yakin ingin menghapus materi ini?')) return
 
-    setIsDeleting(true)
-    try {
-      const { error } = await supabase
-        .from('materials')
-        .delete()
-        .eq('id', material.id)
-
-      if (error) throw error
-
-      toast({
-        title: 'Berhasil',
-        description: 'Materi berhasil dihapus',
-      })
-
-      onDeleted?.()
-    } catch (error) {
-      toast({
-        title: 'Error',
-        description: 'Gagal menghapus materi',
-        variant: 'destructive',
-      })
-    } finally {
-      setIsDeleting(false)
+  setIsDeleting(true)
+  try {
+    // ⛔ Hapus PDF dari Supabase Storage
+    if (material.link) {
+      await deleteFromStorage(material.link)
     }
+
+    // ✅ Hapus data dari table 'materials'
+    const { error } = await supabase
+      .from('materials')
+      .delete()
+      .eq('id', material.id)
+
+    if (error) throw error
+
+    toast({
+      title: 'Berhasil',
+      description: 'Materi berhasil dihapus',
+    })
+
+    onDeleted?.()
+  } catch (error) {
+    toast({
+      title: 'Error',
+      description: 'Gagal menghapus materi',
+      variant: 'destructive',
+    })
+  } finally {
+    setIsDeleting(false)
   }
+}
 
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString('id-ID', {
