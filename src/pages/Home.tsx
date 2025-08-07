@@ -57,7 +57,7 @@ export default function Home() {
         <div className="flex justify-center mb-6">
           <GraduationCap className="h-16 w-16 text-primary" />
         </div>
-        <h1 className="text-4xl font-bold mb-4">Materi RKS 2A</h1>
+        <h1 className="text-4xl font-bold mb-4">Materi Bersama</h1>
         <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
           Website sederhana untuk mengakses materi kuliah dengan mudah
         </p>
