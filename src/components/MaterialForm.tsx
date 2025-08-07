@@ -238,17 +238,24 @@ export default function MaterialForm({ isEdit = false, materialId }: MaterialFor
         </Select>
       </div>
 
-      {/* Upload PDF */}
+      {/* Upload File */}
       <div>
         <Label>
-          {isEdit ? 'Upload File PDF Baru (Opsional)' : 'Upload File PDF'}
+          {isEdit ? 'Upload File Baru (Opsional)' : 'Upload File'}
           {isEdit && originalLink && (
             <span className="block text-xs text-muted-foreground mt-1">
               File saat ini akan diganti jika Anda upload file baru
             </span>
           )}
         </Label>
-        <Input type="file" accept=".pdf" onChange={handleFileChange} />
+        <Input 
+          type="file" 
+          accept=".pdf,.pka,.doc,.docx,.ppt,.pptx" 
+          onChange={handleFileChange} 
+        />
+        <p className="text-xs text-muted-foreground mt-1">
+          Format yang didukung: PDF, PKA, DOC, DOCX, PPT, PPTX
+        </p>
       </div>
 
       {/* Tombol */}
