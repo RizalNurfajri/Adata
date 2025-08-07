@@ -8,15 +8,14 @@ export function cn(...inputs: ClassValue[]) {
 
 export async function uploadToStorage(file: File): Promise<string | null> {
   try {
-    const fileExt = file.name.split('.').pop()
-    const fileName = `${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`
-    const filePath = `${fileName}`
+    // Menggunakan nama file asli
+    const filePath = file.name
 
     const uploadResult = await supabase.storage
       .from('materi-pdf')
       .upload(filePath, file, {
         cacheControl: '3600',
-        upsert: false,
+        upsert: true, // Set ke true untuk menimpa file dengan nama yang sama
       })
 
     if (uploadResult.error) return null
