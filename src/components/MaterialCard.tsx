@@ -1,3 +1,5 @@
+// Update untuk MaterialCard.tsx - ganti import dan function call
+
 import { useState } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -7,7 +9,8 @@ import { useAuth } from '@/hooks/useAuth'
 import { supabase } from '@/integrations/supabase/client'
 import { toast } from '@/hooks/use-toast'
 import { Link } from 'react-router-dom'
-import { deleteFromStorage, deleteFromStorageAlternative } from '@/lib/utils'
+// Import the enhanced delete function
+import { deleteFromStorageEnhanced, debugStorageContents } from '@/lib/utils'
 
 interface Material {
   id: string
@@ -34,30 +37,22 @@ export default function MaterialCard({ material, onDeleted }: MaterialCardProps)
 
     setIsDeleting(true)
     try {
-      // ⛔ Hapus PDF dari Supabase Storage
+      // ⛔ Hapus PDF dari Supabase Storage menggunakan enhanced method
       if (material.link) {
         console.log('Attempting to delete file from storage:', material.link)
         
-        // Try the main method first
-        let deleted = await deleteFromStorage(material.link)
-        
-        // If main method fails, try alternative method
-        if (!deleted) {
-          console.log('Main delete method failed, trying alternative...')
-          deleted = await deleteFromStorageAlternative(material.link)
-        }
+        // Use the enhanced delete method
+        const deleted = await deleteFromStorageEnhanced(material.link)
         
         if (!deleted) {
-          // Log the URL format to help debug
-          console.warn('Failed to delete file from storage. URL format:', material.link)
-          // Don't throw error here, still proceed with database deletion
+          console.warn('Enhanced delete method failed for URL:', material.link)
           toast({
             title: 'Peringatan',
-            description: 'File berhasil dihapus dari database tetapi mungkin masih tersisa di storage',
+            description: 'File berhasil dihapus dari database tetapi mungkin masih tersisa di storage. Periksa console untuk detail.',
             variant: 'destructive',
           })
         } else {
-          console.log('File successfully deleted from storage')
+          console.log('File successfully deleted from storage using enhanced method')
         }
       }
 
@@ -85,6 +80,11 @@ export default function MaterialCard({ material, onDeleted }: MaterialCardProps)
     } finally {
       setIsDeleting(false)
     }
+  }
+
+  // Debug function untuk admin
+  const handleDebugStorage = async () => {
+    await debugStorageContents()
   }
 
   const formatDate = (dateString: string) => {
@@ -164,6 +164,15 @@ export default function MaterialCard({ material, onDeleted }: MaterialCardProps)
               >
                 <Trash2 className="h-4 w-4 mr-1" />
                 {isDeleting ? 'Menghapus...' : 'Hapus'}
+              </Button>
+              {/* Debug button - remove in production */}
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={handleDebugStorage}
+                className="text-xs"
+              >
+                Debug Storage
               </Button>
             </>
           )}
