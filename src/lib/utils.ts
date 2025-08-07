@@ -11,7 +11,7 @@ export function cn(...inputs: ClassValue[]) {
 export async function uploadToStorage(file: File): Promise<string | null> {
   const fileExt = file.name.split('.').pop()
   const fileName = `${Date.now()}.${fileExt}`
-  const filePath = `pdf/${fileName}` // Folder "pdf" di dalam bucket "materi-pdf"
+  const filePath = `${fileName}`
 
   const uploadResult = await supabase.storage
     .from('materi-pdf')
