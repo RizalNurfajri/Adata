@@ -1,5 +1,3 @@
-// Update untuk MaterialCard.tsx - ganti import dan function call
-
 import { useState } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -9,7 +7,6 @@ import { useAuth } from '@/hooks/useAuth'
 import { supabase } from '@/integrations/supabase/client'
 import { toast } from '@/hooks/use-toast'
 import { Link } from 'react-router-dom'
-// Import the enhanced delete function
 import { deleteFromStorageEnhanced, debugStorageContents } from '@/lib/utils'
 
 interface Material {
@@ -37,26 +34,18 @@ export default function MaterialCard({ material, onDeleted }: MaterialCardProps)
 
     setIsDeleting(true)
     try {
-      // ⛔ Hapus PDF dari Supabase Storage menggunakan enhanced method
       if (material.link) {
-        console.log('Attempting to delete file from storage:', material.link)
-        
-        // Use the enhanced delete method
         const deleted = await deleteFromStorageEnhanced(material.link)
-        
+
         if (!deleted) {
-          console.warn('Enhanced delete method failed for URL:', material.link)
           toast({
             title: 'Peringatan',
             description: 'File berhasil dihapus dari database tetapi mungkin masih tersisa di storage. Periksa console untuk detail.',
             variant: 'destructive',
           })
-        } else {
-          console.log('File successfully deleted from storage using enhanced method')
         }
       }
 
-      // ✅ Hapus data dari table 'materials'
       const { error } = await supabase
         .from('materials')
         .delete()
@@ -71,7 +60,6 @@ export default function MaterialCard({ material, onDeleted }: MaterialCardProps)
 
       onDeleted?.()
     } catch (error) {
-      console.error('Delete error:', error)
       toast({
         title: 'Error',
         description: 'Gagal menghapus materi',
@@ -82,7 +70,6 @@ export default function MaterialCard({ material, onDeleted }: MaterialCardProps)
     }
   }
 
-  // Debug function untuk admin
   const handleDebugStorage = async () => {
     await debugStorageContents()
   }
@@ -121,7 +108,6 @@ export default function MaterialCard({ material, onDeleted }: MaterialCardProps)
         <div className="flex flex-wrap gap-2">
           {material.link && (
             <>
-              {/* Tombol Lihat (preview PDF via Google Docs Viewer) */}
               <Button asChild variant="outline" size="sm">
                 <a
                   href={`https://docs.google.com/gview?url=${encodeURIComponent(material.link)}&embedded=true`}
@@ -134,7 +120,6 @@ export default function MaterialCard({ material, onDeleted }: MaterialCardProps)
                 </a>
               </Button>
 
-              {/* Tombol Download */}
               <Button asChild variant="outline" size="sm">
                 <a
                   href={material.link}
@@ -165,7 +150,6 @@ export default function MaterialCard({ material, onDeleted }: MaterialCardProps)
                 <Trash2 className="h-4 w-4 mr-1" />
                 {isDeleting ? 'Menghapus...' : 'Hapus'}
               </Button>
-              {/* Debug button - remove in production */}
               <Button
                 variant="ghost"
                 size="sm"

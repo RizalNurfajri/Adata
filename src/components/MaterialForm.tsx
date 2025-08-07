@@ -78,24 +78,13 @@ export default function MaterialForm({ isEdit = false, materialId }: MaterialFor
 
   const deleteOldFile = async (fileUrl: string): Promise<boolean> => {
     if (!fileUrl) return true
-    
-    console.log('Attempting to delete old file:', fileUrl)
-    
-    // Try the main method first
+
     let deleted = await deleteFromStorage(fileUrl)
-    
-    // If main method fails, try alternative method
+
     if (!deleted) {
-      console.log('Main delete method failed, trying alternative...')
       deleted = await deleteFromStorageAlternative(fileUrl)
     }
-    
-    if (!deleted) {
-      console.warn('Failed to delete old file from storage:', fileUrl)
-    } else {
-      console.log('Old file successfully deleted from storage')
-    }
-    
+
     return deleted
   }
 
@@ -124,15 +113,12 @@ export default function MaterialForm({ isEdit = false, materialId }: MaterialFor
       }
 
       let uploadedLink = formData.link
-      
-      // If user selected a new file
+
       if (file) {
-        // Upload new file
         const url = await uploadToStorage(file)
         if (!url) throw new Error('Gagal upload file PDF')
         uploadedLink = url
 
-        // If editing and there was an old file, delete it
         if (isEdit && originalLink && originalLink !== uploadedLink) {
           await deleteOldFile(originalLink)
         }
@@ -174,7 +160,6 @@ export default function MaterialForm({ isEdit = false, materialId }: MaterialFor
 
       navigate('/admin/dashboard')
     } catch (err: any) {
-      console.error('Submit error:', err)
       toast({
         title: 'Error',
         description: err.message || 'Terjadi kesalahan saat memproses data',
@@ -189,19 +174,16 @@ export default function MaterialForm({ isEdit = false, materialId }: MaterialFor
     <form onSubmit={handleSubmit} className="space-y-6 bg-background p-6 rounded-lg border max-w-xl mx-auto">
       <h2 className="text-xl font-semibold">{isEdit ? 'Edit Materi' : 'Tambah Materi Baru'}</h2>
 
-      {/* Judul */}
       <div>
         <Label>Judul Materi</Label>
         <Input name="title" value={formData.title} onChange={handleChange} placeholder="Masukkan judul materi" required />
       </div>
 
-      {/* Deskripsi */}
       <div>
         <Label>Deskripsi</Label>
         <Textarea name="description" value={formData.description} onChange={handleChange} placeholder="Masukkan deskripsi materi (opsional)" />
       </div>
 
-      {/* Mata Kuliah & Semester */}
       <div className="flex gap-4">
         <div className="flex-1">
           <Label>Mata Kuliah</Label>
@@ -224,7 +206,6 @@ export default function MaterialForm({ isEdit = false, materialId }: MaterialFor
         </div>
       </div>
 
-      {/* Tipe */}
       <div>
         <Label>Tipe</Label>
         <Select value={formData.type} onValueChange={(value) => handleSelect('type', value)}>
@@ -238,7 +219,6 @@ export default function MaterialForm({ isEdit = false, materialId }: MaterialFor
         </Select>
       </div>
 
-      {/* Upload File */}
       <div>
         <Label>
           {isEdit ? 'Upload File Baru (Opsional)' : 'Upload File'}
@@ -258,7 +238,6 @@ export default function MaterialForm({ isEdit = false, materialId }: MaterialFor
         </p>
       </div>
 
-      {/* Tombol */}
       <div className="flex gap-4 justify-end">
         <Button type="submit" disabled={loading}>
           {loading && <Loader2 className="animate-spin mr-2 h-4 w-4" />}
