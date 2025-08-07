@@ -7,13 +7,38 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
 }
 
+// ✅ Upload file PDF ke Supabase Storage dan return public URL
+export async function uploadToStorage(file: File): Promise<string | null> {
+  const fileExt = file.name.split('.').pop()
+  const fileName = `${Date.now()}.${fileExt}`
+  const filePath = `pdf/${fileName}` // Folder "pdf" di dalam bucket "materi-pdf"
+
+  const uploadResult = await supabase.storage
+    .from('materi-pdf')
+    .upload(filePath, file, {
+      cacheControl: '3600',
+      upsert: false,
+    })
+
+  if (uploadResult.error) {
+    console.error('Upload error:', uploadResult.error.message)
+    return null
+  }
+
+  const urlResult = supabase.storage
+    .from('materi-pdf')
+    .getPublicUrl(filePath)
+
+  return urlResult.data?.publicUrl ?? null
+}
+
 // ✅ Hapus file PDF dari Supabase Storage berdasarkan public URL
 export async function deleteFromStorage(publicUrl: string): Promise<boolean> {
   try {
     const url = new URL(publicUrl)
     const fullPath = decodeURIComponent(url.pathname)
 
-    // Contoh path: /storage/v1/object/public/materi-pdf/pdf/namafile.pdf
+    // Contoh: /storage/v1/object/public/materi-pdf/pdf/file.pdf
     const prefix = '/storage/v1/object/public/'
     const pathStartIndex = fullPath.indexOf(prefix)
 
@@ -22,7 +47,7 @@ export async function deleteFromStorage(publicUrl: string): Promise<boolean> {
       return false
     }
 
-    const fullStoragePath = fullPath.slice(pathStartIndex + prefix.length) // hasil: materi-pdf/pdf/namafile.pdf
+    const fullStoragePath = fullPath.slice(pathStartIndex + prefix.length) // hasil: materi-pdf/pdf/file.pdf
     const [bucketName, ...fileParts] = fullStoragePath.split('/')
     const filePath = fileParts.join('/')
 
