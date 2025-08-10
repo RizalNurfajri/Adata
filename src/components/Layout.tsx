@@ -127,7 +127,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
             
             {/* Sidebar */}
             <aside 
-              className={`fixed right-0 top-0 w-full sm:w-96 md:w-80 bg-card h-full shadow-xl border-l transform transition-transform duration-300 ease-in-out ${
+              className={`fixed right-0 top-0 w-full sm:w-96 md:w-80 bg-card h-full shadow-xl border-l transform transition-transform duration-300 ease-in-out flex flex-col ${
                 isSidebarOpen 
                   ? 'translate-x-0' 
                   : 'translate-x-full'
@@ -136,11 +136,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
               {/* Sidebar Header */}
               <div className="p-4 sm:p-6 border-b bg-gradient-to-r from-primary/10 to-primary/5">
                 <div className="flex items-center justify-between mb-3 sm:mb-4">
-                  <h2 className={`text-lg font-semibold transition-all duration-500 ${
-                    isSidebarOpen 
-                      ? 'opacity-100 transform translate-x-0' 
-                      : 'opacity-0 transform translate-x-4'
-                  }`}>
+                  <h2 className="text-lg font-semibold">
                     Menu
                   </h2>
                   <Button 
@@ -154,11 +150,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                 </div>
                 
                 {/* User Profile Section */}
-                <div className={`flex items-start space-x-3 transition-all duration-700 delay-100 ${
-                  isSidebarOpen 
-                    ? 'opacity-100 transform translate-x-0' 
-                    : 'opacity-0 transform translate-x-8'
-                }`}>
+                <div className="flex items-start space-x-3">
                   <div className="flex-shrink-0">
                     <div className="w-10 h-10 sm:w-12 sm:h-12 bg-primary/20 rounded-full flex items-center justify-center transition-transform duration-300 hover:scale-110">
                       <UserCircle className="h-6 w-6 sm:h-8 sm:w-8 text-primary" />
@@ -171,25 +163,20 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                         {user.email}
                       </p>
                     </div>
-
                   </div>
                 </div>
               </div>
               
               {/* Navigation Section */}
-              <div className="p-6 space-y-6">
+              <div className="flex-1 p-6 space-y-6">
                 <div className="space-y-3">
-                  <h3 className={`text-sm font-medium text-muted-foreground uppercase tracking-wide transition-all duration-700 delay-200 ${
-                    isSidebarOpen 
-                      ? 'opacity-100 transform translate-x-0' 
-                      : 'opacity-0 transform translate-x-8'
-                  }`}>
+                  <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wide">
                     Navigasi
                   </h3>
                   <div className="space-y-1">
                     {navigationItems
                       .filter(item => item.show)
-                      .map((item, index) => {
+                      .map((item) => {
                         const Icon = item.icon
                         return (
                           <Link
@@ -200,14 +187,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                               isActive(item.path)
                                 ? 'bg-primary text-primary-foreground shadow-sm transform translate-x-1'
                                 : 'text-muted-foreground hover:text-foreground hover:bg-accent hover:translate-x-1'
-                            } ${
-                              isSidebarOpen 
-                                ? 'opacity-100 transform translate-x-0' 
-                                : 'opacity-0 transform translate-x-8'
                             }`}
-                            style={{
-                              transitionDelay: isSidebarOpen ? `${300 + (index * 100)}ms` : '0ms'
-                            }}
                           >
                             <Icon className="h-5 w-5" />
                             <span>{item.name}</span>
@@ -217,37 +197,18 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                     }
                   </div>
                 </div>
+              </div>
 
-                {/* Account Actions */}
-                <div className={`space-y-3 pt-6 border-t transition-all duration-700 delay-500 ${
-                  isSidebarOpen 
-                    ? 'opacity-100 transform translate-x-0' 
-                    : 'opacity-0 transform translate-x-8'
-                }`}>
-                  <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wide">
-                    Akun
-                  </h3>
-                  <Button 
-                    variant="outline" 
-                    className="w-full justify-start text-left transition-all duration-200 hover:scale-[1.02] hover:translate-x-1" 
-                    onClick={handleSignOut}
-                  >
-                    <LogOut className="h-4 w-4 mr-3" />
-                    Keluar dari Akun
-                  </Button>
-                </div>
-
-                {/* App Info */}
-                <div className={`pt-6 border-t transition-all duration-700 delay-600 ${
-                  isSidebarOpen 
-                    ? 'opacity-100 transform translate-x-0' 
-                    : 'opacity-0 transform translate-x-8'
-                }`}>
-                  <div className="text-center text-xs text-muted-foreground">
-                    <p>Adata v1.0</p>
-                    <p className="mt-1">© 2025 Made with ♥ by Rizal</p>
-                  </div>
-                </div>
+              {/* Account Actions - Fixed at bottom */}
+              <div className="p-6 border-t bg-muted/5">
+                <Button 
+                  variant="outline" 
+                  className="w-full justify-start text-left transition-all duration-200 hover:scale-[1.02] hover:translate-x-1" 
+                  onClick={handleSignOut}
+                >
+                  <LogOut className="h-4 w-4 mr-3" />
+                  Keluar dari Akun
+                </Button>
               </div>
             </aside>
           </div>
