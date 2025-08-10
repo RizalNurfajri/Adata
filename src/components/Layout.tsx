@@ -211,7 +211,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                 </Button>
               </div>
             </aside>
-          </div>
+          </>
         )}
       </div>
 
