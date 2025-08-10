@@ -5,7 +5,7 @@ import TabSwitcher from '@/components/TabSwitcher'
 import MaterialCard from '@/components/MaterialCard'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
-import { ArrowLeft, FileText, Plus } from 'lucide-react'
+import { ArrowLeft, FileText } from 'lucide-react'
 import { useAuth } from '@/hooks/useAuth'
 
 interface Material {
@@ -58,30 +58,19 @@ export default function MaterialList() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center space-x-4">
-          <Button asChild variant="outline" size="sm">
-            <Link to={`/semester/${semester}/${encodeURIComponent(matkul)}`}>
-              <ArrowLeft className="h-4 w-4 mr-2" />
-              Kembali
-            </Link>
-          </Button>
-          <div>
-            <h1 className="text-3xl font-bold">{matkul}</h1>
-            <p className="text-muted-foreground">
-              Semester {semester} - Materi {tipe}
-            </p>
-          </div>
+      <div className="flex items-center space-x-4">
+        <Button asChild variant="outline" size="sm">
+          <Link to={`/semester/${semester}/${encodeURIComponent(matkul)}`}>
+            <ArrowLeft className="h-4 w-4 mr-2" />
+            Kembali
+          </Link>
+        </Button>
+        <div>
+          <h1 className="text-3xl font-bold">{matkul}</h1>
+          <p className="text-muted-foreground">
+            Semester {semester} - Materi {tipe}
+          </p>
         </div>
-
-        {profile?.role === 'admin' && (
-          <Button asChild>
-            <Link to="/tambah">
-              <Plus className="h-4 w-4 mr-2" />
-              Tambah Materi
-            </Link>
-          </Button>
-        )}
       </div>
 
       {/* Tab Switcher */}
@@ -113,14 +102,6 @@ export default function MaterialList() {
               <p className="text-muted-foreground mb-6">
                 Belum ada materi {tipe.toLowerCase()} yang tersedia untuk {matkul}.
               </p>
-              {profile?.role === 'admin' && (
-                <Button asChild>
-                  <Link to="/tambah">
-                    <Plus className="h-4 w-4 mr-2" />
-                    Tambah Materi Pertama
-                  </Link>
-                </Button>
-              )}
             </CardContent>
           </Card>
         ) : (

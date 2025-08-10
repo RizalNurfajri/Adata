@@ -5,7 +5,7 @@ import { supabase } from '@/integrations/supabase/client'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-import { Plus, Edit, Trash2, Users, BookOpen, FileText } from 'lucide-react'
+import { Edit, Trash2, Users, BookOpen, FileText } from 'lucide-react'
 import AuthGuard from '@/components/AuthGuard'
 import MaterialCard from '@/components/MaterialCard'
 
@@ -70,19 +70,11 @@ export default function AdminDashboard() {
   return (
     <AuthGuard requireAuth requireAdmin>
       <div className="space-y-6">
-        <div className="flex justify-between items-center">
-          <div>
-            <h1 className="text-3xl font-bold">Admin Dashboard</h1>
-            <p className="text-muted-foreground">
-              Kelola materi dan sistem
-            </p>
-          </div>
-          <Button asChild>
-            <Link to="/tambah">
-              <Plus className="h-4 w-4 mr-2" />
-              Tambah Materi
-            </Link>
-          </Button>
+        <div>
+          <h1 className="text-3xl font-bold">Admin Dashboard</h1>
+          <p className="text-muted-foreground">
+            Kelola materi dan sistem
+          </p>
         </div>
 
         {/* Admin Stats */}
@@ -126,12 +118,6 @@ export default function AdminDashboard() {
               <div className="text-center py-8">
                 <BookOpen className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
                 <p className="text-muted-foreground mb-4">Belum ada materi yang ditambahkan</p>
-                <Button asChild>
-                  <Link to="/tambah">
-                    <Plus className="h-4 w-4 mr-2" />
-                    Tambah Materi Pertama
-                  </Link>
-                </Button>
               </div>
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
