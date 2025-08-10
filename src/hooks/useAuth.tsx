@@ -27,6 +27,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
+    // Cek jika URL mengandung type=signup (hasil klik link konfirmasi signup Supabase)
+    const hash = window.location.hash
+    if (hash.includes('type=signup')) {
+      supabase.auth.signOut().then(() => {
+        window.location.href = '/login'
+      })
+      return // stop eksekusi listener supaya tidak auto-login
+    }
+
     // Set up auth state listener
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
