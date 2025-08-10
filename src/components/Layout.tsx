@@ -111,7 +111,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         {/* Right Sidebar Overlay */}
         {user && (
           <div 
-            className={`fixed inset-0 z-30 transition-opacity duration-300 ${
+            className={`fixed inset-0 z-40 transition-opacity duration-300 ${
               isSidebarOpen 
                 ? 'opacity-100 pointer-events-auto' 
                 : 'opacity-0 pointer-events-none'
@@ -200,7 +200,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
               </div>
 
               {/* Account Actions - Fixed at bottom */}
-              <div className="p-6 border-t bg-muted/5 mt-auto">
+              <div className="p-6 border-t bg-muted/5">
                 <Button 
                   variant="outline" 
                   className="w-full justify-start text-left transition-all duration-200 hover:scale-[1.02] hover:translate-x-1" 
@@ -211,7 +211,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                 </Button>
               </div>
             </aside>
-          </>
+          </div>
         )}
       </div>
 
@@ -220,7 +220,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         <footer className="border-t bg-card mt-auto">
           <div className="px-4 sm:px-6 lg:px-8 py-6">
             <div className="text-center text-sm text-muted-foreground">
-              © 2025 Adata. Made With ♥ By Rizal.
+              © 2025 Adata. Made With ♥ For RKS A.
             </div>
           </div>
         </footer>
