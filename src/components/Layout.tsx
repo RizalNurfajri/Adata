@@ -108,10 +108,10 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         {isSidebarOpen && user && (
           <div className="fixed inset-0 z-40">
             <div className="fixed inset-0 bg-black bg-opacity-50" onClick={closeSidebar} />
-            <aside className="fixed right-0 top-0 w-80 bg-card h-full shadow-xl border-l">
+            <aside className="fixed right-0 top-0 w-full sm:w-96 md:w-80 bg-card h-full shadow-xl border-l">
               {/* Sidebar Header */}
-              <div className="p-6 border-b bg-gradient-to-r from-primary/10 to-primary/5">
-                <div className="flex items-center justify-between mb-4">
+              <div className="p-4 sm:p-6 border-b bg-gradient-to-r from-primary/10 to-primary/5">
+                <div className="flex items-center justify-between mb-3 sm:mb-4">
                   <h2 className="text-lg font-semibold">Menu</h2>
                   <Button variant="ghost" size="sm" onClick={closeSidebar}>
                     <X className="h-5 w-5" />
@@ -121,25 +121,25 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                 {/* User Profile Section */}
                 <div className="flex items-start space-x-3">
                   <div className="flex-shrink-0">
-                    <div className="w-12 h-12 bg-primary/20 rounded-full flex items-center justify-center">
-                      <UserCircle className="h-8 w-8 text-primary" />
+                    <div className="w-10 h-10 sm:w-12 sm:h-12 bg-primary/20 rounded-full flex items-center justify-center">
+                      <UserCircle className="h-6 w-6 sm:h-8 sm:w-8 text-primary" />
                     </div>
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center space-x-2 mb-1">
-                      <Mail className="h-4 w-4 text-muted-foreground" />
-                      <p className="text-sm font-medium text-foreground truncate">
+                      <Mail className="h-3 w-3 sm:h-4 sm:w-4 text-muted-foreground" />
+                      <p className="text-xs sm:text-sm font-medium text-foreground truncate">
                         {user.email}
                       </p>
                     </div>
                     <div className="flex items-center space-x-2">
                       {profile?.role === 'admin' ? (
-                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-primary text-primary-foreground">
+                        <span className="inline-flex items-center px-2 py-0.5 sm:px-2.5 rounded-full text-xs font-medium bg-primary text-primary-foreground">
                           <Settings className="h-3 w-3 mr-1" />
-                          Administrator
+                          Admin
                         </span>
                       ) : (
-                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-secondary text-secondary-foreground">
+                        <span className="inline-flex items-center px-2 py-0.5 sm:px-2.5 rounded-full text-xs font-medium bg-secondary text-secondary-foreground">
                           <User className="h-3 w-3 mr-1" />
                           User
                         </span>
