@@ -10,8 +10,9 @@ import {
   X,
   Home,
   BarChart3,
-  BookOpen,
-  Settings
+  Settings,
+  Mail,
+  UserCircle
 } from 'lucide-react'
 import ThemeToggle from '@/components/ThemeToggle'
 
@@ -22,6 +23,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
 
   const handleSignOut = async () => {
     await signOut()
+    setIsSidebarOpen(false)
   }
 
   const isActive = (path: string) => location.pathname === path
@@ -67,43 +69,29 @@ export default function Layout({ children }: { children: React.ReactNode }) {
       <nav className="border-b bg-card sticky top-0 z-50">
         <div className="px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
-            <div className="flex items-center space-x-4">
-              {/* Mobile menu button */}
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={toggleSidebar}
-                className="lg:hidden"
-              >
-                <Menu className="h-5 w-5" />
-              </Button>
-              
-              {/* Logo */}
-              <Link to="/" className="flex items-center space-x-2">
-                <img src="/logo.png" alt="Adata" className="h-6 w-6" />
-                <span className="text-xl font-bold text-foreground">Adata</span>
-              </Link>
-            </div>
+            {/* Logo */}
+            <Link to="/" className="flex items-center space-x-2">
+              <img src="/logo.png" alt="Adata" className="h-6 w-6" />
+              <span className="text-xl font-bold text-foreground">Adata</span>
+            </Link>
 
             {/* Right side items */}
             <div className="flex items-center space-x-4">
               <ThemeToggle />
+              
+              {/* Menu button - always visible when user is logged in */}
               {user && (
-                <div className="flex items-center space-x-2">
-                  <div className="hidden sm:flex items-center space-x-2 text-sm">
-                    <User className="h-4 w-4" />
-                    <span className="text-muted-foreground">{user.email}</span>
-                    {profile?.role === 'admin' && (
-                      <span className="bg-primary text-primary-foreground px-2 py-1 rounded text-xs">
-                        Admin
-                      </span>
-                    )}
-                  </div>
-                  <Button variant="outline" size="sm" onClick={handleSignOut}>
-                    <LogOut className="h-4 w-4 mr-1" />
-                    <span className="hidden sm:inline">Keluar</span>
-                  </Button>
-                </div>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={toggleSidebar}
+                  className="relative"
+                >
+                  <Menu className="h-5 w-5" />
+                  {profile?.role === 'admin' && (
+                    <span className="absolute -top-1 -right-1 h-2 w-2 bg-primary rounded-full"></span>
+                  )}
+                </Button>
               )}
             </div>
           </div>
@@ -111,115 +99,125 @@ export default function Layout({ children }: { children: React.ReactNode }) {
       </nav>
 
       <div className="flex">
-        {/* Desktop Sidebar */}
-        <aside className="hidden lg:block w-64 bg-card border-r min-h-[calc(100vh-4rem)] sticky top-16">
-          <div className="p-4 space-y-4">
-            <div className="space-y-1">
-              <h3 className="text-sm font-medium text-muted-foreground px-3 pb-2">
-                Navigasi
-              </h3>
-              {navigationItems
-                .filter(item => item.show)
-                .map((item) => {
-                  const Icon = item.icon
-                  return (
-                    <Link
-                      key={item.path}
-                      to={item.path}
-                      className={`flex items-center space-x-3 px-3 py-2 rounded-md text-sm font-medium transition-colors ${
-                        isActive(item.path)
-                          ? 'bg-primary text-primary-foreground'
-                          : 'text-muted-foreground hover:text-foreground hover:bg-accent'
-                      }`}
-                    >
-                      <Icon className="h-4 w-4" />
-                      <span>{item.name}</span>
-                    </Link>
-                  )
-                })
-              }
-            </div>
-          </div>
-        </aside>
+        {/* Main Content */}
+        <main className="flex-1 p-4 sm:p-6 lg:p-8">
+          {children}
+        </main>
 
-        {/* Mobile Sidebar Overlay */}
-        {isSidebarOpen && (
-          <div className="fixed inset-0 z-40 lg:hidden">
+        {/* Right Sidebar Overlay */}
+        {isSidebarOpen && user && (
+          <div className="fixed inset-0 z-40">
             <div className="fixed inset-0 bg-black bg-opacity-50" onClick={closeSidebar} />
-            <aside className="fixed left-0 top-0 w-64 bg-card h-full shadow-lg">
-              <div className="p-4 border-b">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center space-x-2">
-                    <img src="/logo.png" alt="Adata" className="h-6 w-6" />
-                    <span className="text-xl font-bold">Adata</span>
-                  </div>
+            <aside className="fixed right-0 top-0 w-80 bg-card h-full shadow-xl border-l">
+              {/* Sidebar Header */}
+              <div className="p-6 border-b bg-gradient-to-r from-primary/10 to-primary/5">
+                <div className="flex items-center justify-between mb-4">
+                  <h2 className="text-lg font-semibold">Menu</h2>
                   <Button variant="ghost" size="sm" onClick={closeSidebar}>
                     <X className="h-5 w-5" />
                   </Button>
                 </div>
+                
+                {/* User Profile Section */}
+                <div className="flex items-start space-x-3">
+                  <div className="flex-shrink-0">
+                    <div className="w-12 h-12 bg-primary/20 rounded-full flex items-center justify-center">
+                      <UserCircle className="h-8 w-8 text-primary" />
+                    </div>
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center space-x-2 mb-1">
+                      <Mail className="h-4 w-4 text-muted-foreground" />
+                      <p className="text-sm font-medium text-foreground truncate">
+                        {user.email}
+                      </p>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      {profile?.role === 'admin' ? (
+                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-primary text-primary-foreground">
+                          <Settings className="h-3 w-3 mr-1" />
+                          Administrator
+                        </span>
+                      ) : (
+                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-secondary text-secondary-foreground">
+                          <User className="h-3 w-3 mr-1" />
+                          User
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                </div>
               </div>
               
-              <div className="p-4 space-y-4">
-                {/* User info on mobile */}
-                {user && (
-                  <div className="p-3 bg-accent rounded-lg">
-                    <div className="flex items-center space-x-2 text-sm">
-                      <User className="h-4 w-4" />
-                      <span className="font-medium">{user.email}</span>
-                    </div>
-                    {profile?.role === 'admin' && (
-                      <span className="inline-block mt-1 bg-primary text-primary-foreground px-2 py-1 rounded text-xs">
-                        Admin
-                      </span>
-                    )}
-                  </div>
-                )}
-                
-                <div className="space-y-1">
-                  <h3 className="text-sm font-medium text-muted-foreground px-3 pb-2">
+              {/* Navigation Section */}
+              <div className="p-6 space-y-6">
+                <div className="space-y-3">
+                  <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wide">
                     Navigasi
                   </h3>
-                  {navigationItems
-                    .filter(item => item.show)
-                    .map((item) => {
-                      const Icon = item.icon
-                      return (
-                        <Link
-                          key={item.path}
-                          to={item.path}
-                          onClick={closeSidebar}
-                          className={`flex items-center space-x-3 px-3 py-2 rounded-md text-sm font-medium transition-colors ${
-                            isActive(item.path)
-                              ? 'bg-primary text-primary-foreground'
-                              : 'text-muted-foreground hover:text-foreground hover:bg-accent'
-                          }`}
-                        >
-                          <Icon className="h-4 w-4" />
-                          <span>{item.name}</span>
-                        </Link>
-                      )
-                    })
-                  }
+                  <div className="space-y-1">
+                    {navigationItems
+                      .filter(item => item.show)
+                      .map((item) => {
+                        const Icon = item.icon
+                        return (
+                          <Link
+                            key={item.path}
+                            to={item.path}
+                            onClick={closeSidebar}
+                            className={`flex items-center space-x-3 px-4 py-3 rounded-lg text-sm font-medium transition-all duration-200 ${
+                              isActive(item.path)
+                                ? 'bg-primary text-primary-foreground shadow-sm'
+                                : 'text-muted-foreground hover:text-foreground hover:bg-accent'
+                            }`}
+                          >
+                            <Icon className="h-5 w-5" />
+                            <span>{item.name}</span>
+                          </Link>
+                        )
+                      })
+                    }
+                  </div>
+                </div>
+
+                {/* Account Actions */}
+                <div className="space-y-3 pt-6 border-t">
+                  <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wide">
+                    Akun
+                  </h3>
+                  <Button 
+                    variant="outline" 
+                    className="w-full justify-start text-left" 
+                    onClick={handleSignOut}
+                  >
+                    <LogOut className="h-4 w-4 mr-3" />
+                    Keluar dari Akun
+                  </Button>
+                </div>
+
+                {/* App Info */}
+                <div className="pt-6 border-t">
+                  <div className="text-center text-xs text-muted-foreground">
+                    <p>Adata v1.0</p>
+                    <p className="mt-1">© 2025 Made with ♥ by Rizal</p>
+                  </div>
                 </div>
               </div>
             </aside>
           </div>
         )}
-
-        {/* Main Content */}
-        <main className="flex-1 p-4 sm:p-6 lg:p-8">
-          {children}
-        </main>
       </div>
 
-      {/* Footer */}
-      <footer className="border-t bg-card mt-auto">
-        <div className="px-4 sm:px-6 lg:px-8 py-6">
-          <div className="text-center text-sm text-muted-foreground">
-            © 2025 Adata. Made With ♥ By Rizal.
+      {/* Footer - only visible when sidebar is closed */}
+      {!isSidebarOpen && (
+        <footer className="border-t bg-card mt-auto">
+          <div className="px-4 sm:px-6 lg:px-8 py-6">
+            <div className="text-center text-sm text-muted-foreground">
+              © 2025 Adata. Made With ♥ By Rizal.
+            </div>
           </div>
-        </div>
-      </footer>
+        </footer>
+      )}
     </div>
   )
 }
