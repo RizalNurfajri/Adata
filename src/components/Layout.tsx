@@ -215,16 +215,14 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         )}
       </div>
 
-      {/* Footer - only visible when sidebar is closed */}
-      {!isSidebarOpen && (
-        <footer className="border-t bg-card mt-auto">
-          <div className="px-4 sm:px-6 lg:px-8 py-6">
-            <div className="text-center text-sm text-muted-foreground">
-              © 2025 Adata. Made With ♥ For RKS A.
-            </div>
+      {/* Footer - Always visible */}
+      <footer className="border-t bg-card mt-auto">
+        <div className="px-4 sm:px-6 lg:px-8 py-6">
+          <div className="text-center text-sm text-muted-foreground">
+            © 2025 Adata. Made With ♥ For RKS A.
           </div>
-        </footer>
-      )}
+        </div>
+      </footer>
     </div>
   )
 }
