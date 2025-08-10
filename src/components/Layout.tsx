@@ -171,19 +171,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                         {user.email}
                       </p>
                     </div>
-                    <div className="flex items-center space-x-2">
-                      {profile?.role === 'admin' ? (
-                        <span className="inline-flex items-center px-2 py-0.5 sm:px-2.5 rounded-full text-xs font-medium bg-primary text-primary-foreground transition-all duration-200 hover:scale-105">
-                          <Settings className="h-3 w-3 mr-1" />
-                          Admin
-                        </span>
-                      ) : (
-                        <span className="inline-flex items-center px-2 py-0.5 sm:px-2.5 rounded-full text-xs font-medium bg-secondary text-secondary-foreground transition-all duration-200 hover:scale-105">
-                          <User className="h-3 w-3 mr-1" />
-                          User
-                        </span>
-                      )}
-                    </div>
+
                   </div>
                 </div>
               </div>
