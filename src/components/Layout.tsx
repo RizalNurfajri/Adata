@@ -237,33 +237,4 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                   </Button>
                 </div>
 
-                {/* App Info */}
-                <div className={`pt-6 border-t transition-all duration-700 delay-600 ${
-                  isSidebarOpen 
-                    ? 'opacity-100 transform translate-x-0' 
-                    : 'opacity-0 transform translate-x-8'
-                }`}>
-                  <div className="text-center text-xs text-muted-foreground">
-                    <p>Adata v1.0</p>
-                    <p className="mt-1">© 2025 Made with ♥ by Rizal</p>
-                  </div>
-                </div>
-              </div>
-            </aside>
-          </div>
-        )}
-      </div>
-
-      {/* Footer - only visible when sidebar is closed */}
-      {!isSidebarOpen && (
-        <footer className="border-t bg-card mt-auto">
-          <div className="px-4 sm:px-6 lg:px-8 py-6">
-            <div className="text-center text-sm text-muted-foreground">
-              © 2025 Adata. Made With ♥ By Rizal.
-            </div>
-          </div>
-        </footer>
-      )}
-    </div>
-  )
 }
