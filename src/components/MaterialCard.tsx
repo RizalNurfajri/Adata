@@ -74,6 +74,54 @@ export default function MaterialCard({ material, onDeleted }: MaterialCardProps)
     await debugStorageContents()
   }
 
+  // Function to handle proper file download
+  const handleDownload = async (fileUrl: string, filename: string) => {
+    try {
+      const response = await fetch(fileUrl)
+      const blob = await response.blob()
+      
+      // Create a temporary URL for the blob
+      const url = window.URL.createObjectURL(blob)
+      
+      // Create a temporary anchor element and trigger download
+      const a = document.createElement('a')
+      a.style.display = 'none'
+      a.href = url
+      a.download = filename
+      
+      document.body.appendChild(a)
+      a.click()
+      
+      // Clean up
+      window.URL.revokeObjectURL(url)
+      document.body.removeChild(a)
+      
+      toast({
+        title: 'Berhasil',
+        description: 'File berhasil didownload',
+      })
+    } catch (error) {
+      toast({
+        title: 'Error',
+        description: 'Gagal mendownload file',
+        variant: 'destructive',
+      })
+    }
+  }
+
+  // Extract filename from URL or use title
+  const getFilename = (url: string, title: string) => {
+    const urlParts = url.split('/')
+    const filename = urlParts[urlParts.length - 1]
+    
+    // If filename has extension, use it, otherwise use title with .pdf
+    if (filename.includes('.')) {
+      return decodeURIComponent(filename)
+    }
+    
+    return `${title}.pdf`
+  }
+
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString('id-ID', {
       year: 'numeric',
@@ -120,15 +168,14 @@ export default function MaterialCard({ material, onDeleted }: MaterialCardProps)
                 </a>
               </Button>
 
-              <Button asChild variant="outline" size="sm">
-                <a
-                  href={material.link}
-                  download
-                  className="flex items-center"
-                >
-                  <Download className="h-4 w-4 mr-1" />
-                  Download
-                </a>
+              <Button 
+                variant="outline" 
+                size="sm"
+                onClick={() => handleDownload(material.link!, getFilename(material.link!, material.judul))}
+                className="flex items-center"
+              >
+                <Download className="h-4 w-4 mr-1" />
+                Download
               </Button>
             </>
           )}
