@@ -12,7 +12,9 @@ import {
   BarChart3,
   Settings,
   Mail,
-  UserCircle
+  UserCircle,
+  ChevronDown,
+  ChevronUp
 } from 'lucide-react'
 import ThemeToggle from '@/components/ThemeToggle'
 
@@ -20,10 +22,12 @@ export default function Layout({ children }: { children: React.ReactNode }) {
   const { user, profile, signOut } = useAuth()
   const location = useLocation()
   const [isSidebarOpen, setIsSidebarOpen] = useState(false)
+  const [isProfileDropdownOpen, setIsProfileDropdownOpen] = useState(false)
 
   const handleSignOut = async () => {
     await signOut()
     setIsSidebarOpen(false)
+    setIsProfileDropdownOpen(false)
   }
 
   const isActive = (path: string) => location.pathname === path
@@ -34,6 +38,11 @@ export default function Layout({ children }: { children: React.ReactNode }) {
 
   const closeSidebar = () => {
     setIsSidebarOpen(false)
+    setIsProfileDropdownOpen(false)
+  }
+
+  const toggleProfileDropdown = () => {
+    setIsProfileDropdownOpen(!isProfileDropdownOpen)
   }
 
   const navigationItems = [
@@ -92,9 +101,6 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                       isSidebarOpen ? 'rotate-90' : 'rotate-0'
                     }`} 
                   />
-                  {profile?.role === 'admin' && (
-                    <span className="absolute -top-1 -right-1 h-2 w-2 bg-primary rounded-full animate-pulse"></span>
-                  )}
                 </Button>
               )}
             </div>
@@ -134,8 +140,8 @@ export default function Layout({ children }: { children: React.ReactNode }) {
               }`}
             >
               {/* Sidebar Header */}
-              <div className="p-4 sm:p-6 border-b bg-gradient-to-r from-primary/10 to-primary/5">
-                <div className="flex items-center justify-between mb-3 sm:mb-4">
+              <div className="p-4 sm:p-6 border-b">
+                <div className="flex items-center justify-between">
                   <h2 className="text-lg font-semibold">
                     Menu
                   </h2>
@@ -148,67 +154,76 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                     <X className="h-5 w-5" />
                   </Button>
                 </div>
-                
-                {/* User Profile Section */}
-                <div className="flex items-start space-x-3">
-                  <div className="flex-shrink-0">
-                    <div className="w-10 h-10 sm:w-12 sm:h-12 bg-primary/20 rounded-full flex items-center justify-center transition-transform duration-300 hover:scale-110">
-                      <UserCircle className="h-6 w-6 sm:h-8 sm:w-8 text-primary" />
-                    </div>
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center space-x-2 mb-1">
-                      <Mail className="h-3 w-3 sm:h-4 sm:w-4 text-muted-foreground" />
-                      <p className="text-xs sm:text-sm font-medium text-foreground truncate">
-                        {user.email}
-                      </p>
-                    </div>
-                  </div>
-                </div>
               </div>
               
               {/* Navigation Section */}
-              <div className="flex-1 p-6 space-y-6">
-                <div className="space-y-3">
-                  <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wide">
-                    Navigasi
-                  </h3>
-                  <div className="space-y-1">
-                    {navigationItems
-                      .filter(item => item.show)
-                      .map((item) => {
-                        const Icon = item.icon
-                        return (
-                          <Link
-                            key={item.path}
-                            to={item.path}
-                            onClick={closeSidebar}
-                            className={`flex items-center space-x-3 px-4 py-3 rounded-lg text-sm font-medium transition-all duration-300 hover:scale-[1.02] ${
-                              isActive(item.path)
-                                ? 'bg-primary text-primary-foreground shadow-sm transform translate-x-1'
-                                : 'text-muted-foreground hover:text-foreground hover:bg-accent hover:translate-x-1'
-                            }`}
-                          >
-                            <Icon className="h-5 w-5" />
-                            <span>{item.name}</span>
-                          </Link>
-                        )
-                      })
-                    }
-                  </div>
-                </div>
+              <div className="flex-1 p-6 space-y-1">
+                {navigationItems
+                  .filter(item => item.show)
+                  .map((item) => {
+                    const Icon = item.icon
+                    return (
+                      <Link
+                        key={item.path}
+                        to={item.path}
+                        onClick={closeSidebar}
+                        className={`flex items-center space-x-3 px-4 py-3 rounded-lg text-sm font-medium transition-all duration-300 hover:scale-[1.02] ${
+                          isActive(item.path)
+                            ? 'bg-primary text-primary-foreground shadow-sm transform translate-x-1'
+                            : 'text-muted-foreground hover:text-foreground hover:bg-accent hover:translate-x-1'
+                        }`}
+                      >
+                        <Icon className="h-5 w-5" />
+                        <span>{item.name}</span>
+                      </Link>
+                    )
+                  })
+                }
               </div>
 
-              {/* Account Actions - Fixed at bottom */}
-              <div className="p-6 border-t bg-muted/5">
-                <Button 
-                  variant="outline" 
-                  className="w-full justify-start text-left transition-all duration-200 hover:scale-[1.02] hover:translate-x-1" 
-                  onClick={handleSignOut}
+              {/* User Profile Section - Fixed at bottom */}
+              <div className="border-t bg-muted/5">
+                {/* Profile Button */}
+                <Button
+                  variant="ghost"
+                  className="w-full p-4 sm:p-6 justify-between text-left h-auto hover:bg-accent/50"
+                  onClick={toggleProfileDropdown}
                 >
-                  <LogOut className="h-4 w-4 mr-3" />
-                  Keluar dari Akun
+                  <div className="flex items-center space-x-3">
+                    <div className="flex-shrink-0">
+                      <div className="w-10 h-10 sm:w-12 sm:h-12 bg-primary/20 rounded-full flex items-center justify-center">
+                        <UserCircle className="h-6 w-6 sm:h-8 sm:w-8 text-primary" />
+                      </div>
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center space-x-2 mb-1">
+                        <Mail className="h-3 w-3 sm:h-4 sm:w-4 text-muted-foreground" />
+                        <p className="text-xs sm:text-sm font-medium text-foreground truncate">
+                          {user.email}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                  {isProfileDropdownOpen ? (
+                    <ChevronUp className="h-4 w-4 text-muted-foreground" />
+                  ) : (
+                    <ChevronDown className="h-4 w-4 text-muted-foreground" />
+                  )}
                 </Button>
+
+                {/* Dropdown Menu */}
+                {isProfileDropdownOpen && (
+                  <div className="px-4 pb-4 space-y-2">
+                    <Button 
+                      variant="outline" 
+                      className="w-full justify-start text-left transition-all duration-200 hover:scale-[1.02] hover:translate-x-1" 
+                      onClick={handleSignOut}
+                    >
+                      <LogOut className="h-4 w-4 mr-3" />
+                      Keluar dari Akun
+                    </Button>
+                  </div>
+                )}
               </div>
             </aside>
           </div>
