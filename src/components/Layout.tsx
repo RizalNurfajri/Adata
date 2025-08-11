@@ -182,7 +182,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
               </div>
 
               {/* User Profile Section - Fixed at bottom */}
-              <div className="border-t">
+              <div className="border-t relative">
                 {/* Profile Button */}
                 <Button
                   variant="ghost"
@@ -197,21 +197,18 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                       <span className="text-sm font-medium text-foreground">
                         {user.email.split('@')[0]}
                       </span>
-                      <span className="text-xs text-muted-foreground">
-                        Free plan
-                      </span>
                     </div>
                   </div>
                   {isProfileDropdownOpen ? (
-                    <ChevronUp className="h-4 w-4 text-muted-foreground" />
-                  ) : (
                     <ChevronDown className="h-4 w-4 text-muted-foreground" />
+                  ) : (
+                    <ChevronUp className="h-4 w-4 text-muted-foreground" />
                   )}
                 </Button>
 
-                {/* Dropdown Menu */}
+                {/* Dropdown Menu - Opens upward */}
                 {isProfileDropdownOpen && (
-                  <div className="border-t bg-muted/30">
+                  <div className="absolute bottom-full left-0 right-0 border-b bg-card shadow-lg">
                     <Button 
                       variant="ghost" 
                       className="w-full justify-start text-left px-4 py-3 rounded-none hover:bg-accent/50" 
