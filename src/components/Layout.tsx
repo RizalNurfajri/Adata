@@ -182,26 +182,24 @@ export default function Layout({ children }: { children: React.ReactNode }) {
               </div>
 
               {/* User Profile Section - Fixed at bottom */}
-              <div className="border-t bg-muted/5">
+              <div className="border-t">
                 {/* Profile Button */}
                 <Button
                   variant="ghost"
-                  className="w-full p-4 sm:p-6 justify-between text-left h-auto hover:bg-accent/50"
+                  className="w-full px-4 py-3 justify-between text-left h-auto hover:bg-accent/50 rounded-none"
                   onClick={toggleProfileDropdown}
                 >
                   <div className="flex items-center space-x-3">
-                    <div className="flex-shrink-0">
-                      <div className="w-10 h-10 sm:w-12 sm:h-12 bg-primary/20 rounded-full flex items-center justify-center">
-                        <UserCircle className="h-6 w-6 sm:h-8 sm:w-8 text-primary" />
-                      </div>
+                    <div className="w-8 h-8 bg-primary rounded-full flex items-center justify-center text-primary-foreground text-sm font-medium">
+                      {user.email.charAt(0).toUpperCase()}
                     </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center space-x-2 mb-1">
-                        <Mail className="h-3 w-3 sm:h-4 sm:w-4 text-muted-foreground" />
-                        <p className="text-xs sm:text-sm font-medium text-foreground truncate">
-                          {user.email}
-                        </p>
-                      </div>
+                    <div className="flex flex-col">
+                      <span className="text-sm font-medium text-foreground">
+                        {user.email.split('@')[0]}
+                      </span>
+                      <span className="text-xs text-muted-foreground">
+                        Free plan
+                      </span>
                     </div>
                   </div>
                   {isProfileDropdownOpen ? (
@@ -213,10 +211,10 @@ export default function Layout({ children }: { children: React.ReactNode }) {
 
                 {/* Dropdown Menu */}
                 {isProfileDropdownOpen && (
-                  <div className="px-4 pb-4 space-y-2">
+                  <div className="border-t bg-muted/30">
                     <Button 
-                      variant="outline" 
-                      className="w-full justify-start text-left transition-all duration-200 hover:scale-[1.02] hover:translate-x-1" 
+                      variant="ghost" 
+                      className="w-full justify-start text-left px-4 py-3 rounded-none hover:bg-accent/50" 
                       onClick={handleSignOut}
                     >
                       <LogOut className="h-4 w-4 mr-3" />
