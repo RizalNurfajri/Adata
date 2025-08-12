@@ -73,7 +73,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
   ]
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background flex flex-col">
       {/* Top Navigation Bar */}
       <nav className="border-b bg-card sticky top-0 z-50">
         <div className="px-4 sm:px-6 lg:px-8">
@@ -108,7 +108,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         </div>
       </nav>
 
-      <div className="flex">
+      <div className="flex flex-1">
         {/* Main Content */}
         <main className="flex-1 p-4 sm:p-6 lg:p-8">
           {children}
@@ -226,7 +226,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
       </div>
 
       {/* Footer - */}
-      <footer className="border-t bg-card mt-auto">
+      <footer className="border-t bg-card">
         <div className="px-4 sm:px-6 lg:px-8 py-6">
           <div className="text-center text-sm text-muted-foreground">
             © 2025 Adata. Made With ♥ For RKS A.
