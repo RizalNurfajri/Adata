@@ -71,7 +71,7 @@ export default function Semester() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between flex-wrap gap-4">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div className="flex items-center space-x-4">
           <Button asChild variant="outline" size="sm">
             <Link to="/">
@@ -86,15 +86,16 @@ export default function Semester() {
             </p>
           </div>
         </div>
-        {/* Search Input */}
-        <div className="flex items-center space-x-2">
-          <Search className="h-4 w-4 text-muted-foreground" />
+        
+        {/* Search Input - Same style as AdminDashboard */}
+        <div className="relative w-full sm:w-80">
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
           <Input
             type="text"
-            placeholder="Cari mata kuliah"
+            placeholder="Cari mata kuliah..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full max-w-xs"
+            className="pl-10"
           />
         </div>
       </div>
@@ -127,17 +128,24 @@ export default function Semester() {
             </CardContent>
           </Card>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {filteredMatkuls.map((matkulData) => (
-              <MatkulCard
-                key={matkulData.matkul}
-                matkul={matkulData.matkul}
-                semester={semester}
-                teoriCount={matkulData.teoriCount}
-                praktikumCount={matkulData.praktikumCount}
-              />
-            ))}
-          </div>
+          <>
+            {searchTerm && (
+              <p className="text-sm text-muted-foreground mb-4">
+                Menampilkan {filteredMatkuls.length} dari {matkuls.length} mata kuliah
+              </p>
+            )}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {filteredMatkuls.map((matkulData) => (
+                <MatkulCard
+                  key={matkulData.matkul}
+                  matkul={matkulData.matkul}
+                  semester={semester}
+                  teoriCount={matkulData.teoriCount}
+                  praktikumCount={matkulData.praktikumCount}
+                />
+              ))}
+            </div>
+          </>
         )}
       </div>
     </div>
