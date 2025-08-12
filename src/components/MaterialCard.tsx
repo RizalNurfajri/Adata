@@ -25,9 +25,6 @@ interface MaterialCardProps {
   onDeleted?: () => void
 }
 
-// Global download queue to prevent multiple simultaneous downloads
-const downloadQueue = new Set<string>()
-
 export default function MaterialCard({ material, onDeleted }: MaterialCardProps) {
   const { profile } = useAuth()
   const [isDeleting, setIsDeleting] = useState(false)
@@ -78,207 +75,140 @@ export default function MaterialCard({ material, onDeleted }: MaterialCardProps)
     await debugStorageContents()
   }
 
-  // Super optimized download function
+  // Optimized download function with timeout and better error handling
   const handleDownload = async (fileUrl: string, filename: string) => {
-    // Prevent multiple downloads of same file
-    if (downloadQueue.has(fileUrl)) {
-      toast({
-        title: 'Download sedang berjalan',
-        description: 'File ini sedang didownload, mohon tunggu',
-      })
-      return
-    }
-
-    // Prevent multiple downloads from same card
-    if (isDownloading) return
-
+    if (isDownloading) return // Prevent multiple downloads
+    
     setIsDownloading(true)
-    downloadQueue.add(fileUrl)
-
+    
     try {
-      // Method 1: Direct download with link element (fastest)
-      const directDownload = () => {
-        const a = document.createElement('a')
-        a.href = fileUrl
-        a.download = filename
-        a.style.display = 'none'
-        a.target = '_blank'
-        
-        // Add to DOM, click, and remove immediately
-        document.body.appendChild(a)
-        a.click()
-        
-        // Immediate cleanup
-        setTimeout(() => {
-          if (document.body.contains(a)) {
-            document.body.removeChild(a)
-          }
-        }, 100)
-
-        return true
-      }
-
-      // Try direct download first (fastest method)
-      if (directDownload()) {
-        toast({
-          title: 'Download dimulai',
-          description: `Mengunduh ${filename}`,
-        })
-        return
-      }
-
-      // Method 2: Fetch with optimizations (fallback)
+      // Create abort controller for timeout
       const controller = new AbortController()
-      const timeoutId = setTimeout(() => controller.abort(), 15000) // 15s timeout
-
-      // Show immediate feedback
-      toast({
-        title: 'Memproses download...',
-        description: filename,
+      const timeoutId = setTimeout(() => controller.abort(), 30000) // 30 second timeout
+      
+      // Show loading toast
+      const loadingToast = toast({
+        title: 'Memulai download...',
+        description: `Mendownload ${filename}`,
       })
 
+      // Fetch with timeout
       const response = await fetch(fileUrl, {
         signal: controller.signal,
-        method: 'GET',
         headers: {
           'Cache-Control': 'no-cache',
-        },
-        // Don't wait for full response, start download immediately
-        credentials: 'omit'
-      })
-
-      clearTimeout(timeoutId)
-
-      if (!response.ok) {
-        throw new Error(`HTTP ${response.status}`)
-      }
-
-      // Stream download instead of waiting for full blob
-      const reader = response.body?.getReader()
-      const contentLength = response.headers.get('Content-Length')
-      const chunks: Uint8Array[] = []
-      let receivedLength = 0
-
-      if (reader) {
-        while (true) {
-          const { done, value } = await reader.read()
-          
-          if (done) break
-          
-          if (value) {
-            chunks.push(value)
-            receivedLength += value.length
-            
-            // Show progress if content length is known
-            if (contentLength) {
-              const progress = (receivedLength / parseInt(contentLength)) * 100
-              if (progress % 25 === 0) { // Update every 25%
-                toast({
-                  title: `Download ${Math.round(progress)}%`,
-                  description: filename,
-                })
-              }
-            }
-          }
         }
+      })
+      
+      clearTimeout(timeoutId)
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`)
       }
-
-      // Create blob from chunks
-      const blob = new Blob(chunks)
+      
+      // Get file size if available
+      const contentLength = response.headers.get('Content-Length')
+      const fileSize = contentLength ? parseInt(contentLength) : null
+      
+      // Convert to blob
+      const blob = await response.blob()
       
       // Validate blob
       if (blob.size === 0) {
-        throw new Error('File kosong')
+        throw new Error('File kosong atau tidak dapat didownload')
       }
-
-      // Create download URL and trigger download
+      
+      // Create download link
       const url = window.URL.createObjectURL(blob)
       const a = document.createElement('a')
       
+      // Set download attributes
+      a.style.display = 'none'
       a.href = url
       a.download = filename
-      a.style.display = 'none'
+      a.target = '_blank' // Open in new tab as fallback
       
+      // Append to body and trigger download
       document.body.appendChild(a)
+      
+      // Trigger download
       a.click()
       
-      // Quick cleanup
+      // Cleanup immediately after click
       setTimeout(() => {
         window.URL.revokeObjectURL(url)
-        if (document.body.contains(a)) {
-          document.body.removeChild(a)
-        }
+        document.body.removeChild(a)
       }, 100)
-
-      const fileSize = (blob.size / (1024 * 1024)).toFixed(2)
+      
+      // Success toast
       toast({
-        title: 'Download selesai!',
-        description: `${filename} (${fileSize}MB)`,
+        title: 'Berhasil!',
+        description: `File "${filename}" berhasil didownload${fileSize ? ` (${(fileSize / (1024 * 1024)).toFixed(2)} MB)` : ''}`,
       })
-
+      
     } catch (error: any) {
       console.error('Download error:', error)
-
-      let errorMessage = 'Gagal download file'
+      
+      let errorMessage = 'Gagal mendownload file'
       
       if (error.name === 'AbortError') {
-        errorMessage = 'Download timeout - coba lagi'
-      } else if (error.message.includes('HTTP')) {
-        errorMessage = 'File tidak dapat diakses'
+        errorMessage = 'Download timeout - file terlalu besar atau koneksi lambat'
+      } else if (error.message.includes('HTTP error')) {
+        errorMessage = 'File tidak dapat diakses atau sudah tidak tersedia'
       } else if (error.message.includes('Failed to fetch')) {
-        errorMessage = 'Masalah koneksi'
+        errorMessage = 'Masalah koneksi internet'
       }
-
+      
       toast({
-        title: 'Download gagal',
+        title: 'Download Gagal',
         description: errorMessage,
         variant: 'destructive',
       })
-
-      // Ultimate fallback - open in new tab
-      try {
-        const newWindow = window.open(fileUrl, '_blank', 'noopener,noreferrer')
-        if (newWindow) {
+      
+      // Fallback - try opening in new tab
+      if (fileUrl) {
+        try {
+          window.open(fileUrl, '_blank')
           toast({
-            title: 'Dibuka di tab baru',
-            description: 'Download manual dari tab yang terbuka',
+            title: 'Membuka di tab baru',
+            description: 'Silakan download manual dari tab yang terbuka',
           })
-        } else {
-          // Final fallback - copy link
+        } catch {
+          // Final fallback - copy to clipboard
           if (navigator.clipboard) {
-            await navigator.clipboard.writeText(fileUrl)
+            navigator.clipboard.writeText(fileUrl)
             toast({
               title: 'Link disalin',
-              description: 'Paste link di browser untuk download',
+              description: 'Link file telah disalin ke clipboard',
             })
           }
         }
-      } catch (fallbackError) {
-        console.error('Fallback failed:', fallbackError)
       }
-
     } finally {
       setIsDownloading(false)
-      downloadQueue.delete(fileUrl)
     }
   }
 
-  // Optimized filename extraction
+  // Extract filename from URL or use title with better sanitization
   const getFilename = (url: string, title: string) => {
     try {
-      // Quick URL parsing
       const urlParts = url.split('/')
-      const lastPart = urlParts[urlParts.length - 1]
+      const rawFilename = urlParts[urlParts.length - 1]
       
-      if (lastPart && lastPart.includes('.')) {
-        return decodeURIComponent(lastPart).replace(/[<>:"/\\|?*]/g, '_')
+      if (rawFilename && rawFilename.includes('.')) {
+        return decodeURIComponent(rawFilename)
       }
       
-      // Sanitize title quickly
-      const clean = title.replace(/[<>:"/\\|?*]/g, '_').trim().substring(0, 80)
-      return `${clean}.pdf`
+      // Sanitize title for filename
+      const sanitizedTitle = title
+        .replace(/[<>:"/\\|?*]/g, '') // Remove invalid filename characters
+        .replace(/\s+/g, ' ') // Normalize spaces
+        .trim()
+        .substring(0, 100) // Limit length
+      
+      return `${sanitizedTitle}.pdf`
     } catch {
-      return `materi_${Date.now()}.pdf`
+      return `${title.substring(0, 50)}.pdf`
     }
   }
 
@@ -332,25 +262,15 @@ export default function MaterialCard({ material, onDeleted }: MaterialCardProps)
                 variant="outline" 
                 size="sm"
                 onClick={() => handleDownload(material.link!, getFilename(material.link!, material.judul))}
-                disabled={isDownloading || downloadQueue.has(material.link)}
-                className="flex items-center min-w-[90px]"
+                disabled={isDownloading}
+                className="flex items-center"
               >
                 {isDownloading ? (
-                  <>
-                    <Loader2 className="h-4 w-4 mr-1 animate-spin" />
-                    <span className="text-xs">Wait...</span>
-                  </>
-                ) : downloadQueue.has(material.link!) ? (
-                  <>
-                    <Loader2 className="h-4 w-4 mr-1 animate-spin" />
-                    <span className="text-xs">Queue</span>
-                  </>
+                  <Loader2 className="h-4 w-4 mr-1 animate-spin" />
                 ) : (
-                  <>
-                    <Download className="h-4 w-4 mr-1" />
-                    Download
-                  </>
+                  <Download className="h-4 w-4 mr-1" />
                 )}
+                {isDownloading ? 'Downloading...' : 'Download'}
               </Button>
             </>
           )}
@@ -379,6 +299,8 @@ export default function MaterialCard({ material, onDeleted }: MaterialCardProps)
                 className="text-xs"
                 disabled={isDownloading}
               >
+                Debug Storage
+              </Button>
             </>
           )}
         </div>
