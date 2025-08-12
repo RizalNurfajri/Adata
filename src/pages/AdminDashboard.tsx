@@ -49,9 +49,19 @@ export default function AdminDashboard() {
         .from('materials')
         .select('*', { count: 'exact', head: true })
 
-      const { count: totalUsers } = await supabase
+      let totalUsers = 0;
+      const { data: profileData } = await supabase
         .from('profiles')
-        .select('*', { count: 'exact', head: true })
+        .select('role')
+        .eq('id', user?.id)
+        .single();
+
+      if (profileData?.role === 'admin') {
+        const { count: countUsers } = await supabase
+          .from('profiles')
+          .select('*', { count: 'exact', head: true });
+        totalUsers = countUsers || 0;
+      }
 
       setMaterials(materialsData as Material[] || [])
       setStats({
