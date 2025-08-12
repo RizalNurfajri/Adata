@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Link, useLocation } from 'react-router-dom'
+import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '@/hooks/useAuth'
 import { Button } from '@/components/ui/button'
 import { 
@@ -21,13 +21,20 @@ import ThemeToggle from '@/components/ThemeToggle'
 export default function Layout({ children }: { children: React.ReactNode }) {
   const { user, profile, signOut } = useAuth()
   const location = useLocation()
+  const navigate = useNavigate()
   const [isSidebarOpen, setIsSidebarOpen] = useState(false)
   const [isProfileDropdownOpen, setIsProfileDropdownOpen] = useState(false)
 
   const handleSignOut = async () => {
-    await signOut()
-    setIsSidebarOpen(false)
-    setIsProfileDropdownOpen(false)
+    try {
+      await signOut()
+      setIsSidebarOpen(false)
+      setIsProfileDropdownOpen(false)
+      // Redirect ke halaman login setelah logout
+      navigate('/login')
+    } catch (error) {
+      console.error('Error signing out:', error)
+    }
   }
 
   const isActive = (path: string) => location.pathname === path
