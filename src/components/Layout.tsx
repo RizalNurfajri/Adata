@@ -133,7 +133,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
             
             {/* Sidebar */}
             <aside 
-              className={`fixed right-0 top-0 w-full sm:w-96 md:w-80 bg-card h-full shadow-xl border-l transform transition-transform duration-300 ease-in-out flex flex-col ${
+              className={`fixed right-0 top-0 w-full sm:w-96 md:w-80 bg-card h-full shadow-xl transform transition-transform duration-300 ease-in-out flex flex-col ${
                 isSidebarOpen 
                   ? 'translate-x-0' 
                   : 'translate-x-full'
@@ -182,7 +182,21 @@ export default function Layout({ children }: { children: React.ReactNode }) {
               </div>
 
               {/* User Profile Section - Fixed at bottom */}
-              <div className="border-t relative">
+              <div className="relative">
+                {/* Dropdown Menu - Opens upward */}
+                {isProfileDropdownOpen && (
+                  <div className="absolute bottom-full left-0 right-0 bg-card shadow-lg border border-border rounded-t-lg">
+                    <Button 
+                      variant="ghost" 
+                      className="w-full justify-start text-left px-4 py-3 rounded-none hover:bg-accent/50" 
+                      onClick={handleSignOut}
+                    >
+                      <LogOut className="h-4 w-4 mr-3" />
+                      Keluar dari Akun
+                    </Button>
+                  </div>
+                )}
+
                 {/* Profile Button */}
                 <Button
                   variant="ghost"
@@ -200,25 +214,11 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                     </div>
                   </div>
                   {isProfileDropdownOpen ? (
-                    <ChevronDown className="h-4 w-4 text-muted-foreground" />
-                  ) : (
                     <ChevronUp className="h-4 w-4 text-muted-foreground" />
+                  ) : (
+                    <ChevronDown className="h-4 w-4 text-muted-foreground" />
                   )}
                 </Button>
-
-                {/* Dropdown Menu - Opens upward */}
-                {isProfileDropdownOpen && (
-                  <div className="absolute bottom-full left-0 right-0 border-b bg-card shadow-lg">
-                    <Button 
-                      variant="ghost" 
-                      className="w-full justify-start text-left px-4 py-3 rounded-none hover:bg-accent/50" 
-                      onClick={handleSignOut}
-                    >
-                      <LogOut className="h-4 w-4 mr-3" />
-                      Keluar dari Akun
-                    </Button>
-                  </div>
-                )}
               </div>
             </aside>
           </div>
