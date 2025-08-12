@@ -189,8 +189,6 @@ export default function MaterialForm({ isEdit = false, materialId }: MaterialFor
         <div className="flex-1">
           <Label>Mata Kuliah</Label>
           <Input name="subject" value={formData.subject} onChange={handleChange} placeholder="Contoh: Jaringan Komputer" required />
-          <p className="text-xs text-muted-foreground mt-1">
-          </p>
         </div>
         <div className="w-40">
           <Label>Semester</Label>
