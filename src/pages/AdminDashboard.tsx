@@ -25,149 +25,118 @@ export default function AdminDashboard() {
   const [materials, setMaterials] = useState<Material[]>([])
   const [loading, setLoading] = useState(true)
   const [searchQuery, setSearchQuery] = useState('')
-  const [stats, setStats] = useState({
-    totalMaterials: 0,
-    totalUsers: 0
-  })
+  const [stats, setStats] = useState({ totalMaterials: 0, totalUsers: 0 })
+  const { user } = useAuth()
 
   useEffect(() => {
-    loadData()
+    const fetchStats = async () => {
+      try {
+        // Ambil semua materi
+        const { count: materialsCount, error: materialsError } = await supabase
+          .from('materials')
+          .select('*', { count: 'exact', head: true })
+
+        if (materialsError) throw materialsError
+
+        // Ambil semua user dari tabel 'users' TANPA filter UID
+        const { count: usersCount, error: usersError } = await supabase
+          .from('users')
+          .select('*', { count: 'exact', head: true })
+
+        if (usersError) throw usersError
+
+        setStats({
+          totalMaterials: materialsCount ?? 0,
+          totalUsers: usersCount ?? 0
+        })
+      } catch (err) {
+        console.error('Error fetching stats:', err)
+      }
+    }
+
+    const fetchMaterials = async () => {
+      setLoading(true)
+      try {
+        const { data, error } = await supabase
+          .from('materials')
+          .select('*')
+          .order('created_at', { ascending: false })
+
+        if (error) throw error
+
+        setMaterials(data || [])
+      } catch (err) {
+        console.error('Error fetching materials:', err)
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    fetchStats()
+    fetchMaterials()
   }, [])
 
-  const loadData = async () => {
-    try {
-      // Load materials
-      const { data: materialsData, error: materialsError } = await supabase
-        .from('materials')
-        .select('*')
-        .order('created_at', { ascending: false })
-
-      if (materialsError) throw materialsError
-
-      // Load stats
-      const { count: totalMaterials } = await supabase
-        .from('materials')
-        .select('*', { count: 'exact', head: true })
-
-      const { count: totalUsers } = await supabase
-        .from('profiles')
-        .select('*', { count: 'exact', head: true })
-
-      setMaterials(materialsData as Material[] || [])
-      setStats({
-        totalMaterials: totalMaterials || 0,
-        totalUsers: totalUsers || 0
-      })
-    } catch (error) {
-      console.error('Error loading admin data:', error)
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  const handleMaterialDeleted = () => {
-    loadData() // Reload data after deletion
-  }
-
-  // Filter materials based on search query
-  const filteredMaterials = materials.filter(material =>
-    material.judul.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    material.matkul.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    (material.deskripsi && material.deskripsi.toLowerCase().includes(searchQuery.toLowerCase())) ||
-    material.tipe.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    material.semester.toString().includes(searchQuery)
+  const filteredMaterials = materials.filter(
+    (material) =>
+      material.judul.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      material.matkul.toLowerCase().includes(searchQuery.toLowerCase())
   )
 
   return (
-    <AuthGuard requireAuth requireAdmin>
-      <div className="space-y-6">
-        <div>
-          <h1 className="text-3xl font-bold">Admin Dashboard</h1>
-          <p className="text-muted-foreground">
-            Kelola materi dan sistem
-          </p>
-        </div>
-
-        {/* Admin Stats */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+    <AuthGuard>
+      <div className="space-y-8">
+        <div className="grid gap-4 md:grid-cols-2">
           <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardHeader className="flex flex-row items-center justify-between pb-2">
               <CardTitle className="text-sm font-medium">Total Materi</CardTitle>
               <FileText className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">{stats.totalMaterials}</div>
-              <p className="text-xs text-muted-foreground">
-                Materi dalam sistem
-              </p>
+              <p className="text-xs text-muted-foreground">Materi dalam sistem</p>
             </CardContent>
           </Card>
 
           <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardHeader className="flex flex-row items-center justify-between pb-2">
               <CardTitle className="text-sm font-medium">Total Pengguna</CardTitle>
               <Users className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">{stats.totalUsers}</div>
-              <p className="text-xs text-muted-foreground">
-                Pengguna terdaftar
-              </p>
+              <p className="text-xs text-muted-foreground">Pengguna terdaftar</p>
             </CardContent>
           </Card>
         </div>
 
-        {/* Materials Management */}
-        <Card>
-          <CardHeader>
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-              <CardTitle>Kelola Materi</CardTitle>
-              <div className="relative w-full sm:w-80">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
-                <Input
-                  type="text"
-                  placeholder="Cari materi, mata kuliah, atau tipe..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="pl-10"
-                />
-              </div>
-            </div>
-          </CardHeader>
-          <CardContent>
-            {loading ? (
-              <p className="text-muted-foreground">Memuat...</p>
-            ) : filteredMaterials.length === 0 ? (
-              <div className="text-center py-8">
-                <BookOpen className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-                {searchQuery ? (
-                  <p className="text-muted-foreground mb-4">
-                    Tidak ada materi yang sesuai dengan pencarian "{searchQuery}"
-                  </p>
-                ) : (
-                  <p className="text-muted-foreground mb-4">Belum ada materi yang ditambahkan</p>
-                )}
-              </div>
-            ) : (
-              <>
-                {searchQuery && (
-                  <p className="text-sm text-muted-foreground mb-4">
-                    Menampilkan {filteredMaterials.length} dari {materials.length} materi
-                  </p>
-                )}
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                  {filteredMaterials.map((material) => (
-                    <MaterialCard
-                      key={material.id}
-                      material={material}
-                      onDeleted={handleMaterialDeleted}
-                    />
-                  ))}
-                </div>
-              </>
-            )}
-          </CardContent>
-        </Card>
+        <div className="flex items-center justify-between">
+          <h2 className="text-2xl font-bold">Kelola Materi</h2>
+          <Link to="/admin/materials/add">
+            <Button>Tambah Materi</Button>
+          </Link>
+        </div>
+
+        <div className="flex items-center gap-2">
+          <Input
+            placeholder="Cari materi..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="max-w-sm"
+          />
+          <Search className="text-muted-foreground" />
+        </div>
+
+        {loading ? (
+          <p>Loading...</p>
+        ) : filteredMaterials.length > 0 ? (
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {filteredMaterials.map((material) => (
+              <MaterialCard key={material.id} material={material} />
+            ))}
+          </div>
+        ) : (
+          <p>Tidak ada materi ditemukan.</p>
+        )}
       </div>
     </AuthGuard>
   )
