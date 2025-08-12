@@ -14,8 +14,7 @@ import {
   Mail,
   UserCircle,
   ChevronDown,
-  ChevronUp,
-  UserX
+  ChevronUp
 } from 'lucide-react'
 import ThemeToggle from '@/components/ThemeToggle'
 
@@ -26,12 +25,6 @@ export default function Layout({ children }: { children: React.ReactNode }) {
   const [isProfileDropdownOpen, setIsProfileDropdownOpen] = useState(false)
 
   const handleSignOut = async () => {
-    await signOut()
-    setIsSidebarOpen(false)
-    setIsProfileDropdownOpen(false)
-  }
-
-  const handleSwitchAccount = async () => {
     await signOut()
     setIsSidebarOpen(false)
     setIsProfileDropdownOpen(false)
@@ -80,7 +73,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
   ]
 
   return (
-    <div className="min-h-screen bg-background flex flex-col">
+    <div className="min-h-screen bg-background">
       {/* Top Navigation Bar */}
       <nav className="border-b bg-card sticky top-0 z-50">
         <div className="px-4 sm:px-6 lg:px-8">
@@ -115,7 +108,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         </div>
       </nav>
 
-      <div className="flex flex-1">
+      <div className="flex">
         {/* Main Content */}
         <main className="flex-1 p-4 sm:p-6 lg:p-8">
           {children}
@@ -193,17 +186,9 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                 {/* Dropdown Menu - Opens upward */}
                 {isProfileDropdownOpen && (
                   <div className="absolute bottom-full left-0 right-0 bg-card shadow-lg border border-border rounded-t-lg mb-1">
-                    <Button
-                      variant="ghost" 
-                      className="w-full justify-start text-left px-4 py-3 hover:bg-accent/50 transition-colors duration-200"
-                      onClick={handleSwitchAccount}
-                    >
-                      <UserX className="h-4 w-4 mr-3" />
-                      Ganti Akun
-                    </Button>
                     <Button 
                       variant="ghost" 
-                      className="w-full justify-start text-left px-4 py-3 rounded-b-lg hover:bg-accent/50" 
+                      className="w-full justify-start text-left px-4 py-3 rounded-t-lg hover:bg-accent/50" 
                       onClick={handleSignOut}
                     >
                       <LogOut className="h-4 w-4 mr-3" />
@@ -241,7 +226,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
       </div>
 
       {/* Footer - */}
-      <footer className="border-t bg-card">
+      <footer className="border-t bg-card mt-auto">
         <div className="px-4 sm:px-6 lg:px-8 py-6">
           <div className="text-center text-sm text-muted-foreground">
             © 2025 Adata. Made With ♥ For RKS A.
