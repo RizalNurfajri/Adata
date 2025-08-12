@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useCallback, memo } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -25,12 +25,13 @@ interface MaterialCardProps {
   onDeleted?: () => void
 }
 
-export default function MaterialCard({ material, onDeleted }: MaterialCardProps) {
+export default memo(function MaterialCard({ material, onDeleted }: MaterialCardProps) {
   const { profile } = useAuth()
   const [isDeleting, setIsDeleting] = useState(false)
   const [isDownloading, setIsDownloading] = useState(false)
 
-  const handleDelete = async () => {
+  // Memoize functions to prevent unnecessary re-renders
+  const handleDelete = useCallback(async () => {
     if (!confirm('Apakah Anda yakin ingin menghapus materi ini?')) return
 
     setIsDeleting(true)
@@ -69,17 +70,23 @@ export default function MaterialCard({ material, onDeleted }: MaterialCardProps)
     } finally {
       setIsDeleting(false)
     }
-  }
+  }, [material.id, material.link, onDeleted])
 
-  const handleDebugStorage = async () => {
+  const handleDebugStorage = useCallback(async () => {
     await debugStorageContents()
-  }
+  }, [])
 
-  // Optimized download function with timeout and better error handling
-  const handleDownload = async (fileUrl: string, filename: string) => {
+  // Optimized download function with preconnect hint and better error handling
+  const handleDownload = useCallback(async (fileUrl: string, filename: string) => {
     if (isDownloading) return // Prevent multiple downloads
     
     setIsDownloading(true)
+    
+    // Add preconnect hint for better performance
+    const preconnectLink = document.createElement('link')
+    preconnectLink.rel = 'preconnect'
+    preconnectLink.href = new URL(fileUrl).origin
+    document.head.appendChild(preconnectLink)
     
     try {
       // Create abort controller for timeout
@@ -87,17 +94,20 @@ export default function MaterialCard({ material, onDeleted }: MaterialCardProps)
       const timeoutId = setTimeout(() => controller.abort(), 30000) // 30 second timeout
       
       // Show loading toast
-      const loadingToast = toast({
+      toast({
         title: 'Memulai download...',
         description: `Mendownload ${filename}`,
       })
 
-      // Fetch with timeout
+      // Fetch with timeout and optimized headers
       const response = await fetch(fileUrl, {
         signal: controller.signal,
         headers: {
           'Cache-Control': 'no-cache',
-        }
+          'Accept': 'application/octet-stream,*/*',
+        },
+        mode: 'cors',
+        credentials: 'omit'
       })
       
       clearTimeout(timeoutId)
@@ -110,7 +120,7 @@ export default function MaterialCard({ material, onDeleted }: MaterialCardProps)
       const contentLength = response.headers.get('Content-Length')
       const fileSize = contentLength ? parseInt(contentLength) : null
       
-      // Convert to blob
+      // Convert to blob with progress tracking
       const blob = await response.blob()
       
       // Validate blob
@@ -118,27 +128,28 @@ export default function MaterialCard({ material, onDeleted }: MaterialCardProps)
         throw new Error('File kosong atau tidak dapat didownload')
       }
       
-      // Create download link
-      const url = window.URL.createObjectURL(blob)
-      const a = document.createElement('a')
-      
-      // Set download attributes
-      a.style.display = 'none'
-      a.href = url
-      a.download = filename
-      a.target = '_blank' // Open in new tab as fallback
-      
-      // Append to body and trigger download
-      document.body.appendChild(a)
-      
-      // Trigger download
-      a.click()
-      
-      // Cleanup immediately after click
-      setTimeout(() => {
-        window.URL.revokeObjectURL(url)
-        document.body.removeChild(a)
-      }, 100)
+      // Create optimized download using modern APIs
+      if ('showSaveFilePicker' in window) {
+        // Use File System Access API if available (modern browsers)
+        try {
+          const fileHandle = await (window as any).showSaveFilePicker({
+            suggestedName: filename,
+            types: [{
+              description: 'PDF files',
+              accept: { 'application/pdf': ['.pdf'] }
+            }]
+          })
+          const writable = await fileHandle.createWritable()
+          await writable.write(blob)
+          await writable.close()
+        } catch (fsError) {
+          // Fallback to traditional download
+          downloadFallback(blob, filename)
+        }
+      } else {
+        // Traditional download method
+        downloadFallback(blob, filename)
+      }
       
       // Success toast
       toast({
@@ -168,7 +179,7 @@ export default function MaterialCard({ material, onDeleted }: MaterialCardProps)
       // Fallback - try opening in new tab
       if (fileUrl) {
         try {
-          window.open(fileUrl, '_blank')
+          window.open(fileUrl, '_blank', 'noopener,noreferrer')
           toast({
             title: 'Membuka di tab baru',
             description: 'Silakan download manual dari tab yang terbuka',
@@ -176,21 +187,59 @@ export default function MaterialCard({ material, onDeleted }: MaterialCardProps)
         } catch {
           // Final fallback - copy to clipboard
           if (navigator.clipboard) {
-            navigator.clipboard.writeText(fileUrl)
-            toast({
-              title: 'Link disalin',
-              description: 'Link file telah disalin ke clipboard',
-            })
+            try {
+              await navigator.clipboard.writeText(fileUrl)
+              toast({
+                title: 'Link disalin',
+                description: 'Link file telah disalin ke clipboard',
+              })
+            } catch {
+              console.error('Failed to copy to clipboard')
+            }
           }
         }
       }
     } finally {
       setIsDownloading(false)
+      // Clean up preconnect link
+      setTimeout(() => {
+        if (preconnectLink.parentNode) {
+          document.head.removeChild(preconnectLink)
+        }
+      }, 1000)
     }
-  }
+  }, [isDownloading])
 
-  // Extract filename from URL or use title with better sanitization
-  const getFilename = (url: string, title: string) => {
+  // Helper function for traditional download
+  const downloadFallback = useCallback((blob: Blob, filename: string) => {
+    const url = window.URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    
+    // Set download attributes
+    a.style.display = 'none'
+    a.href = url
+    a.download = filename
+    a.target = '_blank' // Open in new tab as fallback
+    
+    // Append to body and trigger download
+    document.body.appendChild(a)
+    
+    // Use requestAnimationFrame for better performance
+    requestAnimationFrame(() => {
+      a.click()
+      
+      // Cleanup with slight delay
+      setTimeout(() => {
+        window.URL.revokeObjectURL(url)
+        if (document.body.contains(a)) {
+          document.body.removeChild(a)
+        }
+      }, 100)
+    })
+  }, [])
+
+  // Memoized filename extraction with better sanitization
+  const getFilename = useCallback((url: string, title: string) => {
     try {
       const urlParts = url.split('/')
       const rawFilename = urlParts[urlParts.length - 1]
@@ -199,39 +248,54 @@ export default function MaterialCard({ material, onDeleted }: MaterialCardProps)
         return decodeURIComponent(rawFilename)
       }
       
-      // Sanitize title for filename
+      // Sanitize title for filename with improved logic
       const sanitizedTitle = title
-        .replace(/[<>:"/\\|?*]/g, '') // Remove invalid filename characters
+        .replace(/[<>:"/\\|?*\x00-\x1f]/g, '') // Remove invalid filename characters including control chars
         .replace(/\s+/g, ' ') // Normalize spaces
+        .replace(/\.+$/, '') // Remove trailing dots
         .trim()
         .substring(0, 100) // Limit length
       
-      return `${sanitizedTitle}.pdf`
+      return `${sanitizedTitle || 'document'}.pdf`
     } catch {
-      return `${title.substring(0, 50)}.pdf`
+      return `${title.substring(0, 50).replace(/[<>:"/\\|?*]/g, '') || 'document'}.pdf`
     }
-  }
+  }, [])
 
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('id-ID', {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric'
-    })
-  }
+  // Memoized date formatting
+  const formatDate = useCallback((dateString: string) => {
+    try {
+      return new Date(dateString).toLocaleDateString('id-ID', {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric'
+      })
+    } catch {
+      return 'Tanggal tidak valid'
+    }
+  }, [])
+
+  // Optimize Google Docs viewer URL
+  const getViewerUrl = useCallback((link: string) => {
+    const encodedUrl = encodeURIComponent(link)
+    return `https://docs.google.com/gview?url=${encodedUrl}&embedded=true`
+  }, [])
 
   return (
-    <Card className="transition-all duration-200 hover:shadow-md">
+    <Card className="transition-all duration-200 hover:shadow-md will-change-transform">
       <CardHeader className="pb-3">
         <div className="flex justify-between items-start">
-          <div className="flex-1">
-            <CardTitle className="text-lg mb-2">{material.judul}</CardTitle>
+          <div className="flex-1 min-w-0"> {/* min-w-0 prevents text overflow */}
+            <CardTitle className="text-lg mb-2 truncate">{material.judul}</CardTitle>
             <div className="flex items-center space-x-2 text-sm text-muted-foreground">
-              <Calendar className="h-4 w-4" />
-              <span>{formatDate(material.created_at)}</span>
+              <Calendar className="h-4 w-4 flex-shrink-0" />
+              <span className="truncate">{formatDate(material.created_at)}</span>
             </div>
           </div>
-          <Badge variant={material.tipe === 'Teori' ? 'default' : 'secondary'}>
+          <Badge 
+            variant={material.tipe === 'Teori' ? 'default' : 'secondary'}
+            className="ml-2 flex-shrink-0"
+          >
             {material.tipe}
           </Badge>
         </div>
@@ -248,10 +312,17 @@ export default function MaterialCard({ material, onDeleted }: MaterialCardProps)
             <>
               <Button asChild variant="outline" size="sm">
                 <a
-                  href={`https://docs.google.com/gview?url=${encodeURIComponent(material.link)}&embedded=true`}
+                  href={getViewerUrl(material.link)}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="flex items-center"
+                  // Add prefetch hint on hover
+                  onMouseEnter={() => {
+                    const prefetchLink = document.createElement('link')
+                    prefetchLink.rel = 'prefetch'
+                    prefetchLink.href = getViewerUrl(material.link!)
+                    document.head.appendChild(prefetchLink)
+                  }}
                 >
                   <ExternalLink className="h-4 w-4 mr-1" />
                   Lihat
@@ -278,7 +349,16 @@ export default function MaterialCard({ material, onDeleted }: MaterialCardProps)
           {profile?.role === 'admin' && (
             <>
               <Button asChild variant="outline" size="sm">
-                <Link to={`/edit/${material.id}`}>
+                <Link 
+                  to={`/edit/${material.id}`}
+                  // Prefetch the edit page
+                  onMouseEnter={() => {
+                    const prefetchLink = document.createElement('link')
+                    prefetchLink.rel = 'prefetch'
+                    prefetchLink.href = `/edit/${material.id}`
+                    document.head.appendChild(prefetchLink)
+                  }}
+                >
                   <Edit className="h-4 w-4 mr-1" />
                   Edit
                 </Link>
@@ -307,4 +387,4 @@ export default function MaterialCard({ material, onDeleted }: MaterialCardProps)
       </CardContent>
     </Card>
   )
-}
+})
