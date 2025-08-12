@@ -31,7 +31,8 @@ export default function Layout({ children }: { children: React.ReactNode }) {
     setIsProfileDropdownOpen(false)
   }
 
-  const handleSwitchAccount = () => {
+  const handleSwitchAccount = async () => {
+    await signOut()
     setIsSidebarOpen(false)
     setIsProfileDropdownOpen(false)
   }
@@ -192,14 +193,14 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                 {/* Dropdown Menu - Opens upward */}
                 {isProfileDropdownOpen && (
                   <div className="absolute bottom-full left-0 right-0 bg-card shadow-lg border border-border rounded-t-lg mb-1">
-                    <Link 
-                      to="/login"
+                    <Button
+                      variant="ghost" 
+                      className="w-full justify-start text-left px-4 py-3 hover:bg-accent/50 transition-colors duration-200"
                       onClick={handleSwitchAccount}
-                      className="flex items-center w-full justify-start text-left px-4 py-3 hover:bg-accent/50 transition-colors duration-200"
                     >
                       <UserX className="h-4 w-4 mr-3" />
                       Ganti Akun
-                    </Link>
+                    </Button>
                     <Button 
                       variant="ghost" 
                       className="w-full justify-start text-left px-4 py-3 rounded-b-lg hover:bg-accent/50" 
