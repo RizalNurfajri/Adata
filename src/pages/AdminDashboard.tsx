@@ -22,7 +22,6 @@ interface Material {
 }
 
 export default function AdminDashboard() {
-  const { user } = useAuth()
   const [materials, setMaterials] = useState<Material[]>([])
   const [loading, setLoading] = useState(true)
   const [searchQuery, setSearchQuery] = useState('')
@@ -57,7 +56,7 @@ export default function AdminDashboard() {
       setMaterials(materialsData as Material[] || [])
       setStats({
         totalMaterials: totalMaterials || 0,
-        totalUsers
+        totalUsers: totalUsers || 0
       })
     } catch (error) {
       console.error('Error loading admin data:', error)
