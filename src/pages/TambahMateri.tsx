@@ -10,12 +10,6 @@ export default function TambahMateri() {
       <div className="space-y-6">
         {/* Header */}
         <div className="flex items-center space-x-4">
-          <Button asChild variant="outline" size="sm">
-            <Link to="/admin/dashboard">
-              <ArrowLeft className="h-4 w-4 mr-2" />
-              Kembali ke Admin
-            </Link>
-          </Button>
           <div>
             <h1 className="text-3xl font-bold">Tambah Materi Baru</h1>
             <p className="text-muted-foreground">
