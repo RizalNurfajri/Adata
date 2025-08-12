@@ -140,7 +140,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
               }`}
             >
               {/* Sidebar Header */}
-              <div className="p-4 sm:p-6 border-b">
+              <div className="p-4 sm:p-6">
                 <div className="flex items-center justify-between">
                   <h2 className="text-lg font-semibold">
                     Menu
