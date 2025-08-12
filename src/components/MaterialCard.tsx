@@ -379,8 +379,6 @@ export default memo(function MaterialCard({ material, onDeleted }: MaterialCardP
                 className="text-xs"
                 disabled={isDownloading}
               >
-                Debug Storage
-              </Button>
             </>
           )}
         </div>
