@@ -49,14 +49,15 @@ export default function AdminDashboard() {
         .from('materials')
         .select('*', { count: 'exact', head: true })
 
-      // Try to get total users from auth metadata or profiles
-      const { data: { users }, error: usersError } = await supabase.auth.admin.listUsers()
-      const totalUsersCount = usersError ? 0 : users?.length || 0
+      // Count profiles (should match actual users if profile trigger exists)
+      const { count: totalUsers } = await supabase
+        .from('profiles')
+        .select('id', { count: 'exact', head: true })
 
       setMaterials(materialsData as Material[] || [])
       setStats({
         totalMaterials: totalMaterials || 0,
-        totalUsers: totalUsersCount
+        totalUsers: totalUsers || 0
       })
     } catch (error) {
       console.error('Error loading admin data:', error)
