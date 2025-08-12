@@ -5,7 +5,8 @@ import { supabase } from '@/integrations/supabase/client'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-import { Edit, Trash2, Users, BookOpen, FileText } from 'lucide-react'
+import { Input } from '@/components/ui/input'
+import { Edit, Trash2, Users, BookOpen, FileText, Search } from 'lucide-react'
 import AuthGuard from '@/components/AuthGuard'
 import MaterialCard from '@/components/MaterialCard'
 
@@ -23,6 +24,7 @@ interface Material {
 export default function AdminDashboard() {
   const [materials, setMaterials] = useState<Material[]>([])
   const [loading, setLoading] = useState(true)
+  const [searchQuery, setSearchQuery] = useState('')
   const [stats, setStats] = useState({
     totalMaterials: 0,
     totalUsers: 0
@@ -67,6 +69,15 @@ export default function AdminDashboard() {
     loadData() // Reload data after deletion
   }
 
+  // Filter materials based on search query
+  const filteredMaterials = materials.filter(material =>
+    material.judul.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    material.matkul.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    (material.deskripsi && material.deskripsi.toLowerCase().includes(searchQuery.toLowerCase())) ||
+    material.tipe.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    material.semester.toString().includes(searchQuery)
+  )
+
   return (
     <AuthGuard requireAuth requireAdmin>
       <div className="space-y-6">
@@ -109,26 +120,51 @@ export default function AdminDashboard() {
         {/* Materials Management */}
         <Card>
           <CardHeader>
-            <CardTitle>Kelola Materi</CardTitle>
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+              <CardTitle>Kelola Materi</CardTitle>
+              <div className="relative w-full sm:w-80">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
+                <Input
+                  type="text"
+                  placeholder="Cari materi, mata kuliah, atau tipe..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="pl-10"
+                />
+              </div>
+            </div>
           </CardHeader>
           <CardContent>
             {loading ? (
               <p className="text-muted-foreground">Memuat...</p>
-            ) : materials.length === 0 ? (
+            ) : filteredMaterials.length === 0 ? (
               <div className="text-center py-8">
                 <BookOpen className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-                <p className="text-muted-foreground mb-4">Belum ada materi yang ditambahkan</p>
+                {searchQuery ? (
+                  <p className="text-muted-foreground mb-4">
+                    Tidak ada materi yang sesuai dengan pencarian "{searchQuery}"
+                  </p>
+                ) : (
+                  <p className="text-muted-foreground mb-4">Belum ada materi yang ditambahkan</p>
+                )}
               </div>
             ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {materials.map((material) => (
-                  <MaterialCard
-                    key={material.id}
-                    material={material}
-                    onDeleted={handleMaterialDeleted}
-                  />
-                ))}
-              </div>
+              <>
+                {searchQuery && (
+                  <p className="text-sm text-muted-foreground mb-4">
+                    Menampilkan {filteredMaterials.length} dari {materials.length} materi
+                  </p>
+                )}
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  {filteredMaterials.map((material) => (
+                    <MaterialCard
+                      key={material.id}
+                      material={material}
+                      onDeleted={handleMaterialDeleted}
+                    />
+                  ))}
+                </div>
+              </>
             )}
           </CardContent>
         </Card>
