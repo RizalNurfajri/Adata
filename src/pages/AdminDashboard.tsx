@@ -50,12 +50,15 @@ export default function AdminDashboard() {
         .select('*', { count: 'exact', head: true })
 
       let totalUsers = 0;
-      const { data: profileData } = await supabase
-        .from('profiles')
-        .select('role')
-        .eq('id', user?.id)
-        .single();
+const { user } = useAuth()
+let totalUsers = 0
 
+if (user?.user_metadata?.role === 'admin') {
+  const { count } = await supabase
+    .from('profiles')
+    .select('*', { count: 'exact', head: true })
+  totalUsers = count || 0
+}
       if (profileData?.role === 'admin') {
         const { count: countUsers } = await supabase
           .from('profiles')
