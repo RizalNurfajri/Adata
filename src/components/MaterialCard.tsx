@@ -7,7 +7,7 @@ import { useAuth } from '@/hooks/useAuth'
 import { supabase } from '@/integrations/supabase/client'
 import { toast } from '@/hooks/use-toast'
 import { Link } from 'react-router-dom'
-import { deleteFromStorageEnhanced, debugStorageContents } from '@/lib/utils'
+import { deleteFromStorageEnhanced } from '@/lib/utils'
 
 interface Material {
   id: string
@@ -71,10 +71,6 @@ export default memo(function MaterialCard({ material, onDeleted }: MaterialCardP
       setIsDeleting(false)
     }
   }, [material.id, material.link, onDeleted])
-
-  const handleDebugStorage = useCallback(async () => {
-    await debugStorageContents()
-  }, [])
 
   // Optimized download function with preconnect hint and better error handling
   const handleDownload = useCallback(async (fileUrl: string, filename: string) => {
@@ -372,13 +368,6 @@ export default memo(function MaterialCard({ material, onDeleted }: MaterialCardP
                 <Trash2 className="h-4 w-4 mr-1" />
                 {isDeleting ? 'Menghapus...' : 'Hapus'}
               </Button>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={handleDebugStorage}
-                className="text-xs"
-                disabled={isDownloading}
-              >
             </>
           )}
         </div>
