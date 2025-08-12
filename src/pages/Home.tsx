@@ -105,18 +105,6 @@ export default function Home() {
           </div>
         )}
       </div>
-
-      {/* Info Section */}
-      <Card className="bg-primary/5 border-primary/20">
-        <CardContent className="pt-6">
-          <div className="text-center">
-            <h3 className="text-lg font-medium mb-2">Cara Menggunakan</h3>
-            <p className="text-muted-foreground">
-              Pilih semester yang diinginkan, kemudian pilih mata kuliah untuk mengakses materi teori dan praktikum
-            </p>
-          </div>
-        </CardContent>
-      </Card>
     </div>
   )
 }
