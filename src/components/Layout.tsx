@@ -157,7 +157,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
               </div>
               
               {/* Navigation Section */}
-              <div className="flex-1 p-6 space-y-1">
+              <div className="flex-1 px-6 pt-2 pb-6 space-y-1">
                 {navigationItems
                   .filter(item => item.show)
                   .map((item) => {
@@ -182,13 +182,13 @@ export default function Layout({ children }: { children: React.ReactNode }) {
               </div>
 
               {/* User Profile Section - Fixed at bottom */}
-              <div className="relative">
+              <div className="relative mx-3 mb-3">
                 {/* Dropdown Menu - Opens upward */}
                 {isProfileDropdownOpen && (
-                  <div className="absolute bottom-full left-0 right-0 bg-card shadow-lg border border-border rounded-t-lg">
+                  <div className="absolute bottom-full left-0 right-0 bg-card shadow-lg border border-border rounded-t-lg mb-1">
                     <Button 
                       variant="ghost" 
-                      className="w-full justify-start text-left px-4 py-3 rounded-none hover:bg-accent/50" 
+                      className="w-full justify-start text-left px-4 py-3 rounded-t-lg hover:bg-accent/50" 
                       onClick={handleSignOut}
                     >
                       <LogOut className="h-4 w-4 mr-3" />
@@ -200,7 +200,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                 {/* Profile Button */}
                 <Button
                   variant="ghost"
-                  className="w-full px-4 py-3 justify-between text-left h-auto hover:bg-accent/50 rounded-none"
+                  className="w-full px-4 py-3 justify-between text-left h-auto hover:bg-accent/50 rounded-lg"
                   onClick={toggleProfileDropdown}
                 >
                   <div className="flex items-center space-x-3">
