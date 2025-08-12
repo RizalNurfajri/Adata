@@ -190,7 +190,6 @@ export default function MaterialForm({ isEdit = false, materialId }: MaterialFor
           <Label>Mata Kuliah</Label>
           <Input name="subject" value={formData.subject} onChange={handleChange} placeholder="Contoh: Jaringan Komputer" required />
           <p className="text-xs text-muted-foreground mt-1">
-            File akan disimpan di folder: {formData.subject ? formData.subject.toLowerCase().replace(/[^a-zA-Z0-9\s]/g, '').replace(/\s+/g, '-') : 'mata-kuliah'}/{formData.type.toLowerCase()}
           </p>
         </div>
         <div className="w-40">
