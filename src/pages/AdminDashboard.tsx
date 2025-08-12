@@ -49,15 +49,36 @@ export default function AdminDashboard() {
         .from('materials')
         .select('*', { count: 'exact', head: true })
 
-      // Count profiles (should match actual users if profile trigger exists)
-      const { count: totalUsers } = await supabase
-        .from('profiles')
-        .select('id', { count: 'exact', head: true })
+      // Try different approaches to count users
+      let totalUsers = 0
+      
+      // Method 1: Try RPC function if exists
+      try {
+        const { data: rpcResult } = await supabase.rpc('count_all_users')
+        totalUsers = rpcResult || 0
+      } catch {
+        // Method 2: Try admin service role query
+        try {
+          const { count } = await supabase
+            .from('profiles')
+            .select('*', { count: 'exact', head: true })
+          totalUsers = count || 0
+        } catch {
+          // Method 3: Fallback - count materials creators as proxy
+          const { data: uniqueCreators } = await supabase
+            .from('materials')
+            .select('created_by')
+            .not('created_by', 'is', null)
+          
+          const uniqueUsers = new Set(uniqueCreators?.map(item => item.created_by))
+          totalUsers = uniqueUsers.size
+        }
+      }
 
       setMaterials(materialsData as Material[] || [])
       setStats({
         totalMaterials: totalMaterials || 0,
-        totalUsers: totalUsers || 0
+        totalUsers: totalUsers
       })
     } catch (error) {
       console.error('Error loading admin data:', error)
