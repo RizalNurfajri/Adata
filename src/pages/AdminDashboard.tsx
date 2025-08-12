@@ -50,7 +50,7 @@ export default function AdminDashboard() {
         .select('*', { count: 'exact', head: true })
 
       const { count: totalUsers } = await supabase
-        .from('profiles')
+        .from('auth.users')
         .select('*', { count: 'exact', head: true })
 
       setMaterials(materialsData as Material[] || [])
