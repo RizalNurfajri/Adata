@@ -112,7 +112,8 @@ export default function MaterialForm({ isEdit = false, materialId }: MaterialFor
         }
       }
 
-      let uploadedLink = formData.link
+      // Gunakan originalLink sebagai default jika sedang edit
+      let uploadedLink = isEdit ? originalLink : formData.link
 
       if (file) {
         // Pass mata kuliah dan tipe ke fungsi upload untuk struktur folder
