@@ -235,9 +235,11 @@ export default function Layout({ children }: { children: React.ReactNode }) {
 
       {/* Footer - Sticky Footer */}
       <footer className="border-t bg-card">
-        <div className="px-4 sm:px-6 lg:px-8 py-6">
-          <div className="text-center text-sm text-muted-foreground">
-            © 2025 Adata. Made With ♥ For RKS A.
+        <div className="px-4 sm:px-6 lg:px-8">
+          <div className="flex justify-center items-center h-16">
+            <div className="text-sm text-muted-foreground">
+              © 2025 Adata. Made With ♥ For RKS A.
+            </div>
           </div>
         </div>
       </footer>
