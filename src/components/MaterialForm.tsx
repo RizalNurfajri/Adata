@@ -362,3 +362,74 @@ export default function MaterialForm({ isEdit = false, materialId }: MaterialFor
             <SelectTrigger>
               <SelectValue placeholder="Pilih semester" />
             </SelectTrigger>
+            <SelectContent>
+              {Array.from({ length: 8 }).map((_, i) => (
+                <SelectItem key={i} value={`Semester ${i + 1}`}>
+                  Semester {i + 1}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+      </div>
+
+      <div>
+        <Label>Tipe</Label>
+        <Select value={formData.type} onValueChange={(value) => handleSelect('type', value)}>
+          <SelectTrigger>
+            <SelectValue placeholder="Pilih tipe" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="Teori">Teori</SelectItem>
+            <SelectItem value="Praktikum">Praktikum</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
+
+      <div>
+        <Label>
+          {isEdit ? 'Upload File Baru (Opsional)' : 'Upload File'}
+          {isEdit && originalLink && (
+            <span className="block text-xs text-muted-foreground mt-1">
+              File saat ini akan diganti jika Anda upload file baru
+            </span>
+          )}
+        </Label>
+        <Input 
+          type="file" 
+          accept=".pdf,.pka,.doc,.docx,.ppt,.pptx" 
+          onChange={handleFileChange}
+          disabled={loading}
+        />
+        <p className="text-xs text-muted-foreground mt-1">
+          Format yang didukung: PDF, PKA, DOC, DOCX, PPT, PPTX (Maksimal 10MB)
+        </p>
+        {isEdit && originalLink && (
+          <div className="mt-2">
+            <p className="text-xs text-muted-foreground">
+              File saat ini: {originalLink.split('/').pop()}
+            </p>
+          </div>
+        )}
+      </div>
+
+      {/* Preview link untuk debugging */}
+      {formData.link && (
+        <div className="mt-2 p-2 bg-muted rounded text-xs">
+          <p className="font-medium">Current Link:</p>
+          <p className="break-all">{formData.link}</p>
+        </div>
+      )}
+
+      <div className="flex gap-4 justify-end">
+        <Button type="submit" disabled={loading || (!file && !isEdit)}>
+          {loading && <Loader2 className="animate-spin mr-2 h-4 w-4" />}
+          {isEdit ? 'Simpan Perubahan' : 'Tambah Materi'}
+        </Button>
+        <Button type="button" variant="outline" onClick={() => navigate('/admin/dashboard')} disabled={loading}>
+          Batal
+        </Button>
+      </div>
+    </form>
+  )
+}
