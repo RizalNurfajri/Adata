@@ -44,14 +44,14 @@ export default function AdminDashboard() {
 
       if (materialsError) throw materialsError
 
-      // Menggunakan RPC function untuk mendapatkan stats
+      // Coba gunakan RPC function dulu untuk stats yang lebih akurat
       const { data: statsData, error: statsError } = await supabase
         .rpc('get_admin_stats')
 
       if (statsError) {
         console.error('Error fetching stats via RPC:', statsError)
         
-        // Fallback ke method lama jika RPC gagal
+        // Fallback ke method asli jika RPC gagal
         const { count: totalMaterials } = await supabase
           .from('materials')
           .select('*', { count: 'exact', head: true })
@@ -65,7 +65,7 @@ export default function AdminDashboard() {
           totalUsers: totalUsers || 0
         })
       } else {
-        // Gunakan data dari RPC function
+        // Gunakan data dari RPC function (lebih akurat)
         const stats = statsData?.[0] || { total_users: 0, total_materials: 0 }
         setStats({
           totalMaterials: stats.total_materials,
