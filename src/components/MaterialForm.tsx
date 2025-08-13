@@ -99,11 +99,10 @@ export default function MaterialForm({ isEdit = false, materialId }: MaterialFor
           .from('materials')
           .select('judul, id')
           .eq('judul', formData.title)
-          .neq('id', materialId) // Tambahkan kondisi ini untuk mengecualikan material yang sedang diedit
+          .neq('id', materialId)
           .single()
 
         if (checkError && checkError.code !== 'PGRST116') {
-          // PGRST116 adalah error "no rows returned" yang normal jika tidak ada duplikat
           throw checkError
         }
         
@@ -127,7 +126,6 @@ export default function MaterialForm({ isEdit = false, materialId }: MaterialFor
           .single()
 
         if (checkError && checkError.code !== 'PGRST116') {
-          // PGRST116 adalah error "no rows returned" yang normal jika tidak ada duplikat
           throw checkError
         }
         
@@ -142,24 +140,26 @@ export default function MaterialForm({ isEdit = false, materialId }: MaterialFor
         }
       }
 
-      let uploadedLink = formData.link
+      let uploadedLink = originalLink // Default gunakan link lama untuk edit
 
       // Jika ada file baru yang diupload
       if (file) {
-        // Pass mata kuliah dan tipe ke fungsi upload untuk struktur folder
         const url = await uploadToStorage(file, formData.subject, formData.type)
-        if (!url) throw new Error('Gagal upload file PDF')
+        if (!url) throw new Error('Gagal upload file')
         uploadedLink = url
 
-        // Hapus file lama jika sedang edit dan ada file lama
         if (isEdit && originalLink && originalLink !== uploadedLink) {
           await deleteOldFile(originalLink)
         }
-      } else {
-        // Jika mode edit dan tidak ada file baru, gunakan link yang sudah ada
-        if (isEdit) {
-          uploadedLink = originalLink
-        }
+      } else if (!isEdit) {
+        // Untuk mode tambah baru, file wajib
+        toast({
+          title: 'File wajib diupload',
+          description: 'Silakan pilih file untuk diupload',
+          variant: 'destructive',
+        })
+        setLoading(false)
+        return
       }
 
       if (isEdit && materialId) {
@@ -177,17 +177,6 @@ export default function MaterialForm({ isEdit = false, materialId }: MaterialFor
 
         if (error) throw error
       } else {
-        // Untuk mode tambah baru, file wajib diupload
-        if (!uploadedLink) {
-          toast({
-            title: 'File wajib diupload',
-            description: 'Silakan pilih file untuk diupload',
-            variant: 'destructive',
-          })
-          setLoading(false)
-          return
-        }
-
         const { error } = await supabase
           .from('materials')
           .insert([{
