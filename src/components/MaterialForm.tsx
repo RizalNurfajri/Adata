@@ -18,6 +18,7 @@ interface MaterialFormProps {
 export default function MaterialForm({ isEdit = false, materialId }: MaterialFormProps) {
   const navigate = useNavigate()
   const [loading, setLoading] = useState(false)
+  const [fetchLoading, setFetchLoading] = useState(false)
   const [originalLink, setOriginalLink] = useState<string>('')
   const [formData, setFormData] = useState({
     title: '',
@@ -32,30 +33,55 @@ export default function MaterialForm({ isEdit = false, materialId }: MaterialFor
   useEffect(() => {
     const fetchMaterial = async () => {
       if (isEdit && materialId) {
-        const { data, error } = await supabase
-          .from('materials')
-          .select('*')
-          .eq('id', materialId)
-          .single()
+        setFetchLoading(true)
+        
+        try {
+          const { data, error } = await supabase
+            .from('materials')
+            .select('*')
+            .eq('id', materialId)
+            .single()
 
-        if (error || !data) {
+          if (error) {
+            console.error('Error fetching material:', error)
+            toast({
+              title: 'Error',
+              description: 'Gagal memuat data materi: ' + error.message,
+              variant: 'destructive',
+            })
+            return
+          }
+
+          if (!data) {
+            toast({
+              title: 'Error',
+              description: 'Data materi tidak ditemukan',
+              variant: 'destructive',
+            })
+            return
+          }
+
+          console.log('Fetched material data:', data)
+
+          setOriginalLink(data.link || '')
+          setFormData({
+            title: data.judul || '',
+            description: data.deskripsi || '',
+            subject: data.matkul || '',
+            semester: `Semester ${data.semester || 1}`,
+            type: data.tipe || 'Teori',
+            link: data.link || '',
+          })
+        } catch (err) {
+          console.error('Unexpected error:', err)
           toast({
             title: 'Error',
-            description: 'Gagal memuat data materi',
+            description: 'Terjadi kesalahan tidak terduga',
             variant: 'destructive',
           })
-          return
+        } finally {
+          setFetchLoading(false)
         }
-
-        setOriginalLink(data.link || '')
-        setFormData({
-          title: data.judul,
-          description: data.deskripsi ?? '',
-          subject: data.matkul,
-          semester: `Semester ${data.semester}`,
-          type: data.tipe,
-          link: data.link ?? '',
-        })
       }
     }
 
@@ -169,6 +195,18 @@ export default function MaterialForm({ isEdit = false, materialId }: MaterialFor
     } finally {
       setLoading(false)
     }
+  }
+
+  // Show loading while fetching data in edit mode
+  if (isEdit && fetchLoading) {
+    return (
+      <div className="flex justify-center items-center min-h-[400px]">
+        <div className="text-center">
+          <Loader2 className="animate-spin mx-auto h-8 w-8 mb-2" />
+          <p className="text-muted-foreground">Memuat data materi...</p>
+        </div>
+      </div>
+    )
   }
 
   return (
