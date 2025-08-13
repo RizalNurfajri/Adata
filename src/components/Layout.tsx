@@ -14,7 +14,8 @@ import {
   Mail,
   UserCircle,
   ChevronDown,
-  ChevronUp
+  ChevronUp,
+  AlertTriangle
 } from 'lucide-react'
 import ThemeToggle from '@/components/ThemeToggle'
 
@@ -24,17 +25,27 @@ export default function Layout({ children }: { children: React.ReactNode }) {
   const navigate = useNavigate()
   const [isSidebarOpen, setIsSidebarOpen] = useState(false)
   const [isProfileDropdownOpen, setIsProfileDropdownOpen] = useState(false)
+  const [showLogoutConfirmation, setShowLogoutConfirmation] = useState(false)
 
   const handleSignOut = async () => {
     try {
       await signOut()
       setIsSidebarOpen(false)
       setIsProfileDropdownOpen(false)
+      setShowLogoutConfirmation(false)
       // Redirect ke halaman login setelah logout
       navigate('/login')
     } catch (error) {
       console.error('Error signing out:', error)
     }
+  }
+
+  const handleLogoutClick = () => {
+    setShowLogoutConfirmation(true)
+  }
+
+  const cancelLogout = () => {
+    setShowLogoutConfirmation(false)
   }
 
   const isActive = (path: string) => location.pathname === path
@@ -197,7 +208,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                     <Button 
                       variant="ghost" 
                       className="w-full justify-start text-left px-4 py-3 rounded-t-lg hover:bg-accent/50" 
-                      onClick={handleSignOut}
+                      onClick={handleLogoutClick}
                     >
                       <LogOut className="h-4 w-4 mr-3" />
                       Keluar dari Akun
@@ -232,6 +243,51 @@ export default function Layout({ children }: { children: React.ReactNode }) {
           </div>
         )}
       </div>
+
+      {/* Logout Confirmation Modal */}
+      {showLogoutConfirmation && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center">
+          {/* Backdrop */}
+          <div 
+            className="fixed inset-0 bg-black/60 backdrop-blur-sm"
+            onClick={cancelLogout}
+          />
+          
+          {/* Modal */}
+          <div className="relative bg-card border border-border rounded-lg shadow-2xl p-6 mx-4 max-w-md w-full animate-in fade-in-0 zoom-in-95 duration-200">
+            <div className="flex items-center space-x-3 mb-4">
+              <div className="w-10 h-10 bg-orange-100 dark:bg-orange-900/30 rounded-full flex items-center justify-center">
+                <AlertTriangle className="h-5 w-5 text-orange-600 dark:text-orange-400" />
+              </div>
+              <div>
+                <h3 className="text-lg font-semibold text-foreground">
+                  Konfirmasi Keluar
+                </h3>
+                <p className="text-sm text-muted-foreground mt-1">
+                  Apakah Anda yakin ingin keluar dari akun?
+                </p>
+              </div>
+            </div>
+            
+            <div className="flex space-x-3 justify-end">
+              <Button 
+                variant="outline" 
+                onClick={cancelLogout}
+                className="px-4 py-2"
+              >
+                Batal
+              </Button>
+              <Button 
+                variant="destructive" 
+                onClick={handleSignOut}
+                className="px-4 py-2"
+              >
+                Ya, Keluar
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Footer - Sticky Footer */}
       <footer className="border-t bg-card">
