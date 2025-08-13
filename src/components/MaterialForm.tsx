@@ -100,9 +100,13 @@ export default function MaterialForm({ isEdit = false, materialId }: MaterialFor
           .select('judul, id')
           .eq('judul', formData.title)
           .neq('id', materialId) // Tambahkan kondisi ini untuk mengecualikan material yang sedang diedit
-          .maybeSingle()
+          .single()
 
-        if (checkError) throw checkError
+        if (checkError && checkError.code !== 'PGRST116') {
+          // PGRST116 adalah error "no rows returned" yang normal jika tidak ada duplikat
+          throw checkError
+        }
+        
         if (existing) {
           toast({
             title: 'Judul sudah ada',
@@ -120,9 +124,13 @@ export default function MaterialForm({ isEdit = false, materialId }: MaterialFor
           .from('materials')
           .select('judul')
           .eq('judul', formData.title)
-          .maybeSingle()
+          .single()
 
-        if (checkError) throw checkError
+        if (checkError && checkError.code !== 'PGRST116') {
+          // PGRST116 adalah error "no rows returned" yang normal jika tidak ada duplikat
+          throw checkError
+        }
+        
         if (existing) {
           toast({
             title: 'Judul sudah ada',
