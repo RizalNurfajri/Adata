@@ -224,12 +224,21 @@ export default function MaterialForm({ isEdit = false, materialId }: MaterialFor
       <div>
         <Label>
           {isEdit ? 'Upload File Baru (Opsional)' : 'Upload File'}
-          {isEdit && originalLink && (
-            <span className="block text-xs text-muted-foreground mt-1">
-              File saat ini akan diganti jika Anda upload file baru
-            </span>
-          )}
         </Label>
+        
+        {/* Tampilkan file yang sudah ada jika sedang edit */}
+        {isEdit && originalLink && (
+          <div className="mb-2 p-2 bg-muted rounded-md">
+            <p className="text-sm text-muted-foreground">File saat ini:</p>
+            <p className="text-sm font-medium">
+              {originalLink.split('/').pop()?.split('?')[0] || 'File tersedia'}
+            </p>
+            <p className="text-xs text-muted-foreground mt-1">
+              File akan diganti jika Anda upload file baru
+            </p>
+          </div>
+        )}
+        
         <Input 
           type="file" 
           accept=".pdf,.pka,.doc,.docx,.ppt,.pptx" 
