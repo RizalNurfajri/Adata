@@ -6,7 +6,7 @@ import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { toast } from '@/hooks/use-toast'
-import { uploadToStorage, deleteFromStorage, deleteFromStorageAlternative, extractFilePathFromUrl, renameFileInStorage } from '@/lib/utils'
+import { uploadToStorage, deleteFromStorage, deleteFromStorageAlternative, extractFilePathFromUrl, renameFileInStorage, validatePdfUrl } from '@/lib/utils'
 import { supabase } from '@/integrations/supabase/client'
 import { Loader2 } from 'lucide-react'
 
@@ -47,14 +47,28 @@ export default function MaterialForm({ isEdit = false, materialId }: MaterialFor
           return
         }
 
-        setOriginalLink(data.link || '')
+        // Validasi URL PDF jika ada
+        let validatedLink = data.link || ''
+        if (validatedLink) {
+          const isValid = await validatePdfUrl(validatedLink)
+          if (!isValid) {
+            console.warn('Invalid PDF URL detected:', validatedLink)
+            toast({
+              title: 'Peringatan',
+              description: 'Link file PDF mungkin tidak valid. Silakan upload file baru.',
+              variant: 'destructive',
+            })
+          }
+        }
+
+        setOriginalLink(validatedLink)
         setFormData({
           title: data.judul,
           description: data.deskripsi ?? '',
           subject: data.matkul,
           semester: `Semester ${data.semester}`,
           type: data.tipe,
-          link: data.link ?? '',
+          link: validatedLink,
         })
       }
     }
@@ -74,15 +88,59 @@ export default function MaterialForm({ isEdit = false, materialId }: MaterialFor
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFile = e.target.files?.[0] || null
     setFile(selectedFile)
+
+    // Validasi file
+    if (selectedFile) {
+      const maxSize = 10 * 1024 * 1024 // 10MB
+      if (selectedFile.size > maxSize) {
+        toast({
+          title: 'File terlalu besar',
+          description: 'Ukuran file maksimal adalah 10MB',
+          variant: 'destructive',
+        })
+        e.target.value = '' // Reset input
+        setFile(null)
+        return
+      }
+
+      // Validasi tipe file
+      const allowedTypes = [
+        'application/pdf',
+        'application/vnd.ms-powerpoint',
+        'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+        'application/msword',
+        'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+      ]
+
+      if (!allowedTypes.includes(selectedFile.type) && !selectedFile.name.endsWith('.pka')) {
+        toast({
+          title: 'Tipe file tidak didukung',
+          description: 'Hanya file PDF, PKA, DOC, DOCX, PPT, PPTX yang diperbolehkan',
+          variant: 'destructive',
+        })
+        e.target.value = '' // Reset input
+        setFile(null)
+        return
+      }
+    }
   }
 
   const deleteOldFile = async (fileUrl: string): Promise<boolean> => {
     if (!fileUrl) return true
 
+    console.log('Attempting to delete old file:', fileUrl)
+
     let deleted = await deleteFromStorage(fileUrl)
 
     if (!deleted) {
+      console.log('First delete method failed, trying alternative method')
       deleted = await deleteFromStorageAlternative(fileUrl)
+    }
+
+    if (deleted) {
+      console.log('Successfully deleted old file')
+    } else {
+      console.error('Failed to delete old file with all methods')
     }
 
     return deleted
@@ -93,6 +151,19 @@ export default function MaterialForm({ isEdit = false, materialId }: MaterialFor
     setLoading(true)
 
     try {
+      // Validasi data form
+      if (!formData.title.trim()) {
+        throw new Error('Judul materi harus diisi')
+      }
+
+      if (!formData.subject.trim()) {
+        throw new Error('Mata kuliah harus diisi')
+      }
+
+      if (!isEdit && !file) {
+        throw new Error('File harus diupload untuk materi baru')
+      }
+
       if (!isEdit) {
         const { data: existing, error: checkError } = await supabase
           .from('materials')
@@ -115,16 +186,35 @@ export default function MaterialForm({ isEdit = false, materialId }: MaterialFor
       let uploadedLink = formData.link
 
       if (file) {
+        console.log('Uploading new file:', file.name)
         // Kasus: Upload file baru
         // Pass mata kuliah dan tipe ke fungsi upload untuk struktur folder
         const url = await uploadToStorage(file, formData.subject, formData.type)
-        if (!url) throw new Error('Gagal upload file PDF')
+        if (!url) throw new Error('Gagal upload file. Silakan coba lagi.')
+        
+        console.log('File uploaded successfully:', url)
         uploadedLink = url
 
+        // Validasi URL yang baru diupload
+        const isValidUrl = await validatePdfUrl(uploadedLink)
+        if (!isValidUrl) {
+          throw new Error('File berhasil diupload tetapi URL tidak valid. Silakan coba lagi.')
+        }
+
+        // Hapus file lama jika ada dan berbeda
         if (isEdit && originalLink && originalLink !== uploadedLink) {
-          await deleteOldFile(originalLink)
+          console.log('Deleting old file since new file was uploaded')
+          const deleted = await deleteOldFile(originalLink)
+          if (!deleted) {
+            console.warn('Warning: Could not delete old file, but continuing with update')
+            toast({
+              title: 'Peringatan',
+              description: 'File baru berhasil diupload, tetapi file lama mungkin masih tersisa',
+            })
+          }
         }
       } else if (isEdit && originalLink) {
+        console.log('No new file uploaded, checking if file structure needs to be updated')
         // Kasus: Edit tanpa upload file baru, tapi cek apakah struktur folder perlu diubah
         const currentFileName = originalLink.split('/').pop() || ''
         const currentFilePath = extractFilePathFromUrl(originalLink)
@@ -142,8 +232,12 @@ export default function MaterialForm({ isEdit = false, materialId }: MaterialFor
           // Path yang diharapkan berdasarkan data form saat ini
           const expectedPath = `${sanitizedMatkul}/${sanitizedTipe}/${currentFileName}`
           
+          console.log('Current path:', currentFilePath)
+          console.log('Expected path:', expectedPath)
+          
           // Jika struktur folder tidak sesuai, pindahkan file
           if (currentFilePath !== expectedPath) {
+            console.log('File structure needs to be updated, moving file')
             const renamedUrl = await renameFileInStorage(
               originalLink, 
               currentFileName, 
@@ -152,11 +246,17 @@ export default function MaterialForm({ isEdit = false, materialId }: MaterialFor
             )
             
             if (renamedUrl) {
-              uploadedLink = renamedUrl
-              toast({
-                title: 'Info',
-                description: 'File berhasil dipindahkan ke struktur folder yang benar',
-              })
+              // Validasi URL yang baru
+              const isValidUrl = await validatePdfUrl(renamedUrl)
+              if (isValidUrl) {
+                uploadedLink = renamedUrl
+                toast({
+                  title: 'Info',
+                  description: 'File berhasil dipindahkan ke struktur folder yang benar',
+                })
+              } else {
+                console.warn('Renamed file URL is invalid, keeping original')
+              }
             } else {
               // Jika gagal rename, tetap gunakan link lama
               console.warn('Gagal memindahkan file ke struktur folder baru, menggunakan link lama')
@@ -165,31 +265,36 @@ export default function MaterialForm({ isEdit = false, materialId }: MaterialFor
         }
       }
 
+      // Final validation sebelum menyimpan ke database
+      if (uploadedLink) {
+        const isValidFinalUrl = await validatePdfUrl(uploadedLink)
+        if (!isValidFinalUrl) {
+          throw new Error('URL file tidak valid. Silakan upload ulang file.')
+        }
+      }
+
+      const materialData = {
+        judul: formData.title.trim(),
+        deskripsi: formData.description.trim() || null,
+        matkul: formData.subject.trim(),
+        semester: parseInt(formData.semester.split(' ')[1]),
+        tipe: formData.type,
+        link: uploadedLink || null
+      }
+
       if (isEdit && materialId) {
+        console.log('Updating existing material:', materialData)
         const { error } = await supabase
           .from('materials')
-          .update({
-            judul: formData.title,
-            deskripsi: formData.description,
-            matkul: formData.subject,
-            semester: parseInt(formData.semester.split(' ')[1]),
-            tipe: formData.type,
-            link: uploadedLink
-          })
+          .update(materialData)
           .eq('id', materialId)
 
         if (error) throw error
       } else {
+        console.log('Creating new material:', materialData)
         const { error } = await supabase
           .from('materials')
-          .insert([{
-            judul: formData.title,
-            deskripsi: formData.description,
-            matkul: formData.subject,
-            semester: parseInt(formData.semester.split(' ')[1]),
-            tipe: formData.type,
-            link: uploadedLink
-          }])
+          .insert([materialData])
 
         if (error) throw error
       }
@@ -201,6 +306,7 @@ export default function MaterialForm({ isEdit = false, materialId }: MaterialFor
 
       navigate('/admin/dashboard')
     } catch (err: any) {
+      console.error('Form submission error:', err)
       toast({
         title: 'Error',
         description: err.message || 'Terjadi kesalahan saat memproses data',
@@ -217,18 +323,38 @@ export default function MaterialForm({ isEdit = false, materialId }: MaterialFor
 
       <div>
         <Label>Judul Materi</Label>
-        <Input name="title" value={formData.title} onChange={handleChange} placeholder="Masukkan judul materi" required />
+        <Input 
+          name="title" 
+          value={formData.title} 
+          onChange={handleChange} 
+          placeholder="Masukkan judul materi" 
+          required 
+          maxLength={200}
+        />
       </div>
 
       <div>
         <Label>Deskripsi</Label>
-        <Textarea name="description" value={formData.description} onChange={handleChange} placeholder="Masukkan deskripsi materi (opsional)" />
+        <Textarea 
+          name="description" 
+          value={formData.description} 
+          onChange={handleChange} 
+          placeholder="Masukkan deskripsi materi (opsional)"
+          maxLength={500}
+        />
       </div>
 
       <div className="flex gap-4">
         <div className="flex-1">
           <Label>Mata Kuliah</Label>
-          <Input name="subject" value={formData.subject} onChange={handleChange} placeholder="Contoh: Jaringan Komputer" required />
+          <Input 
+            name="subject" 
+            value={formData.subject} 
+            onChange={handleChange} 
+            placeholder="Contoh: Jaringan Komputer" 
+            required 
+            maxLength={100}
+          />
         </div>
         <div className="w-40">
           <Label>Semester</Label>
@@ -236,58 +362,3 @@ export default function MaterialForm({ isEdit = false, materialId }: MaterialFor
             <SelectTrigger>
               <SelectValue placeholder="Pilih semester" />
             </SelectTrigger>
-            <SelectContent>
-              {Array.from({ length: 8 }).map((_, i) => (
-                <SelectItem key={i} value={`Semester ${i + 1}`}>
-                  Semester {i + 1}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-      </div>
-
-      <div>
-        <Label>Tipe</Label>
-        <Select value={formData.type} onValueChange={(value) => handleSelect('type', value)}>
-          <SelectTrigger>
-            <SelectValue placeholder="Pilih tipe" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="Teori">Teori</SelectItem>
-            <SelectItem value="Praktikum">Praktikum</SelectItem>
-          </SelectContent>
-        </Select>
-      </div>
-
-      <div>
-        <Label>
-          {isEdit ? 'Upload File Baru (Opsional)' : 'Upload File'}
-          {isEdit && originalLink && (
-            <span className="block text-xs text-muted-foreground mt-1">
-              File saat ini akan diganti jika Anda upload file baru
-            </span>
-          )}
-        </Label>
-        <Input 
-          type="file" 
-          accept=".pdf,.pka,.doc,.docx,.ppt,.pptx" 
-          onChange={handleFileChange} 
-        />
-        <p className="text-xs text-muted-foreground mt-1">
-          Format yang didukung: PDF, PKA, DOC, DOCX, PPT, PPTX
-        </p>
-      </div>
-
-      <div className="flex gap-4 justify-end">
-        <Button type="submit" disabled={loading}>
-          {loading && <Loader2 className="animate-spin mr-2 h-4 w-4" />}
-          {isEdit ? 'Simpan Perubahan' : 'Tambah Materi'}
-        </Button>
-        <Button type="button" variant="outline" onClick={() => navigate('/admin/dashboard')}>
-          Batal
-        </Button>
-      </div>
-    </form>
-  )
-}
