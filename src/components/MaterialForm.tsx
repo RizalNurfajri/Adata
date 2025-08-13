@@ -129,7 +129,8 @@ export default function MaterialForm({ isEdit = false, materialId }: MaterialFor
         if (!url) throw new Error('Gagal upload file PDF')
         uploadedLink = url
 
-        if (isEdit && originalLink && originalLink !== uploadedLink) {
+        // Hapus file lama jika berhasil upload file baru dan bukan file yang sama
+        if (isEdit && originalLink && originalLink !== url) {
           await deleteOldFile(originalLink)
         }
       }
