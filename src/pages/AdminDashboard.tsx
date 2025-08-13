@@ -44,36 +44,20 @@ export default function AdminDashboard() {
 
       if (materialsError) throw materialsError
 
-      // Coba gunakan RPC function dulu untuk stats yang lebih akurat
-      const { data: statsData, error: statsError } = await supabase
-        .rpc('get_admin_stats')
+      // Load stats
+      const { count: totalMaterials } = await supabase
+        .from('materials')
+        .select('*', { count: 'exact', head: true })
 
-      if (statsError) {
-        console.error('Error fetching stats via RPC:', statsError)
-        
-        // Fallback ke method asli jika RPC gagal
-        const { count: totalMaterials } = await supabase
-          .from('materials')
-          .select('*', { count: 'exact', head: true })
-
-        const { count: totalUsers } = await supabase
-          .from('profiles')
-          .select('*', { count: 'exact', head: true })
-
-        setStats({
-          totalMaterials: totalMaterials || 0,
-          totalUsers: totalUsers || 0
-        })
-      } else {
-        // Gunakan data dari RPC function (lebih akurat)
-        const stats = statsData?.[0] || { total_users: 0, total_materials: 0 }
-        setStats({
-          totalMaterials: stats.total_materials,
-          totalUsers: stats.total_users
-        })
-      }
+      const { count: totalUsers } = await supabase
+        .from('profiles')
+        .select('*', { count: 'exact', head: true })
 
       setMaterials(materialsData as Material[] || [])
+      setStats({
+        totalMaterials: totalMaterials || 0,
+        totalUsers: totalUsers || 0
+      })
     } catch (error) {
       console.error('Error loading admin data:', error)
     } finally {
