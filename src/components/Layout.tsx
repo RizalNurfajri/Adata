@@ -80,7 +80,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
   ]
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background flex flex-col">
       {/* Top Navigation Bar */}
       <nav className="border-b bg-card sticky top-0 z-50">
         <div className="px-4 sm:px-6 lg:px-8">
@@ -115,13 +115,80 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         </div>
       </nav>
 
-      <div className="flex">
+      <div className="flex flex-1">
+        {/* Sidebar kecil dengan ikon (ketika ditutup) */}
+        {user && !isSidebarOpen && (
+          <aside className="w-16 bg-card border-r shadow-sm flex flex-col py-4">
+            <div className="flex flex-col space-y-2 px-2">
+              {navigationItems
+                .filter(item => item.show)
+                .map((item) => {
+                  const Icon = item.icon
+                  return (
+                    <Link
+                      key={item.path}
+                      to={item.path}
+                      className={`flex items-center justify-center p-3 rounded-lg transition-all duration-200 hover:scale-110 group relative ${
+                        isActive(item.path)
+                          ? 'bg-primary text-primary-foreground shadow-sm'
+                          : 'text-muted-foreground hover:text-foreground hover:bg-accent'
+                      }`}
+                    >
+                      <Icon className="h-5 w-5" />
+                      {/* Tooltip */}
+                      <div className="absolute left-full ml-2 px-2 py-1 bg-popover text-popover-foreground text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap z-50 shadow-md border">
+                        {item.name}
+                      </div>
+                    </Link>
+                  )
+                })
+              }
+            </div>
+            
+            {/* User profile icon at bottom */}
+            <div className="mt-auto px-2">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={toggleProfileDropdown}
+                className="w-full p-3 hover:bg-accent relative group"
+              >
+                <div className="w-6 h-6 bg-primary rounded-full flex items-center justify-center text-primary-foreground text-xs font-medium">
+                  {user.email.charAt(0).toUpperCase()}
+                </div>
+                {/* Tooltip */}
+                <div className="absolute left-full ml-2 px-2 py-1 bg-popover text-popover-foreground text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap z-50 shadow-md border">
+                  {user.email.split('@')[0]}
+                </div>
+              </Button>
+              
+              {/* Profile dropdown */}
+              {isProfileDropdownOpen && (
+                <div className="absolute left-full ml-2 bottom-2 bg-card shadow-lg border border-border rounded-lg z-50 min-w-48">
+                  <div className="p-3 border-b">
+                    <div className="text-sm font-medium">{user.email.split('@')[0]}</div>
+                    <div className="text-xs text-muted-foreground">{user.email}</div>
+                  </div>
+                  <Button 
+                    variant="ghost" 
+                    className="w-full justify-start text-left px-3 py-2 rounded-none hover:bg-accent/50" 
+                    onClick={handleSignOut}
+                  >
+                    <LogOut className="h-4 w-4 mr-2" />
+                    Keluar dari Akun
+                  </Button>
+                </div>
+              )}
+            </div>
+          </aside>
+        )}
+
         {/* Main Content */}
         <main className="flex-1 p-4 sm:p-6 lg:p-8">
           {children}
         </main>
 
-        {/* Right Sidebar Overlay */}
+        {/* Right Sidebar Overlay (ketika dibuka) */}
         {user && (
           <div 
             className={`fixed inset-0 z-40 transition-opacity duration-300 ${
@@ -232,7 +299,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         )}
       </div>
 
-      {/* Footer - */}
+      {/* Footer - Sticky at bottom */}
       <footer className="border-t bg-card mt-auto">
         <div className="px-4 sm:px-6 lg:px-8 py-6">
           <div className="text-center text-sm text-muted-foreground">
