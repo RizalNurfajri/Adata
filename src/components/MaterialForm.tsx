@@ -28,6 +28,7 @@ export default function MaterialForm({ isEdit = false, materialId }: MaterialFor
     link: ''
   })
   const [file, setFile] = useState<File | null>(null)
+  const [currentFileName, setCurrentFileName] = useState<string>('')
 
   useEffect(() => {
     const fetchMaterial = async () => {
@@ -48,6 +49,7 @@ export default function MaterialForm({ isEdit = false, materialId }: MaterialFor
         }
 
         setOriginalLink(data.link || '')
+        setCurrentFileName(data.link ? data.link.split('/').pop()?.split('?')[0] || '' : '')
         setFormData({
           title: data.judul,
           description: data.deskripsi ?? '',
@@ -74,6 +76,12 @@ export default function MaterialForm({ isEdit = false, materialId }: MaterialFor
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFile = e.target.files?.[0] || null
     setFile(selectedFile)
+    if (selectedFile) {
+      setCurrentFileName(selectedFile.name)
+    } else if (isEdit && originalLink) {
+      // Reset ke nama file original jika tidak ada file baru yang dipilih
+      setCurrentFileName(originalLink.split('/').pop()?.split('?')[0] || '')
+    }
   }
 
   const deleteOldFile = async (fileUrl: string): Promise<boolean> => {
@@ -226,26 +234,27 @@ export default function MaterialForm({ isEdit = false, materialId }: MaterialFor
           {isEdit ? 'Upload File Baru (Opsional)' : 'Upload File'}
         </Label>
         
-        {/* Tampilkan file yang sudah ada jika sedang edit */}
-        {isEdit && originalLink && (
-          <div className="mb-2 p-2 bg-muted rounded-md">
-            <p className="text-sm text-muted-foreground">File saat ini:</p>
-            <p className="text-sm font-medium">
-              {originalLink.split('/').pop()?.split('?')[0] || 'File tersedia'}
-            </p>
-            <p className="text-xs text-muted-foreground mt-1">
-              File akan diganti jika Anda upload file baru
-            </p>
-          </div>
-        )}
+        <div className="relative">
+          <Input 
+            type="file" 
+            accept=".pdf,.pka,.doc,.docx,.ppt,.pptx" 
+            onChange={handleFileChange}
+            className="file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-primary file:text-primary-foreground hover:file:bg-primary/80"
+          />
+          {isEdit && currentFileName && !file && (
+            <div className="absolute inset-0 flex items-center px-3 pointer-events-none bg-background">
+              <span className="text-sm text-muted-foreground">
+                File saat ini: {currentFileName}
+              </span>
+            </div>
+          )}
+        </div>
         
-        <Input 
-          type="file" 
-          accept=".pdf,.pka,.doc,.docx,.ppt,.pptx" 
-          onChange={handleFileChange} 
-        />
         <p className="text-xs text-muted-foreground mt-1">
           Format yang didukung: PDF, PKA, DOC, DOCX, PPT, PPTX
+          {isEdit && currentFileName && (
+            <span className="block">File saat ini akan diganti jika Anda upload file baru</span>
+          )}
         </p>
       </div>
 
