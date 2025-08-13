@@ -6,7 +6,7 @@ import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { toast } from '@/hooks/use-toast'
-import { uploadToStorage, deleteFromStorage, deleteFromStorageAlternative } from '@/lib/utils'
+import { uploadToStorage, deleteFromStorage, deleteFromStorageAlternative, extractFilePathFromUrl, renameFileInStorage } from '@/lib/utils'
 import { supabase } from '@/integrations/supabase/client'
 import { Loader2 } from 'lucide-react'
 
@@ -93,42 +93,14 @@ export default function MaterialForm({ isEdit = false, materialId }: MaterialFor
     setLoading(true)
 
     try {
-      // Validasi untuk mode edit: tidak boleh ada judul yang sama dengan material lain (kecuali dirinya sendiri)
-      if (isEdit && materialId) {
-        const { data: existing, error: checkError } = await supabase
-          .from('materials')
-          .select('judul, id')
-          .eq('judul', formData.title)
-          .neq('id', materialId)
-          .single()
-
-        if (checkError && checkError.code !== 'PGRST116') {
-          throw checkError
-        }
-        
-        if (existing) {
-          toast({
-            title: 'Judul sudah ada',
-            description: 'Materi dengan judul ini sudah ditambahkan sebelumnya.',
-            variant: 'destructive',
-          })
-          setLoading(false)
-          return
-        }
-      }
-
-      // Validasi untuk mode tambah baru
       if (!isEdit) {
         const { data: existing, error: checkError } = await supabase
           .from('materials')
           .select('judul')
           .eq('judul', formData.title)
-          .single()
+          .maybeSingle()
 
-        if (checkError && checkError.code !== 'PGRST116') {
-          throw checkError
-        }
-        
+        if (checkError) throw checkError
         if (existing) {
           toast({
             title: 'Judul sudah ada',
@@ -140,26 +112,57 @@ export default function MaterialForm({ isEdit = false, materialId }: MaterialFor
         }
       }
 
-      let uploadedLink = originalLink // Default gunakan link lama untuk edit
+      let uploadedLink = formData.link
 
-      // Jika ada file baru yang diupload
       if (file) {
+        // Kasus: Upload file baru
+        // Pass mata kuliah dan tipe ke fungsi upload untuk struktur folder
         const url = await uploadToStorage(file, formData.subject, formData.type)
-        if (!url) throw new Error('Gagal upload file')
+        if (!url) throw new Error('Gagal upload file PDF')
         uploadedLink = url
 
         if (isEdit && originalLink && originalLink !== uploadedLink) {
           await deleteOldFile(originalLink)
         }
-      } else if (!isEdit) {
-        // Untuk mode tambah baru, file wajib
-        toast({
-          title: 'File wajib diupload',
-          description: 'Silakan pilih file untuk diupload',
-          variant: 'destructive',
-        })
-        setLoading(false)
-        return
+      } else if (isEdit && originalLink) {
+        // Kasus: Edit tanpa upload file baru, tapi cek apakah struktur folder perlu diubah
+        const currentFileName = originalLink.split('/').pop() || ''
+        const currentFilePath = extractFilePathFromUrl(originalLink)
+        
+        if (currentFilePath) {
+          // Sanitasi nama mata kuliah dan tipe untuk folder yang diharapkan
+          const sanitizedMatkul = formData.subject
+            .toLowerCase()
+            .replace(/[^a-zA-Z0-9\s]/g, '') // Hapus karakter khusus
+            .replace(/\s+/g, '-') // Ganti spasi dengan dash
+            .trim()
+
+          const sanitizedTipe = formData.type.toLowerCase()
+          
+          // Path yang diharapkan berdasarkan data form saat ini
+          const expectedPath = `${sanitizedMatkul}/${sanitizedTipe}/${currentFileName}`
+          
+          // Jika struktur folder tidak sesuai, pindahkan file
+          if (currentFilePath !== expectedPath) {
+            const renamedUrl = await renameFileInStorage(
+              originalLink, 
+              currentFileName, 
+              formData.subject, 
+              formData.type
+            )
+            
+            if (renamedUrl) {
+              uploadedLink = renamedUrl
+              toast({
+                title: 'Info',
+                description: 'File berhasil dipindahkan ke struktur folder yang benar',
+              })
+            } else {
+              // Jika gagal rename, tetap gunakan link lama
+              console.warn('Gagal memindahkan file ke struktur folder baru, menggunakan link lama')
+            }
+          }
+        }
       }
 
       if (isEdit && materialId) {
@@ -274,11 +277,6 @@ export default function MaterialForm({ isEdit = false, materialId }: MaterialFor
         <p className="text-xs text-muted-foreground mt-1">
           Format yang didukung: PDF, PKA, DOC, DOCX, PPT, PPTX
         </p>
-        {isEdit && originalLink && (
-          <p className="text-xs text-blue-600 mt-1">
-            File saat ini: {originalLink.split('/').pop()}
-          </p>
-        )}
       </div>
 
       <div className="flex gap-4 justify-end">
