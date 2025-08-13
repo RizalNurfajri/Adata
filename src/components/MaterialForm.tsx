@@ -178,7 +178,7 @@ export default function MaterialForm({ isEdit = false, materialId }: MaterialFor
         if (error) throw error
       } else {
         // Untuk mode tambah baru, file wajib diupload
-        if (!file) {
+        if (!uploadedLink) {
           toast({
             title: 'File wajib diupload',
             description: 'Silakan pilih file untuk diupload',
@@ -281,7 +281,6 @@ export default function MaterialForm({ isEdit = false, materialId }: MaterialFor
           type="file" 
           accept=".pdf,.pka,.doc,.docx,.ppt,.pptx" 
           onChange={handleFileChange} 
-          required={!isEdit} // File wajib untuk mode tambah, opsional untuk mode edit
         />
         <p className="text-xs text-muted-foreground mt-1">
           Format yang didukung: PDF, PKA, DOC, DOCX, PPT, PPTX
