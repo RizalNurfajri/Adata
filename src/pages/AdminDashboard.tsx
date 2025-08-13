@@ -44,31 +44,36 @@ export default function AdminDashboard() {
 
       if (materialsError) throw materialsError
 
-      // Load stats
-      const { count: totalMaterials } = await supabase
-        .from('materials')
-        .select('*', { count: 'exact', head: true })
+      // Menggunakan RPC function untuk mendapatkan stats
+      const { data: statsData, error: statsError } = await supabase
+        .rpc('get_admin_stats')
 
-      // Count users from auth.users instead of profiles table
-      const { data: { users }, error: usersError } = await supabase.auth.admin.listUsers()
-      
-      let totalUsers = 0
-      if (usersError) {
-        console.error('Error fetching users from auth:', usersError)
-        // Fallback to profiles count if auth admin access fails
-        const { count: profilesCount } = await supabase
+      if (statsError) {
+        console.error('Error fetching stats via RPC:', statsError)
+        
+        // Fallback ke method lama jika RPC gagal
+        const { count: totalMaterials } = await supabase
+          .from('materials')
+          .select('*', { count: 'exact', head: true })
+
+        const { count: totalUsers } = await supabase
           .from('profiles')
           .select('*', { count: 'exact', head: true })
-        totalUsers = profilesCount || 0
+
+        setStats({
+          totalMaterials: totalMaterials || 0,
+          totalUsers: totalUsers || 0
+        })
       } else {
-        totalUsers = users?.length || 0
+        // Gunakan data dari RPC function
+        const stats = statsData?.[0] || { total_users: 0, total_materials: 0 }
+        setStats({
+          totalMaterials: stats.total_materials,
+          totalUsers: stats.total_users
+        })
       }
 
       setMaterials(materialsData as Material[] || [])
-      setStats({
-        totalMaterials: totalMaterials || 0,
-        totalUsers: totalUsers
-      })
     } catch (error) {
       console.error('Error loading admin data:', error)
     } finally {
