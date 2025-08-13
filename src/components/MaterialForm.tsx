@@ -261,16 +261,38 @@ export default function MaterialForm({ isEdit = false, materialId }: MaterialFor
       <div>
         <Label>
           {isEdit ? 'Upload File Baru (Opsional)' : 'Upload File'}
-          {isEdit && originalLink && (
-            <span className="block text-xs text-muted-foreground mt-1">
-              File saat ini akan diganti jika Anda upload file baru
-            </span>
-          )}
         </Label>
+        
+        {/* Tampilkan file yang sudah ada dalam mode edit */}
+        {isEdit && originalLink && (
+          <div className="mb-3 p-3 bg-muted/50 rounded-md border">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium">File saat ini:</p>
+                <p className="text-sm text-muted-foreground break-all">
+                  {originalLink.split('/').pop() || 'File tersimpan'}
+                </p>
+              </div>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => window.open(originalLink, '_blank')}
+              >
+                Lihat File
+              </Button>
+            </div>
+            <p className="text-xs text-muted-foreground mt-2">
+              File ini akan diganti jika Anda upload file baru
+            </p>
+          </div>
+        )}
+        
         <Input 
           type="file" 
           accept=".pdf,.pka,.doc,.docx,.ppt,.pptx" 
-          onChange={handleFileChange} 
+          onChange={handleFileChange}
+          required={!isEdit && !originalLink}
         />
         <p className="text-xs text-muted-foreground mt-1">
           Format yang didukung: PDF, PKA, DOC, DOCX, PPT, PPTX
