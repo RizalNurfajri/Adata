@@ -18,7 +18,6 @@ interface MaterialFormProps {
 export default function MaterialForm({ isEdit = false, materialId }: MaterialFormProps) {
   const navigate = useNavigate()
   const [loading, setLoading] = useState(false)
-  const [fetchLoading, setFetchLoading] = useState(false)
   const [originalLink, setOriginalLink] = useState<string>('')
   const [formData, setFormData] = useState({
     title: '',
@@ -33,55 +32,30 @@ export default function MaterialForm({ isEdit = false, materialId }: MaterialFor
   useEffect(() => {
     const fetchMaterial = async () => {
       if (isEdit && materialId) {
-        setFetchLoading(true)
-        
-        try {
-          const { data, error } = await supabase
-            .from('materials')
-            .select('*')
-            .eq('id', materialId)
-            .single()
+        const { data, error } = await supabase
+          .from('materials')
+          .select('*')
+          .eq('id', materialId)
+          .single()
 
-          if (error) {
-            console.error('Error fetching material:', error)
-            toast({
-              title: 'Error',
-              description: 'Gagal memuat data materi: ' + error.message,
-              variant: 'destructive',
-            })
-            return
-          }
-
-          if (!data) {
-            toast({
-              title: 'Error',
-              description: 'Data materi tidak ditemukan',
-              variant: 'destructive',
-            })
-            return
-          }
-
-          console.log('Fetched material data:', data)
-
-          setOriginalLink(data.link || '')
-          setFormData({
-            title: data.judul || '',
-            description: data.deskripsi || '',
-            subject: data.matkul || '',
-            semester: `Semester ${data.semester || 1}`,
-            type: data.tipe || 'Teori',
-            link: data.link || '',
-          })
-        } catch (err) {
-          console.error('Unexpected error:', err)
+        if (error || !data) {
           toast({
             title: 'Error',
-            description: 'Terjadi kesalahan tidak terduga',
+            description: 'Gagal memuat data materi',
             variant: 'destructive',
           })
-        } finally {
-          setFetchLoading(false)
+          return
         }
+
+        setOriginalLink(data.link || '')
+        setFormData({
+          title: data.judul,
+          description: data.deskripsi ?? '',
+          subject: data.matkul,
+          semester: `Semester ${data.semester}`,
+          type: data.tipe,
+          link: data.link ?? '',
+        })
       }
     }
 
@@ -138,8 +112,7 @@ export default function MaterialForm({ isEdit = false, materialId }: MaterialFor
         }
       }
 
-      // Dalam mode edit, gunakan originalLink sebagai default jika tidak ada file baru
-      let uploadedLink = isEdit ? originalLink : formData.link
+      let uploadedLink = formData.link
 
       if (file) {
         // Pass mata kuliah dan tipe ke fungsi upload untuk struktur folder
@@ -147,7 +120,6 @@ export default function MaterialForm({ isEdit = false, materialId }: MaterialFor
         if (!url) throw new Error('Gagal upload file PDF')
         uploadedLink = url
 
-        // Hapus file lama hanya jika berhasil upload file baru dan linknya berbeda
         if (isEdit && originalLink && originalLink !== uploadedLink) {
           await deleteOldFile(originalLink)
         }
@@ -197,18 +169,6 @@ export default function MaterialForm({ isEdit = false, materialId }: MaterialFor
     } finally {
       setLoading(false)
     }
-  }
-
-  // Show loading while fetching data in edit mode
-  if (isEdit && fetchLoading) {
-    return (
-      <div className="flex justify-center items-center min-h-[400px]">
-        <div className="text-center">
-          <Loader2 className="animate-spin mx-auto h-8 w-8 mb-2" />
-          <p className="text-muted-foreground">Memuat data materi...</p>
-        </div>
-      </div>
-    )
   }
 
   return (
@@ -263,38 +223,16 @@ export default function MaterialForm({ isEdit = false, materialId }: MaterialFor
       <div>
         <Label>
           {isEdit ? 'Upload File Baru (Opsional)' : 'Upload File'}
+          {isEdit && originalLink && (
+            <span className="block text-xs text-muted-foreground mt-1">
+              File saat ini akan diganti jika Anda upload file baru
+            </span>
+          )}
         </Label>
-        
-        {/* Tampilkan file yang sudah ada dalam mode edit */}
-        {isEdit && originalLink && (
-          <div className="mb-3 p-3 bg-muted/50 rounded-md border">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium">File saat ini:</p>
-                <p className="text-sm text-muted-foreground break-all">
-                  {originalLink.split('/').pop() || 'File tersimpan'}
-                </p>
-              </div>
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                onClick={() => window.open(originalLink, '_blank')}
-              >
-                Lihat File
-              </Button>
-            </div>
-            <p className="text-xs text-muted-foreground mt-2">
-              File ini akan diganti jika Anda upload file baru
-            </p>
-          </div>
-        )}
-        
         <Input 
           type="file" 
           accept=".pdf,.pka,.doc,.docx,.ppt,.pptx" 
-          onChange={handleFileChange}
-          required={!isEdit && !originalLink}
+          onChange={handleFileChange} 
         />
         <p className="text-xs text-muted-foreground mt-1">
           Format yang didukung: PDF, PKA, DOC, DOCX, PPT, PPTX
