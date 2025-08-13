@@ -20,26 +20,19 @@ export async function uploadToStorage(file: File, matkul?: string, tipe?: string
 
       const sanitizedTipe = tipe.toLowerCase()
 
-      // Tambahkan timestamp untuk mencegah nama file yang sama
-      const timestamp = Date.now()
-      const fileExtension = file.name.split('.').pop()
-      const fileName = `${file.name.replace(/\.[^/.]+$/, "")}_${timestamp}.${fileExtension}`
-
+      // Gunakan nama file asli tanpa perubahan
       // Struktur: matkul/tipe/namafile
-      filePath = `${sanitizedMatkul}/${sanitizedTipe}/${fileName}`
+      filePath = `${sanitizedMatkul}/${sanitizedTipe}/${file.name}`
     } else {
-      // Fallback ke nama file asli dengan timestamp jika tidak ada parameter
-      const timestamp = Date.now()
-      const fileExtension = file.name.split('.').pop()
-      const fileName = `${file.name.replace(/\.[^/.]+$/, "")}_${timestamp}.${fileExtension}`
-      filePath = fileName
+      // Fallback ke nama file asli jika tidak ada parameter
+      filePath = file.name
     }
 
     const uploadResult = await supabase.storage
       .from('materi-pdf')
       .upload(filePath, file, {
         cacheControl: '3600',
-        upsert: false, // Set ke false untuk mencegah overwrite
+        upsert: true, // Set ke true untuk menimpa file dengan nama yang sama jika ada
       })
 
     if (uploadResult.error) {
