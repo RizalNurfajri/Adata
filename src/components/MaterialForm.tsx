@@ -138,7 +138,8 @@ export default function MaterialForm({ isEdit = false, materialId }: MaterialFor
         }
       }
 
-      let uploadedLink = formData.link
+      // Dalam mode edit, gunakan originalLink sebagai default jika tidak ada file baru
+      let uploadedLink = isEdit ? originalLink : formData.link
 
       if (file) {
         // Pass mata kuliah dan tipe ke fungsi upload untuk struktur folder
@@ -146,6 +147,7 @@ export default function MaterialForm({ isEdit = false, materialId }: MaterialFor
         if (!url) throw new Error('Gagal upload file PDF')
         uploadedLink = url
 
+        // Hapus file lama hanya jika berhasil upload file baru dan linknya berbeda
         if (isEdit && originalLink && originalLink !== uploadedLink) {
           await deleteOldFile(originalLink)
         }
