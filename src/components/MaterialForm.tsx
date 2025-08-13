@@ -93,6 +93,28 @@ export default function MaterialForm({ isEdit = false, materialId }: MaterialFor
     setLoading(true)
 
     try {
+      // Validasi untuk mode edit: tidak boleh ada judul yang sama dengan material lain (kecuali dirinya sendiri)
+      if (isEdit && materialId) {
+        const { data: existing, error: checkError } = await supabase
+          .from('materials')
+          .select('judul, id')
+          .eq('judul', formData.title)
+          .neq('id', materialId) // Tambahkan kondisi ini untuk mengecualikan material yang sedang diedit
+          .maybeSingle()
+
+        if (checkError) throw checkError
+        if (existing) {
+          toast({
+            title: 'Judul sudah ada',
+            description: 'Materi dengan judul ini sudah ditambahkan sebelumnya.',
+            variant: 'destructive',
+          })
+          setLoading(false)
+          return
+        }
+      }
+
+      // Validasi untuk mode tambah baru
       if (!isEdit) {
         const { data: existing, error: checkError } = await supabase
           .from('materials')
@@ -114,14 +136,21 @@ export default function MaterialForm({ isEdit = false, materialId }: MaterialFor
 
       let uploadedLink = formData.link
 
+      // Jika ada file baru yang diupload
       if (file) {
         // Pass mata kuliah dan tipe ke fungsi upload untuk struktur folder
         const url = await uploadToStorage(file, formData.subject, formData.type)
         if (!url) throw new Error('Gagal upload file PDF')
         uploadedLink = url
 
+        // Hapus file lama jika sedang edit dan ada file lama
         if (isEdit && originalLink && originalLink !== uploadedLink) {
           await deleteOldFile(originalLink)
+        }
+      } else {
+        // Jika mode edit dan tidak ada file baru, gunakan link yang sudah ada
+        if (isEdit) {
+          uploadedLink = originalLink
         }
       }
 
@@ -140,6 +169,17 @@ export default function MaterialForm({ isEdit = false, materialId }: MaterialFor
 
         if (error) throw error
       } else {
+        // Untuk mode tambah baru, file wajib diupload
+        if (!file) {
+          toast({
+            title: 'File wajib diupload',
+            description: 'Silakan pilih file untuk diupload',
+            variant: 'destructive',
+          })
+          setLoading(false)
+          return
+        }
+
         const { error } = await supabase
           .from('materials')
           .insert([{
@@ -233,10 +273,16 @@ export default function MaterialForm({ isEdit = false, materialId }: MaterialFor
           type="file" 
           accept=".pdf,.pka,.doc,.docx,.ppt,.pptx" 
           onChange={handleFileChange} 
+          required={!isEdit} // File wajib untuk mode tambah, opsional untuk mode edit
         />
         <p className="text-xs text-muted-foreground mt-1">
           Format yang didukung: PDF, PKA, DOC, DOCX, PPT, PPTX
         </p>
+        {isEdit && originalLink && (
+          <p className="text-xs text-blue-600 mt-1">
+            File saat ini: {originalLink.split('/').pop()}
+          </p>
+        )}
       </div>
 
       <div className="flex gap-4 justify-end">
