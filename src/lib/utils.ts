@@ -6,14 +6,6 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
 }
 
-// Fungsi untuk membersihkan nama file agar URL-safe
-function sanitizeFileName(fileName: string): string {
-  return fileName
-    .replace(/[^\w\s.-]/g, '') // Hapus karakter khusus kecuali underscore, spasi, titik, dash
-    .replace(/\s+/g, '_') // Ganti spasi dengan underscore
-    .trim()
-}
-
 export async function uploadToStorage(file: File, matkul?: string, tipe?: string): Promise<string | null> {
   try {
     let filePath: string
@@ -28,14 +20,11 @@ export async function uploadToStorage(file: File, matkul?: string, tipe?: string
 
       const sanitizedTipe = tipe.toLowerCase()
 
-      // Sanitasi nama file untuk menghindari masalah URL encoding
-      const sanitizedFileName = sanitizeFileName(file.name)
-
       // Struktur: matkul/tipe/namafile
-      filePath = `${sanitizedMatkul}/${sanitizedTipe}/${sanitizedFileName}`
+      filePath = `${sanitizedMatkul}/${sanitizedTipe}/${file.name}`
     } else {
-      // Fallback ke nama file yang sudah disanitasi jika tidak ada parameter
-      filePath = sanitizeFileName(file.name)
+      // Fallback ke nama file asli jika tidak ada parameter
+      filePath = file.name
     }
 
     const uploadResult = await supabase.storage
@@ -45,108 +34,14 @@ export async function uploadToStorage(file: File, matkul?: string, tipe?: string
         upsert: true, // Set ke true untuk menimpa file dengan nama yang sama
       })
 
-    if (uploadResult.error) {
-      console.error('Upload error:', uploadResult.error)
-      return null
-    }
+    if (uploadResult.error) return null
 
-    // Gunakan getPublicUrl dengan encoding yang benar
     const urlResult = supabase.storage
       .from('materi-pdf')
       .getPublicUrl(filePath)
 
-    // Pastikan URL tidak mengandung karakter yang menyebabkan masalah
-    const publicUrl = urlResult.data?.publicUrl
-    if (publicUrl) {
-      // Verifikasi bahwa file benar-benar ada dengan mencoba mengakses metadata
-      const { data: fileInfo, error: fileError } = await supabase.storage
-        .from('materi-pdf')
-        .list(filePath.substring(0, filePath.lastIndexOf('/')), {
-          search: filePath.substring(filePath.lastIndexOf('/') + 1)
-        })
-
-      if (fileError || !fileInfo || fileInfo.length === 0) {
-        console.error('File verification failed:', fileError)
-        return null
-      }
-    }
-
-    return publicUrl ?? null
-  } catch (error) {
-    console.error('Upload exception:', error)
-    return null
-  }
-}
-
-// Fungsi baru untuk rename/memindahkan file di storage
-export async function renameFileInStorage(
-  oldUrl: string, 
-  newFileName: string,
-  matkul: string,
-  tipe: string
-): Promise<string | null> {
-  try {
-    // Extract old file path
-    const oldFilePath = extractFilePathFromUrl(oldUrl)
-    if (!oldFilePath) {
-      console.error('Could not extract file path from URL:', oldUrl)
-      return null
-    }
-
-    // Download file lama
-    const { data: fileData, error: downloadError } = await supabase.storage
-      .from('materi-pdf')
-      .download(oldFilePath)
-    
-    if (downloadError || !fileData) {
-      console.error('Error downloading file:', downloadError)
-      return null
-    }
-
-    // Buat path baru dengan struktur folder yang benar
-    const sanitizedMatkul = matkul
-      .toLowerCase()
-      .replace(/[^a-zA-Z0-9\s]/g, '')
-      .replace(/\s+/g, '-')
-      .trim()
-
-    const sanitizedTipe = tipe.toLowerCase()
-    
-    // Sanitasi nama file baru
-    const sanitizedNewFileName = sanitizeFileName(newFileName)
-    const newFilePath = `${sanitizedMatkul}/${sanitizedTipe}/${sanitizedNewFileName}`
-
-    // Upload file ke lokasi baru
-    const { error: uploadError } = await supabase.storage
-      .from('materi-pdf')
-      .upload(newFilePath, fileData, {
-        cacheControl: '3600',
-        upsert: true
-      })
-
-    if (uploadError) {
-      console.error('Error uploading file to new location:', uploadError)
-      return null
-    }
-
-    // Hapus file lama
-    const { error: deleteError } = await supabase.storage
-      .from('materi-pdf')
-      .remove([oldFilePath])
-
-    if (deleteError) {
-      console.warn('Warning: Failed to delete old file:', deleteError)
-      // Tidak return null karena file sudah berhasil dipindah
-    }
-
-    // Return URL baru
-    const { data } = supabase.storage
-      .from('materi-pdf')
-      .getPublicUrl(newFilePath)
-
-    return data?.publicUrl ?? null
-  } catch (error) {
-    console.error('Error in renameFileInStorage:', error)
+    return urlResult.data?.publicUrl ?? null
+  } catch {
     return null
   }
 }
@@ -156,47 +51,30 @@ export async function debugStorageContents(): Promise<void> {
     const { data, error } = await supabase.storage
       .from('materi-pdf')
       .list('', { limit: 1000 })
-    
-    if (error) {
-      console.error('Debug storage error:', error)
-    } else {
-      console.log('Storage contents:', data)
-    }
-  } catch (error) {
-    console.error('Debug storage exception:', error)
-  }
+  } catch {}
 }
 
-// Fungsi yang diperbaiki untuk extract file path dari URL
 function extractFilePathMethod1(publicUrl: string): string | null {
   try {
     const url = new URL(publicUrl)
-    const pathname = url.pathname
-    const prefix = '/storage/v1/object/public/materi-pdf/'
-    
-    if (pathname.startsWith(prefix)) {
-      const filePath = pathname.substring(prefix.length)
-      // Decode URI component dengan benar
-      return decodeURIComponent(filePath)
-    }
-    
-    return null
-  } catch (error) {
-    console.error('extractFilePathMethod1 error:', error)
+    const pathname = decodeURIComponent(url.pathname)
+    const prefix = '/storage/v1/object/public/'
+    const startIndex = pathname.indexOf(prefix)
+    if (startIndex === -1) return null
+    const fullStoragePath = pathname.slice(startIndex + prefix.length)
+    const [bucketName, ...fileParts] = fullStoragePath.split('/')
+    if (bucketName !== 'materi-pdf') return null
+    return fileParts.join('/')
+  } catch {
     return null
   }
 }
 
 function extractFilePathMethod2(publicUrl: string): string | null {
   try {
-    // Pattern yang lebih ketat untuk mencocokkan URL
-    const match = publicUrl.match(/\/storage\/v1\/object\/public\/materi-pdf\/(.+)$/)
-    if (match && match[1]) {
-      return decodeURIComponent(match[1])
-    }
-    return null
-  } catch (error) {
-    console.error('extractFilePathMethod2 error:', error)
+    const match = publicUrl.match(/\/storage\/v1\/object\/public\/materi-pdf\/(.+)/)
+    return match ? decodeURIComponent(match[1]) : null
+  } catch {
     return null
   }
 }
@@ -205,13 +83,10 @@ function extractFilePathMethod3(publicUrl: string): string | null {
   try {
     const searchString = '/storage/v1/object/public/materi-pdf/'
     const index = publicUrl.indexOf(searchString)
-    if (index !== -1) {
-      const filePath = publicUrl.substring(index + searchString.length)
-      return decodeURIComponent(filePath)
-    }
-    return null
-  } catch (error) {
-    console.error('extractFilePathMethod3 error:', error)
+    if (index === -1) return null
+    const filePath = publicUrl.slice(index + searchString.length)
+    return decodeURIComponent(filePath)
+  } catch {
     return null
   }
 }
@@ -276,28 +151,19 @@ export async function deleteFromStorageEnhanced(publicUrl: string): Promise<bool
     const filePath3 = extractFilePathMethod3(publicUrl)
     const filePaths = [filePath1, filePath2, filePath3].filter(Boolean)
 
-    // Log untuk debugging
-    console.log('Trying to delete file with paths:', filePaths)
-
     for (const filePath of filePaths) {
       if (filePath) {
         const { error } = await supabase.storage
           .from('materi-pdf')
           .remove([filePath])
 
-        if (!error) {
-          console.log('Successfully deleted file:', filePath)
-          return true
-        } else {
-          console.error('Delete error for path:', filePath, error)
-        }
+        if (!error) return true
       }
     }
 
     const bruteForceResult = await deleteByBruteForceSearch(publicUrl)
     return bruteForceResult
-  } catch (error) {
-    console.error('deleteFromStorageEnhanced error:', error)
+  } catch {
     return false
   }
 }
@@ -375,27 +241,26 @@ export async function cleanupOrphanedFiles(): Promise<void> {
 
 export async function deleteFromStorage(publicUrl: string): Promise<boolean> {
   try {
-    const filePath = extractFilePathFromUrl(publicUrl)
-    if (!filePath) {
-      console.error('Could not extract file path from URL:', publicUrl)
-      return false
-    }
+    const url = new URL(publicUrl)
+    const fullPath = decodeURIComponent(url.pathname)
+    const prefix = '/storage/v1/object/public/'
+    const pathStartIndex = fullPath.indexOf(prefix)
+    if (pathStartIndex === -1) return false
 
-    console.log('Attempting to delete file at path:', filePath)
+    const fullStoragePath = fullPath.slice(pathStartIndex + prefix.length)
+    const [bucketName, ...fileParts] = fullStoragePath.split('/')
+    const filePath = fileParts.join('/')
+
+    if (!filePath || bucketName !== 'materi-pdf') return false
 
     const { error } = await supabase.storage
-      .from('materi-pdf')
+      .from(bucketName)
       .remove([filePath])
 
-    if (error) {
-      console.error('Delete error:', error)
-      return false
-    }
+    if (error) return false
 
-    console.log('Successfully deleted file:', filePath)
     return true
-  } catch (error) {
-    console.error('deleteFromStorage exception:', error)
+  } catch {
     return false
   }
 }
@@ -403,15 +268,10 @@ export async function deleteFromStorage(publicUrl: string): Promise<boolean> {
 export async function deleteFromStorageAlternative(publicUrl: string): Promise<boolean> {
   try {
     const match = publicUrl.match(/\/storage\/v1\/object\/public\/materi-pdf\/(.+)$/)
-    if (!match) {
-      console.error('URL pattern does not match:', publicUrl)
-      return false
-    }
+    if (!match) return false
 
-    const filePath = decodeURIComponent(match[1])
-    console.log('Alternative delete attempt for path:', filePath)
+    const filePath = match[1]
 
-    // Verify file exists first
     const { data: listResult } = await supabase.storage
       .from('materi-pdf')
       .list('', { limit: 1000 })
@@ -420,45 +280,30 @@ export async function deleteFromStorageAlternative(publicUrl: string): Promise<b
       .from('materi-pdf')
       .remove([filePath])
 
-    if (error) {
-      console.error('Alternative delete error:', error)
-      return false
-    }
+    if (error) return false
 
-    console.log('Successfully deleted file (alternative method):', filePath)
     return true
-  } catch (error) {
-    console.error('deleteFromStorageAlternative exception:', error)
+  } catch {
     return false
   }
 }
 
 export function extractFilePathFromUrl(publicUrl: string): string | null {
   try {
-    // Method 1: URL parsing
     const url = new URL(publicUrl)
-    const pathname = url.pathname
-    const prefix = '/storage/v1/object/public/materi-pdf/'
-    
-    if (pathname.startsWith(prefix)) {
-      const filePath = pathname.substring(prefix.length)
-      const decodedPath = decodeURIComponent(filePath)
-      console.log('Extracted file path (method 1):', decodedPath)
-      return decodedPath
+    const fullPath = decodeURIComponent(url.pathname)
+    const prefix = '/storage/v1/object/public/'
+    const pathStartIndex = fullPath.indexOf(prefix)
+
+    if (pathStartIndex !== -1) {
+      const fullStoragePath = fullPath.slice(pathStartIndex + prefix.length)
+      const [bucketName, ...fileParts] = fullStoragePath.split('/')
+      return fileParts.join('/')
     }
 
-    // Method 2: Regex matching
     const match = publicUrl.match(/\/storage\/v1\/object\/public\/materi-pdf\/(.+)$/)
-    if (match && match[1]) {
-      const decodedPath = decodeURIComponent(match[1])
-      console.log('Extracted file path (method 2):', decodedPath)
-      return decodedPath
-    }
-
-    console.error('Could not extract file path from URL:', publicUrl)
-    return null
-  } catch (error) {
-    console.error('extractFilePathFromUrl error:', error)
+    return match ? match[1] : null
+  } catch {
     return null
   }
 }
@@ -471,30 +316,5 @@ export async function getUserRole(): Promise<string | null> {
     return role || null
   } catch {
     return null
-  }
-}
-
-// Fungsi tambahan untuk memvalidasi URL PDF
-export async function validatePdfUrl(url: string): Promise<boolean> {
-  try {
-    const filePath = extractFilePathFromUrl(url)
-    if (!filePath) return false
-
-    // Cek apakah file benar-benar ada di storage
-    const { data, error } = await supabase.storage
-      .from('materi-pdf')
-      .list(filePath.substring(0, filePath.lastIndexOf('/')), {
-        search: filePath.substring(filePath.lastIndexOf('/') + 1)
-      })
-
-    if (error || !data || data.length === 0) {
-      console.error('File validation failed:', error || 'File not found')
-      return false
-    }
-
-    return true
-  } catch (error) {
-    console.error('validatePdfUrl error:', error)
-    return false
   }
 }
