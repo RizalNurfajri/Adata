@@ -14,8 +14,13 @@ export default function TabSwitcher({ semester, matkul, currentTipe }: TabSwitch
   
   return (
     <div className="mb-6">
-      <Tabs value={currentTipe || 'Teori'} className="w-full">
-        <TabsList className="grid w-full grid-cols-2">
+      <Tabs value={currentTipe || 'overview'} className="w-full">
+        <TabsList className="grid w-full grid-cols-3">
+          <TabsTrigger value="overview" asChild>
+            <Link to={baseUrl}>
+              Overview
+            </Link>
+          </TabsTrigger>
           <TabsTrigger value="Teori" asChild>
             <Link to={`${baseUrl}/Teori`}>
               Teori
