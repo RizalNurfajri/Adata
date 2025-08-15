@@ -23,10 +23,39 @@ export default function MatkulDetail() {
     totalMaterials: 0
   })
   const [loading, setLoading] = useState(true)
+  const [isAdmin, setIsAdmin] = useState(false)
+  const [userLoading, setUserLoading] = useState(true)
 
   useEffect(() => {
+    checkUserRole()
     loadStats()
   }, [semester, matkul])
+
+  const checkUserRole = async () => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser()
+      
+      if (user) {
+        // Check user role from profiles table or user metadata
+        const { data: profile, error } = await supabase
+          .from('profiles')
+          .select('role')
+          .eq('id', user.id)
+          .single()
+
+        if (!error && profile) {
+          setIsAdmin(profile.role === 'admin')
+        }
+        
+        // Alternative: check from user metadata if role is stored there
+        // setIsAdmin(user.user_metadata?.role === 'admin')
+      }
+    } catch (error) {
+      console.error('Error checking user role:', error)
+    } finally {
+      setUserLoading(false)
+    }
+  }
 
   const loadStats = async () => {
     try {
@@ -53,6 +82,14 @@ export default function MatkulDetail() {
     }
   }
 
+  if (userLoading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="text-muted-foreground">Memuat...</div>
+      </div>
+    )
+  }
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -73,43 +110,46 @@ export default function MatkulDetail() {
         </div>
       </div>
 
-      {/* Tab Switcher */}
-      <TabSwitcher semester={semester.toString()} matkul={matkul} />
+      {/* Tab Switcher - Only show for admin */}
+      {isAdmin && <TabSwitcher semester={semester.toString()} matkul={matkul} />}
 
-      {/* Overview Content */}
+      {/* Content */}
       <div className="space-y-6">
-        <Card>
-          <CardContent className="pt-6">
-            <div className="text-center">
-              <BookOpen className="h-12 w-12 mx-auto text-primary mb-4" />
-              <h3 className="text-xl font-medium mb-2">Overview Mata Kuliah</h3>
-              <p className="text-muted-foreground mb-6">
-                Ringkasan materi yang tersedia untuk {matkul}
-              </p>
-              
-              {loading ? (
-                <div className="text-muted-foreground">Memuat...</div>
-              ) : (
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 max-w-md mx-auto">
-                  <div className="text-center">
-                    <div className="text-2xl font-bold text-primary">{stats.totalMaterials}</div>
-                    <div className="text-sm text-muted-foreground">Total Materi</div>
+        {/* Overview Content - Only for Admin */}
+        {isAdmin && (
+          <Card>
+            <CardContent className="pt-6">
+              <div className="text-center">
+                <BookOpen className="h-12 w-12 mx-auto text-primary mb-4" />
+                <h3 className="text-xl font-medium mb-2">Overview Mata Kuliah</h3>
+                <p className="text-muted-foreground mb-6">
+                  Ringkasan materi yang tersedia untuk {matkul}
+                </p>
+                
+                {loading ? (
+                  <div className="text-muted-foreground">Memuat...</div>
+                ) : (
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4 max-w-md mx-auto">
+                    <div className="text-center">
+                      <div className="text-2xl font-bold text-primary">{stats.totalMaterials}</div>
+                      <div className="text-sm text-muted-foreground">Total Materi</div>
+                    </div>
+                    <div className="text-center">
+                      <div className="text-2xl font-bold text-blue-500">{stats.teoriCount}</div>
+                      <div className="text-sm text-muted-foreground">Materi Teori</div>
+                    </div>
+                    <div className="text-center">
+                      <div className="text-2xl font-bold text-green-500">{stats.praktikumCount}</div>
+                      <div className="text-sm text-muted-foreground">Materi Praktikum</div>
+                    </div>
                   </div>
-                  <div className="text-center">
-                    <div className="text-2xl font-bold text-blue-500">{stats.teoriCount}</div>
-                    <div className="text-sm text-muted-foreground">Materi Teori</div>
-                  </div>
-                  <div className="text-center">
-                    <div className="text-2xl font-bold text-green-500">{stats.praktikumCount}</div>
-                    <div className="text-sm text-muted-foreground">Materi Praktikum</div>
-                  </div>
-                </div>
-              )}
-            </div>
-          </CardContent>
-        </Card>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+        )}
 
-        {/* Quick Access */}
+        {/* Quick Access - Always visible */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <Card className="group hover:shadow-lg transition-all duration-200">
             <CardContent className="pt-6">
@@ -122,9 +162,15 @@ export default function MatkulDetail() {
                 <p className="text-sm text-muted-foreground mb-4">
                   Akses semua materi teori untuk mata kuliah ini
                 </p>
-                <Badge variant="secondary">
-                  {stats.teoriCount} materi tersedia
-                </Badge>
+                {isAdmin ? (
+                  <Badge variant="secondary">
+                    {stats.teoriCount} materi tersedia
+                  </Badge>
+                ) : (
+                  <Badge variant="secondary">
+                    Materi Teori
+                  </Badge>
+                )}
               </Link>
             </CardContent>
           </Card>
@@ -140,13 +186,34 @@ export default function MatkulDetail() {
                 <p className="text-sm text-muted-foreground mb-4">
                   Akses semua materi praktikum untuk mata kuliah ini
                 </p>
-                <Badge variant="outline">
-                  {stats.praktikumCount} materi tersedia
-                </Badge>
+                {isAdmin ? (
+                  <Badge variant="outline">
+                    {stats.praktikumCount} materi tersedia
+                  </Badge>
+                ) : (
+                  <Badge variant="outline">
+                    Materi Praktikum
+                  </Badge>
+                )}
               </Link>
             </CardContent>
           </Card>
         </div>
+
+        {/* Non-admin message */}
+        {!isAdmin && (
+          <Card>
+            <CardContent className="pt-6">
+              <div className="text-center">
+                <FileText className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
+                <h3 className="text-lg font-medium mb-2">Akses Materi</h3>
+                <p className="text-muted-foreground">
+                  Pilih jenis materi di atas untuk mengakses konten mata kuliah {matkul}
+                </p>
+              </div>
+            </CardContent>
+          </Card>
+        )}
       </div>
     </div>
   )
