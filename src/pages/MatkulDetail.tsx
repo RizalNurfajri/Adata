@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react'
-import { useParams, Link, useNavigate } from 'react-router-dom'
+import { useParams, Link } from 'react-router-dom'
 import { supabase } from '@/integrations/supabase/client'
-import TabSwitcher from '@/components/TabSwitcher'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -14,8 +13,7 @@ interface MatkulStats {
 }
 
 export default function MatkulDetail() {
-  const { id: semesterParam, matkul: matkulParam, tipe } = useParams()
-  const navigate = useNavigate()
+  const { id: semesterParam, matkul: matkulParam } = useParams()
   const semester = parseInt(semesterParam || '1')
   const matkul = decodeURIComponent(matkulParam || '')
   const [stats, setStats] = useState<MatkulStats>({
@@ -24,13 +22,6 @@ export default function MatkulDetail() {
     totalMaterials: 0
   })
   const [loading, setLoading] = useState(true)
-
-  // Redirect to Teori if no tipe is specified
-  useEffect(() => {
-    if (!tipe) {
-      navigate(`/semester/${semester}/${encodeURIComponent(matkul)}/Teori`, { replace: true })
-    }
-  }, [semester, matkul, tipe, navigate])
 
   useEffect(() => {
     loadStats()
@@ -61,11 +52,6 @@ export default function MatkulDetail() {
     }
   }
 
-  // Don't render if redirecting
-  if (!tipe) {
-    return null
-  }
-
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -85,11 +71,6 @@ export default function MatkulDetail() {
           </div>
         </div>
       </div>
-
-
-
-      {/* Tab Switcher */}
-      <TabSwitcher semester={semester.toString()} matkul={matkul} currentTipe={tipe} />
 
       {/* Quick Access */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
