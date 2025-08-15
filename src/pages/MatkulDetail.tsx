@@ -73,6 +73,8 @@ export default function MatkulDetail() {
         </div>
       </div>
 
+
+
       {/* Tab Switcher */}
       <TabSwitcher semester={semester.toString()} matkul={matkul} />
 
