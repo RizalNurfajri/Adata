@@ -26,13 +26,15 @@ export default function MatkulDetail() {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
+    loadStats()
+  }, [semester, matkul])
+
+  useEffect(() => {
     // If no tipe is specified in the URL, redirect to Teori
     if (!tipe) {
       navigate(`/semester/${semester}/${encodeURIComponent(matkul)}/Teori`, { replace: true })
-      return
     }
-    loadStats()
-  }, [semester, matkul, tipe, navigate])
+  }, [tipe, navigate, semester, matkul])
 
   const loadStats = async () => {
     try {
