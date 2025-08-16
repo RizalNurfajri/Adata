@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { useParams, Link, Navigate } from 'react-router-dom'
+import { useParams, Link } from 'react-router-dom'
 import { supabase } from '@/integrations/supabase/client'
 import TabSwitcher from '@/components/TabSwitcher'
 import { Button } from '@/components/ui/button'
@@ -23,15 +23,31 @@ export default function MatkulDetail() {
     totalMaterials: 0
   })
   const [loading, setLoading] = useState(true)
-
-  // If no tipe specified, redirect to Teori
-  if (!tipe) {
-    return <Navigate to={`/semester/${semester}/${encodeURIComponent(matkul)}/Teori`} replace />
-  }
+  const [materials, setMaterials] = useState<any[]>([])
 
   useEffect(() => {
     loadStats()
-  }, [semester, matkul])
+    if (tipe) {
+      loadMaterials()
+    }
+  }, [semester, matkul, tipe])
+
+  const loadMaterials = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('materials')
+        .select('*')
+        .eq('semester', semester)
+        .eq('matkul', matkul)
+        .eq('tipe', tipe)
+        .order('created_at', { ascending: false })
+
+      if (error) throw error
+      setMaterials(data || [])
+    } catch (error) {
+      console.error('Error loading materials:', error)
+    }
+  }
 
   const loadStats = async () => {
     try {
@@ -79,46 +95,115 @@ export default function MatkulDetail() {
       </div>
 
       {/* Tab Switcher */}
-      <TabSwitcher semester={semester.toString()} matkul={matkul} currentTipe={tipe} />
+      <TabSwitcher semester={semester.toString()} matkul={matkul} currentTipe={tipe || 'Teori'} />
 
-      {/* Quick Access */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <Card className="group hover:shadow-lg transition-all duration-200">
-          <CardContent className="pt-6">
-            <Link 
-              to={`/semester/${semester}/${encodeURIComponent(matkul)}/Teori`}
-              className="block text-center"
-            >
-              <BookOpen className="h-12 w-12 mx-auto text-blue-500 mb-4 group-hover:scale-110 transition-transform" />
-              <h3 className="text-lg font-medium mb-2">Materi Teori</h3>
-              <p className="text-sm text-muted-foreground mb-4">
-                Akses semua materi teori untuk mata kuliah ini
-              </p>
-              <Badge variant="secondary">
-                {stats.teoriCount} materi tersedia
-              </Badge>
-            </Link>
-          </CardContent>
-        </Card>
+      {/* Content based on tipe */}
+      {!tipe ? (
+        // Default to show Teori materials when no tipe specified
+        <div className="space-y-6">
+          <div className="text-center text-muted-foreground mb-4">
+            <p>Materi Teori - {matkul}</p>
+          </div>
+          {loading ? (
+            <div className="text-center text-muted-foreground">Memuat...</div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {/* Show Teori materials by default */}
+              {/* This will be handled by the materials display logic */}
+            </div>
+          )}
+        </div>
+      ) : tipe === 'Teori' || tipe === 'Praktikum' ? (
+        // Show materials for selected tipe
+        <div className="space-y-6">
+          <div className="text-center text-muted-foreground mb-4">
+            <p>Materi {tipe} - {matkul}</p>
+          </div>
+          {loading ? (
+            <div className="text-center text-muted-foreground">Memuat...</div>
+          ) : materials.length > 0 ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {materials.map((material) => (
+                <Card key={material.id} className="group hover:shadow-lg transition-all duration-200">
+                  <CardContent className="pt-6">
+                    <div className="space-y-4">
+                      <div className="flex items-start justify-between">
+                        <h3 className="text-lg font-medium">{material.judul}</h3>
+                        <Badge variant="secondary">{material.tipe}</Badge>
+                      </div>
+                      <div className="flex items-center text-sm text-muted-foreground">
+                        <FileText className="h-4 w-4 mr-2" />
+                        {new Date(material.created_at).toLocaleDateString('id-ID', {
+                          day: 'numeric',
+                          month: 'long',
+                          year: 'numeric'
+                        })}
+                      </div>
+                      <div className="flex gap-2">
+                        <Button asChild size="sm" className="flex-1">
+                          <a href={material.link} target="_blank" rel="noopener noreferrer">
+                            <BookOpen className="h-4 w-4 mr-2" />
+                            Lihat
+                          </a>
+                        </Button>
+                        <Button asChild variant="outline" size="sm" className="flex-1">
+                          <a href={material.file_url} download>
+                            <FileText className="h-4 w-4 mr-2" />
+                            Download
+                          </a>
+                        </Button>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          ) : (
+            <div className="text-center text-muted-foreground">
+              Belum ada materi {tipe.toLowerCase()} yang tersedia
+            </div>
+          )}
+        </div>
+      ) : (
+        // Fallback: Show overview cards
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <Card className="group hover:shadow-lg transition-all duration-200">
+            <CardContent className="pt-6">
+              <Link 
+                to={`/semester/${semester}/${encodeURIComponent(matkul)}/Teori`}
+                className="block text-center"
+              >
+                <BookOpen className="h-12 w-12 mx-auto text-blue-500 mb-4 group-hover:scale-110 transition-transform" />
+                <h3 className="text-lg font-medium mb-2">Materi Teori</h3>
+                <p className="text-sm text-muted-foreground mb-4">
+                  Akses semua materi teori untuk mata kuliah ini
+                </p>
+                <Badge variant="secondary">
+                  {stats.teoriCount} materi tersedia
+                </Badge>
+              </Link>
+            </CardContent>
+          </Card>
 
-        <Card className="group hover:shadow-lg transition-all duration-200">
-          <CardContent className="pt-6">
-            <Link 
-              to={`/semester/${semester}/${encodeURIComponent(matkul)}/Praktikum`}
-              className="block text-center"
-            >
-              <Laptop className="h-12 w-12 mx-auto text-green-500 mb-4 group-hover:scale-110 transition-transform" />
-              <h3 className="text-lg font-medium mb-2">Materi Praktikum</h3>
-              <p className="text-sm text-muted-foreground mb-4">
-                Akses semua materi praktikum untuk mata kuliah ini
-              </p>
-              <Badge variant="outline">
-                {stats.praktikumCount} materi tersedia
-              </Badge>
-            </Link>
-          </CardContent>
-        </Card>
-      </div>
+          <Card className="group hover:shadow-lg transition-all duration-200">
+            <CardContent className="pt-6">
+              <Link 
+                to={`/semester/${semester}/${encodeURIComponent(matkul)}/Praktikum`}
+                className="block text-center"
+              >
+                <Laptop className="h-12 w-12 mx-auto text-green-500 mb-4 group-hover:scale-110 transition-transform" />
+                <h3 className="text-lg font-medium mb-2">Materi Praktikum</h3>
+                <p className="text-sm text-muted-foreground mb-4">
+                  Akses semua materi praktikum untuk mata kuliah ini
+                </p>
+                <Badge variant="outline">
+                  {stats.praktikumCount} materi tersedia
+                </Badge>
+              </Link>
+            </CardContent>
+          </Card>
+        </div>
+      )}
     </div>
   )
 }
