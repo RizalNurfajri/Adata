@@ -14,7 +14,7 @@ interface MatkulStats {
 }
 
 export default function MatkulDetail() {
-  const { id: semesterParam, matkul: matkulParam, tipe } = useParams()
+  const { id: semesterParam, matkul: matkulParam } = useParams()
   const semester = parseInt(semesterParam || '1')
   const matkul = decodeURIComponent(matkulParam || '')
   const [stats, setStats] = useState<MatkulStats>({
@@ -23,31 +23,10 @@ export default function MatkulDetail() {
     totalMaterials: 0
   })
   const [loading, setLoading] = useState(true)
-  const [materials, setMaterials] = useState<any[]>([])
 
   useEffect(() => {
     loadStats()
-    if (tipe) {
-      loadMaterials()
-    }
-  }, [semester, matkul, tipe])
-
-  const loadMaterials = async () => {
-    try {
-      const { data, error } = await supabase
-        .from('materials')
-        .select('*')
-        .eq('semester', semester)
-        .eq('matkul', matkul)
-        .eq('tipe', tipe)
-        .order('created_at', { ascending: false })
-
-      if (error) throw error
-      setMaterials(data || [])
-    } catch (error) {
-      console.error('Error loading materials:', error)
-    }
-  }
+  }, [semester, matkul])
 
   const loadStats = async () => {
     try {
@@ -95,77 +74,42 @@ export default function MatkulDetail() {
       </div>
 
       {/* Tab Switcher */}
-      <TabSwitcher semester={semester.toString()} matkul={matkul} currentTipe={tipe || 'Teori'} />
+      <TabSwitcher semester={semester.toString()} matkul={matkul} />
 
-      {/* Content based on tipe */}
-      {!tipe ? (
-        // Default to show Teori materials when no tipe specified
-        <div className="space-y-6">
-          <div className="text-center text-muted-foreground mb-4">
-            <p>Materi Teori - {matkul}</p>
-          </div>
-          {loading ? (
-            <div className="text-center text-muted-foreground">Memuat...</div>
-          ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {/* Show Teori materials by default */}
-              {/* This will be handled by the materials display logic */}
+      {/* Overview Content */}
+      <div className="space-y-6">
+        <Card>
+          <CardContent className="pt-6">
+            <div className="text-center">
+              <BookOpen className="h-12 w-12 mx-auto text-primary mb-4" />
+              <h3 className="text-xl font-medium mb-2">Overview Mata Kuliah</h3>
+              <p className="text-muted-foreground mb-6">
+                Ringkasan materi yang tersedia untuk {matkul}
+              </p>
+              
+              {loading ? (
+                <div className="text-muted-foreground">Memuat...</div>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 max-w-md mx-auto">
+                  <div className="text-center">
+                    <div className="text-2xl font-bold text-primary">{stats.totalMaterials}</div>
+                    <div className="text-sm text-muted-foreground">Total Materi</div>
+                  </div>
+                  <div className="text-center">
+                    <div className="text-2xl font-bold text-blue-500">{stats.teoriCount}</div>
+                    <div className="text-sm text-muted-foreground">Materi Teori</div>
+                  </div>
+                  <div className="text-center">
+                    <div className="text-2xl font-bold text-green-500">{stats.praktikumCount}</div>
+                    <div className="text-sm text-muted-foreground">Materi Praktikum</div>
+                  </div>
+                </div>
+              )}
             </div>
-          )}
-        </div>
-      ) : tipe === 'Teori' || tipe === 'Praktikum' ? (
-        // Show materials for selected tipe
-        <div className="space-y-6">
-          <div className="text-center text-muted-foreground mb-4">
-            <p>Materi {tipe} - {matkul}</p>
-          </div>
-          {loading ? (
-            <div className="text-center text-muted-foreground">Memuat...</div>
-          ) : materials.length > 0 ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {materials.map((material) => (
-                <Card key={material.id} className="group hover:shadow-lg transition-all duration-200">
-                  <CardContent className="pt-6">
-                    <div className="space-y-4">
-                      <div className="flex items-start justify-between">
-                        <h3 className="text-lg font-medium">{material.judul}</h3>
-                        <Badge variant="secondary">{material.tipe}</Badge>
-                      </div>
-                      <div className="flex items-center text-sm text-muted-foreground">
-                        <FileText className="h-4 w-4 mr-2" />
-                        {new Date(material.created_at).toLocaleDateString('id-ID', {
-                          day: 'numeric',
-                          month: 'long',
-                          year: 'numeric'
-                        })}
-                      </div>
-                      <div className="flex gap-2">
-                        <Button asChild size="sm" className="flex-1">
-                          <a href={material.link} target="_blank" rel="noopener noreferrer">
-                            <BookOpen className="h-4 w-4 mr-2" />
-                            Lihat
-                          </a>
-                        </Button>
-                        <Button asChild variant="outline" size="sm" className="flex-1">
-                          <a href={material.file_url} download>
-                            <FileText className="h-4 w-4 mr-2" />
-                            Download
-                          </a>
-                        </Button>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
-          ) : (
-            <div className="text-center text-muted-foreground">
-              Belum ada materi {tipe.toLowerCase()} yang tersedia
-            </div>
-          )}
-        </div>
-      ) : (
-        // Fallback: Show overview cards
+          </CardContent>
+        </Card>
+
+        {/* Quick Access */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <Card className="group hover:shadow-lg transition-all duration-200">
             <CardContent className="pt-6">
@@ -203,7 +147,7 @@ export default function MatkulDetail() {
             </CardContent>
           </Card>
         </div>
-      )}
+      </div>
     </div>
   )
 }
