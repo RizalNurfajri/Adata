@@ -282,13 +282,7 @@ export default memo(function MaterialCard({ material, onDeleted }: MaterialCardP
       <CardHeader className="pb-3">
         <div className="flex justify-between items-start">
           <div className="flex-1 min-w-0"> {/* min-w-0 prevents text overflow */}
-            {/* 🔥 Ubah truncate jadi line-clamp-2 + tooltip */}
-            <CardTitle 
-              className="text-lg mb-2 line-clamp-2"
-              title={material.judul}
-            >
-              {material.judul}
-            </CardTitle>
+            <CardTitle className="text-lg mb-2 truncate">{material.judul}</CardTitle>
             <div className="flex items-center space-x-2 text-sm text-muted-foreground">
               <Calendar className="h-4 w-4 flex-shrink-0" />
               <span className="truncate">{formatDate(material.created_at)}</span>
