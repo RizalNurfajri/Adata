@@ -40,8 +40,17 @@ export default function Layout({ children }: { children: React.ReactNode }) {
     return () => window.removeEventListener('scroll', handleScroll)
   }, [])
 
-  // Function untuk scroll ke atas
+  // Function untuk scroll ke atas dengan animasi feedback
   const scrollToTop = () => {
+    // Trigger visual feedback
+    const button = document.querySelector('[data-back-to-top]')
+    if (button) {
+      button.classList.add('animate-pulse')
+      setTimeout(() => {
+        button.classList.remove('animate-pulse')
+      }, 300)
+    }
+    
     window.scrollTo({
       top: 0,
       behavior: 'smooth'
@@ -266,19 +275,38 @@ export default function Layout({ children }: { children: React.ReactNode }) {
       </div>
 
       {/* Back to Top Button */}
-      {showBackToTop && (
+      <div
+        className={`fixed bottom-6 right-6 z-50 transition-all duration-500 ease-out ${
+          showBackToTop 
+            ? 'opacity-100 scale-100 translate-y-0' 
+            : 'opacity-0 scale-75 translate-y-8 pointer-events-none'
+        }`}
+      >
         <Button
+          data-back-to-top
           onClick={scrollToTop}
-          className={`fixed bottom-6 right-6 z-50 w-12 h-12 rounded-full shadow-lg transition-all duration-300 hover:scale-110 bg-primary hover:bg-primary/90 ${
-            showBackToTop 
-              ? 'opacity-100 translate-y-0' 
-              : 'opacity-0 translate-y-2 pointer-events-none'
-          }`}
+          className="relative w-14 h-14 rounded-full shadow-2xl transition-all duration-300 ease-out
+                     bg-primary hover:bg-primary/90 
+                     hover:scale-110 hover:shadow-xl hover:-translate-y-1
+                     active:scale-95 active:translate-y-0
+                     group overflow-hidden"
           size="sm"
         >
-          <ArrowUp className="h-5 w-5" />
+          {/* Background animation effect */}
+          <div className="absolute inset-0 bg-gradient-to-r from-primary/20 via-primary-foreground/10 to-primary/20 
+                          translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-700 ease-out" />
+          
+          {/* Arrow icon with bounce animation */}
+          <ArrowUp className="h-6 w-6 relative z-10 transition-all duration-300 
+                            group-hover:scale-110 group-hover:-translate-y-0.5
+                            group-active:scale-90" />
+          
+          {/* Ripple effect on hover */}
+          <div className="absolute inset-0 rounded-full bg-primary-foreground/20 scale-0 
+                          group-hover:scale-100 group-hover:opacity-0 
+                          transition-all duration-500 ease-out opacity-100" />
         </Button>
-      )}
+      </div>
 
       {/* Logout Confirmation Modal */}
       {showLogoutConfirmation && (
