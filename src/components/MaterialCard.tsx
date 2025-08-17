@@ -282,8 +282,28 @@ export default memo(function MaterialCard({ material, onDeleted }: MaterialCardP
       <CardHeader className="pb-3">
         <div className="flex justify-between items-start">
           <div className="flex-1 min-w-0 overflow-hidden">
-            <div className="group">
-              <CardTitle className="text-lg mb-2 truncate group-hover:animate-marquee whitespace-nowrap">
+            <div 
+              className="group cursor-pointer"
+              onMouseEnter={(e) => {
+                const title = e.currentTarget.querySelector('.marquee-text') as HTMLElement
+                if (title && title.scrollWidth > title.clientWidth) {
+                  title.style.animation = `marquee 3s linear infinite`
+                }
+              }}
+              onMouseLeave={(e) => {
+                const title = e.currentTarget.querySelector('.marquee-text') as HTMLElement
+                if (title) {
+                  title.style.animation = 'none'
+                }
+              }}
+            >
+              <CardTitle 
+                className="text-lg mb-2 truncate whitespace-nowrap marquee-text" 
+                style={{
+                  display: 'inline-block',
+                  paddingRight: '2rem'
+                }}
+              >
                 {material.judul}
               </CardTitle>
             </div>
@@ -299,24 +319,16 @@ export default memo(function MaterialCard({ material, onDeleted }: MaterialCardP
             {material.tipe}
           </Badge>
         </div>
+      </CardHeader>
 
-        <style jsx>{`
+      <style dangerouslySetInnerHTML={{
+        __html: `
           @keyframes marquee {
             0% { transform: translateX(0%) }
             100% { transform: translateX(-100%) }
           }
-          
-          .animate-marquee {
-            animation: marquee 3s linear infinite;
-            display: inline-block;
-            padding-right: 2rem;
-          }
-          
-          .group:not(:hover) .animate-marquee {
-            animation: none;
-          }
-        `}</style>
-      </CardHeader>
+        `
+      }} />
       <CardContent>
         {material.deskripsi && (
           <p className="text-sm text-muted-foreground mb-4 line-clamp-3">
