@@ -280,9 +280,13 @@ export default memo(function MaterialCard({ material, onDeleted }: MaterialCardP
   return (
     <Card className="transition-all duration-200 hover:shadow-md will-change-transform">
       <CardHeader className="pb-3">
-        <div className="flex flex-col space-y-3 sm:flex-row sm:justify-between sm:items-start sm:space-y-0">
-          <div className="flex-1">
-            <CardTitle className="text-lg mb-2 leading-6 break-words">{material.judul}</CardTitle>
+        <div className="flex justify-between items-start">
+          <div className="flex-1 min-w-0 overflow-hidden">
+            <div className="group">
+              <CardTitle className="text-lg mb-2 truncate group-hover:animate-marquee whitespace-nowrap">
+                {material.judul}
+              </CardTitle>
+            </div>
             <div className="flex items-center space-x-2 text-sm text-muted-foreground">
               <Calendar className="h-4 w-4 flex-shrink-0" />
               <span>{formatDate(material.created_at)}</span>
@@ -290,11 +294,28 @@ export default memo(function MaterialCard({ material, onDeleted }: MaterialCardP
           </div>
           <Badge 
             variant={material.tipe === 'Teori' ? 'default' : 'secondary'}
-            className="self-start sm:ml-2 flex-shrink-0"
+            className="ml-2 flex-shrink-0"
           >
             {material.tipe}
           </Badge>
         </div>
+
+        <style jsx>{`
+          @keyframes marquee {
+            0% { transform: translateX(0%) }
+            100% { transform: translateX(-100%) }
+          }
+          
+          .animate-marquee {
+            animation: marquee 3s linear infinite;
+            display: inline-block;
+            padding-right: 2rem;
+          }
+          
+          .group:not(:hover) .animate-marquee {
+            animation: none;
+          }
+        `}</style>
       </CardHeader>
       <CardContent>
         {material.deskripsi && (
