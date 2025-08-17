@@ -281,35 +281,11 @@ export default memo(function MaterialCard({ material, onDeleted }: MaterialCardP
     <Card className="transition-all duration-200 hover:shadow-md will-change-transform">
       <CardHeader className="pb-3">
         <div className="flex justify-between items-start">
-          <div className="flex-1 min-w-0 overflow-hidden">
-            <div 
-              className="group cursor-pointer"
-              onMouseEnter={(e) => {
-                const title = e.currentTarget.querySelector('.marquee-text') as HTMLElement
-                if (title && title.scrollWidth > title.clientWidth) {
-                  title.style.animation = `marquee 3s linear infinite`
-                }
-              }}
-              onMouseLeave={(e) => {
-                const title = e.currentTarget.querySelector('.marquee-text') as HTMLElement
-                if (title) {
-                  title.style.animation = 'none'
-                }
-              }}
-            >
-              <CardTitle 
-                className="text-lg mb-2 truncate whitespace-nowrap marquee-text" 
-                style={{
-                  display: 'inline-block',
-                  paddingRight: '2rem'
-                }}
-              >
-                {material.judul}
-              </CardTitle>
-            </div>
+          <div className="flex-1 min-w-0"> {/* min-w-0 prevents text overflow */}
+            <CardTitle className="text-lg mb-2 truncate">{material.judul}</CardTitle>
             <div className="flex items-center space-x-2 text-sm text-muted-foreground">
               <Calendar className="h-4 w-4 flex-shrink-0" />
-              <span>{formatDate(material.created_at)}</span>
+              <span className="truncate">{formatDate(material.created_at)}</span>
             </div>
           </div>
           <Badge 
@@ -320,15 +296,6 @@ export default memo(function MaterialCard({ material, onDeleted }: MaterialCardP
           </Badge>
         </div>
       </CardHeader>
-
-      <style dangerouslySetInnerHTML={{
-        __html: `
-          @keyframes marquee {
-            0% { transform: translateX(0%) }
-            100% { transform: translateX(-100%) }
-          }
-        `
-      }} />
       <CardContent>
         {material.deskripsi && (
           <p className="text-sm text-muted-foreground mb-4 line-clamp-3">
