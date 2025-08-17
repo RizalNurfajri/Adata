@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '@/hooks/useAuth'
 import { Button } from '@/components/ui/button'
@@ -15,7 +15,8 @@ import {
   UserCircle,
   ChevronDown,
   ChevronUp,
-  AlertTriangle
+  AlertTriangle,
+  ArrowUp
 } from 'lucide-react'
 import ThemeToggle from '@/components/ThemeToggle'
 
@@ -26,6 +27,26 @@ export default function Layout({ children }: { children: React.ReactNode }) {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false)
   const [isProfileDropdownOpen, setIsProfileDropdownOpen] = useState(false)
   const [showLogoutConfirmation, setShowLogoutConfirmation] = useState(false)
+  const [showBackToTop, setShowBackToTop] = useState(false)
+
+  // Handle scroll untuk back to top button
+  useEffect(() => {
+    const handleScroll = () => {
+      const scrollTop = window.pageYOffset || document.documentElement.scrollTop
+      setShowBackToTop(scrollTop > 300) // Show button after scrolling 300px
+    }
+
+    window.addEventListener('scroll', handleScroll)
+    return () => window.removeEventListener('scroll', handleScroll)
+  }, [])
+
+  // Function untuk scroll ke atas
+  const scrollToTop = () => {
+    window.scrollTo({
+      top: 0,
+      behavior: 'smooth'
+    })
+  }
 
   const handleSignOut = async () => {
     try {
@@ -243,6 +264,21 @@ export default function Layout({ children }: { children: React.ReactNode }) {
           </div>
         )}
       </div>
+
+      {/* Back to Top Button */}
+      {showBackToTop && (
+        <Button
+          onClick={scrollToTop}
+          className={`fixed bottom-6 right-6 z-50 w-12 h-12 rounded-full shadow-lg transition-all duration-300 hover:scale-110 bg-primary hover:bg-primary/90 ${
+            showBackToTop 
+              ? 'opacity-100 translate-y-0' 
+              : 'opacity-0 translate-y-2 pointer-events-none'
+          }`}
+          size="sm"
+        >
+          <ArrowUp className="h-5 w-5" />
+        </Button>
+      )}
 
       {/* Logout Confirmation Modal */}
       {showLogoutConfirmation && (
