@@ -311,72 +311,87 @@ export default memo(function MaterialCard({ material, onDeleted }: MaterialCardP
           </p>
         )}
 
-        <div className="flex flex-wrap gap-2">
-          {material.link && (
-            <>
-              <Button asChild variant="outline" size="sm">
-                <a
-                  href={getViewerUrl(material.link)}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex items-center"
-                  // Add prefetch hint on hover
-                  onMouseEnter={() => {
-                    const prefetchLink = document.createElement('link')
-                    prefetchLink.rel = 'prefetch'
-                    prefetchLink.href = getViewerUrl(material.link!)
-                    document.head.appendChild(prefetchLink)
-                  }}
-                >
-                  <ExternalLink className="h-4 w-4 mr-1" />
-                  Lihat
-                </a>
-              </Button>
-
-              <Button 
-                variant="outline" 
-                size="sm"
-                onClick={() => handleDownload(material.link!, getFilename(material.link!, material.judul))}
-                disabled={isDownloading}
-                className="flex items-center"
+        <div className="grid grid-cols-4 gap-2">
+          {/* Lihat Button - Always in first position */}
+          {material.link ? (
+            <Button asChild variant="outline" size="sm">
+              <a
+                href={getViewerUrl(material.link)}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center justify-center"
+                // Add prefetch hint on hover
+                onMouseEnter={() => {
+                  const prefetchLink = document.createElement('link')
+                  prefetchLink.rel = 'prefetch'
+                  prefetchLink.href = getViewerUrl(material.link!)
+                  document.head.appendChild(prefetchLink)
+                }}
               >
-                {isDownloading ? (
-                  <Loader2 className="h-4 w-4 mr-1 animate-spin" />
-                ) : (
-                  <Download className="h-4 w-4 mr-1" />
-                )}
-                {isDownloading ? 'Downloading...' : 'Download'}
-              </Button>
-            </>
+                <ExternalLink className="h-4 w-4 mr-1" />
+                Lihat
+              </a>
+            </Button>
+          ) : (
+            <div></div> // Empty placeholder
           )}
 
-          {profile?.role === 'admin' && (
-            <>
-              <Button asChild variant="outline" size="sm">
-                <Link 
-                  to={`/edit/${material.id}`}
-                  // Prefetch the edit page
-                  onMouseEnter={() => {
-                    const prefetchLink = document.createElement('link')
-                    prefetchLink.rel = 'prefetch'
-                    prefetchLink.href = `/edit/${material.id}`
-                    document.head.appendChild(prefetchLink)
-                  }}
-                >
-                  <Edit className="h-4 w-4 mr-1" />
-                  Edit
-                </Link>
-              </Button>
-              <Button
-                variant="destructive"
-                size="sm"
-                onClick={handleDelete}
-                disabled={isDeleting || isDownloading}
+          {/* Download Button - Always in second position */}
+          {material.link ? (
+            <Button 
+              variant="outline" 
+              size="sm"
+              onClick={() => handleDownload(material.link!, getFilename(material.link!, material.judul))}
+              disabled={isDownloading}
+              className="flex items-center justify-center"
+            >
+              {isDownloading ? (
+                <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+              ) : (
+                <Download className="h-4 w-4 mr-1" />
+              )}
+              {isDownloading ? 'Downloading...' : 'Download'}
+            </Button>
+          ) : (
+            <div></div> // Empty placeholder
+          )}
+
+          {/* Edit Button - Always in third position */}
+          {profile?.role === 'admin' ? (
+            <Button asChild variant="outline" size="sm">
+              <Link 
+                to={`/edit/${material.id}`}
+                className="flex items-center justify-center"
+                // Prefetch the edit page
+                onMouseEnter={() => {
+                  const prefetchLink = document.createElement('link')
+                  prefetchLink.rel = 'prefetch'
+                  prefetchLink.href = `/edit/${material.id}`
+                  document.head.appendChild(prefetchLink)
+                }}
               >
-                <Trash2 className="h-4 w-4 mr-1" />
-                {isDeleting ? 'Menghapus...' : 'Hapus'}
-              </Button>
-            </>
+                <Edit className="h-4 w-4 mr-1" />
+                Edit
+              </Link>
+            </Button>
+          ) : (
+            <div></div> // Empty placeholder
+          )}
+
+          {/* Delete Button - Always in fourth position */}
+          {profile?.role === 'admin' ? (
+            <Button
+              variant="destructive"
+              size="sm"
+              onClick={handleDelete}
+              disabled={isDeleting || isDownloading}
+              className="flex items-center justify-center"
+            >
+              <Trash2 className="h-4 w-4 mr-1" />
+              {isDeleting ? 'Menghapus...' : 'Hapus'}
+            </Button>
+          ) : (
+            <div></div> // Empty placeholder
           )}
         </div>
       </CardContent>
