@@ -280,17 +280,17 @@ export default memo(function MaterialCard({ material, onDeleted }: MaterialCardP
   return (
     <Card className="transition-all duration-200 hover:shadow-md will-change-transform">
       <CardHeader className="pb-3">
-        <div className="flex justify-between items-start">
-          <div className="flex-1 min-w-0"> {/* min-w-0 prevents text overflow */}
-            <CardTitle className="text-lg mb-2 truncate">{material.judul}</CardTitle>
+        <div className="flex flex-col space-y-3 sm:flex-row sm:justify-between sm:items-start sm:space-y-0">
+          <div className="flex-1">
+            <CardTitle className="text-lg mb-2 leading-6 break-words">{material.judul}</CardTitle>
             <div className="flex items-center space-x-2 text-sm text-muted-foreground">
               <Calendar className="h-4 w-4 flex-shrink-0" />
-              <span className="truncate">{formatDate(material.created_at)}</span>
+              <span>{formatDate(material.created_at)}</span>
             </div>
           </div>
           <Badge 
             variant={material.tipe === 'Teori' ? 'default' : 'secondary'}
-            className="ml-2 flex-shrink-0"
+            className="self-start sm:ml-2 flex-shrink-0"
           >
             {material.tipe}
           </Badge>
