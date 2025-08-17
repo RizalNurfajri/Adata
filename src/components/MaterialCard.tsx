@@ -278,7 +278,7 @@ export default memo(function MaterialCard({ material, onDeleted }: MaterialCardP
   }, [])
 
   return (
-    <Card className="transition-all duration-200 hover:shadow-md will-change-transform">
+    <Card className="transition-all duration-200 hover:shadow-md will-change-transform flex flex-col h-full">
       <CardHeader className="pb-3">
         <div className="flex justify-between items-start">
           <div className="flex-1 min-w-0">
@@ -301,17 +301,21 @@ export default memo(function MaterialCard({ material, onDeleted }: MaterialCardP
           </Badge>
         </div>
       </CardHeader>
-      <CardContent>
-        {material.deskripsi && (
-          <p 
-            className="text-sm text-muted-foreground mb-4 line-clamp-2 cursor-help"
-            title={material.deskripsi}
-          >
-            {material.deskripsi}
-          </p>
-        )}
+      
+      <CardContent className="flex flex-col flex-1">
+        <div className="flex-1">
+          {material.deskripsi && (
+            <p 
+              className="text-sm text-muted-foreground mb-4 line-clamp-2 cursor-help"
+              title={material.deskripsi}
+            >
+              {material.deskripsi}
+            </p>
+          )}
+        </div>
 
-        <div className="flex flex-wrap gap-2">
+        {/* Buttons positioned at the bottom */}
+        <div className="flex flex-wrap gap-2 mt-auto pt-4">
           {material.link && (
             <>
               <Button asChild variant="outline" size="sm">
