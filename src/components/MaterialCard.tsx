@@ -281,13 +281,8 @@ export default memo(function MaterialCard({ material, onDeleted }: MaterialCardP
     <Card className="transition-all duration-200 hover:shadow-md will-change-transform">
       <CardHeader className="pb-3">
         <div className="flex justify-between items-start">
-          <div className="flex-1 min-w-0">
-            <CardTitle 
-              className="text-lg mb-2 leading-tight line-clamp-2 cursor-help" 
-              title={material.judul}
-            >
-              {material.judul}
-            </CardTitle>
+          <div className="flex-1 min-w-0"> {/* min-w-0 prevents text overflow */}
+            <CardTitle className="text-lg mb-2 truncate">{material.judul}</CardTitle>
             <div className="flex items-center space-x-2 text-sm text-muted-foreground">
               <Calendar className="h-4 w-4 flex-shrink-0" />
               <span className="truncate">{formatDate(material.created_at)}</span>
@@ -303,10 +298,7 @@ export default memo(function MaterialCard({ material, onDeleted }: MaterialCardP
       </CardHeader>
       <CardContent>
         {material.deskripsi && (
-          <p 
-            className="text-sm text-muted-foreground mb-4 line-clamp-2 cursor-help"
-            title={material.deskripsi}
-          >
+          <p className="text-sm text-muted-foreground mb-4 line-clamp-3">
             {material.deskripsi}
           </p>
         )}
