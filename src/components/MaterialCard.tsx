@@ -278,11 +278,19 @@ export default memo(function MaterialCard({ material, onDeleted }: MaterialCardP
   }, [])
 
   return (
-    <Card className="transition-all duration-200 hover:shadow-md will-change-transform">
-      <CardHeader className="pb-3">
+    <Card className="transition-all duration-200 hover:shadow-md will-change-transform h-[280px] flex flex-col">
+      <CardHeader className="pb-3 flex-shrink-0">
         <div className="flex justify-between items-start">
           <div className="flex-1 min-w-0"> {/* min-w-0 prevents text overflow */}
-            <CardTitle className="text-lg mb-2 truncate">{material.judul}</CardTitle>
+            {/* Fixed height title with tooltip */}
+            <div className="h-14 flex items-start mb-2"> {/* Fixed height container */}
+              <CardTitle 
+                className="text-lg leading-tight line-clamp-2 cursor-help" 
+                title={material.judul} // Native tooltip
+              >
+                {material.judul}
+              </CardTitle>
+            </div>
             <div className="flex items-center space-x-2 text-sm text-muted-foreground">
               <Calendar className="h-4 w-4 flex-shrink-0" />
               <span className="truncate">{formatDate(material.created_at)}</span>
@@ -296,14 +304,21 @@ export default memo(function MaterialCard({ material, onDeleted }: MaterialCardP
           </Badge>
         </div>
       </CardHeader>
-      <CardContent>
-        {material.deskripsi && (
-          <p className="text-sm text-muted-foreground mb-4 line-clamp-3">
-            {material.deskripsi}
-          </p>
-        )}
+      <CardContent className="flex-1 flex flex-col">
+        {/* Fixed height description */}
+        <div className="h-16 mb-4 flex-shrink-0">
+          {material.deskripsi && (
+            <p 
+              className="text-sm text-muted-foreground line-clamp-3 cursor-help"
+              title={material.deskripsi} // Native tooltip for full description
+            >
+              {material.deskripsi}
+            </p>
+          )}
+        </div>
 
-        <div className="flex flex-wrap gap-2">
+        {/* Buttons section - pushes to bottom */}
+        <div className="flex flex-wrap gap-2 mt-auto">
           {material.link && (
             <>
               <Button asChild variant="outline" size="sm">
