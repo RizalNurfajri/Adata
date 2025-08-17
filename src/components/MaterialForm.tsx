@@ -212,28 +212,48 @@ export default function MaterialForm({ isEdit = false, materialId }: MaterialFor
   }
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-6 bg-background p-6 rounded-lg border max-w-xl mx-auto">
-      <h2 className="text-xl font-semibold">{isEdit ? 'Edit Materi' : 'Tambah Materi Baru'}</h2>
+    <form onSubmit={handleSubmit} className="space-y-6 bg-background p-6 rounded-lg border w-full max-w-4xl mx-auto">
+      <h2 className="text-xl font-semibold break-words">{isEdit ? 'Edit Materi' : 'Tambah Materi Baru'}</h2>
 
       <div>
         <Label>Judul Materi</Label>
-        <Input name="title" value={formData.title} onChange={handleChange} placeholder="Masukkan judul materi" required />
+        <Input 
+          name="title" 
+          value={formData.title} 
+          onChange={handleChange} 
+          placeholder="Masukkan judul materi" 
+          required 
+          className="w-full"
+        />
       </div>
 
       <div>
         <Label>Deskripsi</Label>
-        <Textarea name="description" value={formData.description} onChange={handleChange} placeholder="Masukkan deskripsi materi (opsional)" />
+        <Textarea 
+          name="description" 
+          value={formData.description} 
+          onChange={handleChange} 
+          placeholder="Masukkan deskripsi materi (opsional)"
+          className="w-full min-h-[80px]"
+        />
       </div>
 
-      <div className="flex gap-4">
-        <div className="flex-1">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="md:col-span-2">
           <Label>Mata Kuliah</Label>
-          <Input name="subject" value={formData.subject} onChange={handleChange} placeholder="Contoh: Jaringan Komputer" required />
+          <Input 
+            name="subject" 
+            value={formData.subject} 
+            onChange={handleChange} 
+            placeholder="Contoh: Jaringan Komputer" 
+            required 
+            className="w-full"
+          />
         </div>
-        <div className="w-40">
+        <div>
           <Label>Semester</Label>
           <Select value={formData.semester} onValueChange={(value) => handleSelect('semester', value)}>
-            <SelectTrigger>
+            <SelectTrigger className="w-full">
               <SelectValue placeholder="Pilih semester" />
             </SelectTrigger>
             <SelectContent>
@@ -250,7 +270,7 @@ export default function MaterialForm({ isEdit = false, materialId }: MaterialFor
       <div>
         <Label>Tipe</Label>
         <Select value={formData.type} onValueChange={(value) => handleSelect('type', value)}>
-          <SelectTrigger>
+          <SelectTrigger className="w-full max-w-xs">
             <SelectValue placeholder="Pilih tipe" />
           </SelectTrigger>
           <SelectContent>
@@ -272,19 +292,25 @@ export default function MaterialForm({ isEdit = false, materialId }: MaterialFor
         <Input 
           type="file" 
           accept=".pdf,.pka,.doc,.docx,.ppt,.pptx" 
-          onChange={handleFileChange} 
+          onChange={handleFileChange}
+          className="w-full"
         />
         <p className="text-xs text-muted-foreground mt-1">
           Format yang didukung: PDF, PKA, DOC, DOCX, PPT, PPTX
         </p>
       </div>
 
-      <div className="flex gap-4 justify-end">
-        <Button type="submit" disabled={loading}>
+      <div className="flex flex-col sm:flex-row gap-4 justify-end">
+        <Button type="submit" disabled={loading} className="order-2 sm:order-1">
           {loading && <Loader2 className="animate-spin mr-2 h-4 w-4" />}
           {isEdit ? 'Simpan Perubahan' : 'Tambah Materi'}
         </Button>
-        <Button type="button" variant="outline" onClick={() => navigate('/admin/dashboard')}>
+        <Button 
+          type="button" 
+          variant="outline" 
+          onClick={() => navigate('/admin/dashboard')}
+          className="order-1 sm:order-2"
+        >
           Batal
         </Button>
       </div>
