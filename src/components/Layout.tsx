@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '@/hooks/useAuth'
 import { Button } from '@/components/ui/button'
@@ -28,31 +28,77 @@ export default function Layout({ children }: { children: React.ReactNode }) {
   const [isProfileDropdownOpen, setIsProfileDropdownOpen] = useState(false)
   const [showLogoutConfirmation, setShowLogoutConfirmation] = useState(false)
   const [showBackToTop, setShowBackToTop] = useState(false)
+  
+  // Loading state untuk Lottie
   const [isLoading, setIsLoading] = useState(true)
-  const [animationLoaded, setAnimationLoaded] = useState(false)
+  const lottieContainer = useRef<HTMLDivElement>(null)
+  const animationInstance = useRef<any>(null)
 
-  // Loading animation effect
+  // Initialize Lottie Animation
   useEffect(() => {
-    const timer = setTimeout(() => {
-      setIsLoading(false)
-    }, 2500) // Show loading for 2.5 seconds
+    let lottieAnimation: any = null;
 
-    return () => clearTimeout(timer)
-  }, [])
+    const initLottie = async () => {
+      try {
+        // Load Lottie from CDN jika belum ada di window
+        if (!window.lottie) {
+          await new Promise((resolve, reject) => {
+            const script = document.createElement('script')
+            script.src = 'https://cdnjs.cloudflare.com/ajax/libs/lottie-web/5.12.2/lottie.min.js'
+            script.onload = resolve
+            script.onerror = reject
+            document.head.appendChild(script)
+          })
+        }
 
-  // Preload animation
-  useEffect(() => {
-    const iframe = document.createElement('iframe')
-    iframe.src = 'https://lottie.host/embed/5ba352dc-9619-4171-86ea-c433edb3e19f/LY2AOvb8Fo.json'
-    iframe.style.display = 'none'
-    iframe.onload = () => {
-      setAnimationLoaded(true)
+        if (lottieContainer.current && window.lottie) {
+          try {
+            // Coba load dari assets folder dulu
+            const response = await fetch('/animations/loading.json')
+            const animationData = await response.json()
+            
+            lottieAnimation = window.lottie.loadAnimation({
+              container: lottieContainer.current,
+              renderer: 'svg',
+              loop: true,
+              autoplay: true,
+              animationData: animationData
+            })
+          } catch (fetchError) {
+            console.log('Loading from public folder failed, trying alternative...')
+            // Fallback: coba dari path langsung
+            lottieAnimation = window.lottie.loadAnimation({
+              container: lottieContainer.current,
+              renderer: 'svg',
+              loop: true,
+              autoplay: true,
+              path: '/animations/loading.json'
+            })
+          }
+          
+          animationInstance.current = lottieAnimation
+        }
+
+        // Simulate minimum loading time (2 seconds) untuk UX yang lebih baik
+        setTimeout(() => {
+          setIsLoading(false)
+        }, 2000)
+
+      } catch (error) {
+        console.error('Error loading Lottie animation:', error)
+        // Hide loading screen after 1 second if Lottie fails
+        setTimeout(() => {
+          setIsLoading(false)
+        }, 1000)
+      }
     }
-    document.body.appendChild(iframe)
-    
+
+    initLottie()
+
+    // Cleanup function
     return () => {
-      if (document.body.contains(iframe)) {
-        document.body.removeChild(iframe)
+      if (animationInstance.current) {
+        animationInstance.current.destroy()
       }
     }
   }, [])
@@ -148,69 +194,47 @@ export default function Layout({ children }: { children: React.ReactNode }) {
     }
   ]
 
-  // Loading Screen Component
+  // Show loading screen saat masih loading
   if (isLoading) {
     return (
       <div className="fixed inset-0 z-[100] flex items-center justify-center bg-background">
-        <div className="flex flex-col items-center space-y-6">
-          {/* Lottie Animation Container */}
-          <div className="w-64 h-64 flex items-center justify-center relative">
-            {/* Fallback spinner while Lottie loads */}
-            {!animationLoaded && (
-              <div className="absolute inset-0 flex items-center justify-center">
-                <div className="w-16 h-16 border-4 border-primary/20 border-t-primary rounded-full animate-spin"></div>
-              </div>
-            )}
-            
-            {/* Lottie Animation */}
-            <iframe
-              src="https://lottie.host/embed/5ba352dc-9619-4171-86ea-c433edb3e19f/LY2AOvb8Fo.json"
-              className={`w-full h-full border-none transition-opacity duration-300 ${
-                animationLoaded ? 'opacity-100' : 'opacity-0'
-              }`}
-              title="Loading Animation"
-              onLoad={() => setAnimationLoaded(true)}
-            />
-          </div>
+        {/* Lottie Animation Container */}
+        <div className="flex flex-col items-center justify-center space-y-8">
+          <div 
+            ref={lottieContainer}
+            className="w-64 h-64 md:w-80 md:h-80"
+          />
           
-          {/* Loading Text with Animation */}
+          {/* Loading Text */}
           <div className="text-center space-y-2">
-            <h2 className="text-2xl font-bold text-foreground animate-pulse">
-              Adata
+            <h2 className="text-2xl md:text-3xl font-bold text-foreground">
+              Loading Adata
             </h2>
-            <div className="flex items-center space-x-1">
-              <span className="text-sm text-muted-foreground">Memuat</span>
-              <div className="flex space-x-1">
-                <div className="w-1 h-1 bg-primary rounded-full animate-bounce" style={{animationDelay: '0ms'}}></div>
-                <div className="w-1 h-1 bg-primary rounded-full animate-bounce" style={{animationDelay: '150ms'}}></div>
-                <div className="w-1 h-1 bg-primary rounded-full animate-bounce" style={{animationDelay: '300ms'}}></div>
-              </div>
-            </div>
+            <p className="text-muted-foreground text-sm md:text-base">
+              Menyiapkan pengalaman terbaik untuk Anda...
+            </p>
           </div>
-          
-          {/* Progress Bar */}
-          <div className="w-64 h-1 bg-muted rounded-full overflow-hidden">
-            <div className="h-full bg-primary rounded-full animate-pulse" 
-                 style={{
-                   animation: 'loading-progress 2.5s ease-out forwards',
-                 }}>
-            </div>
+
+          {/* Animated Progress Dots */}
+          <div className="flex space-x-2">
+            <div className="w-3 h-3 bg-primary rounded-full animate-bounce" 
+                 style={{ animationDelay: '0ms' }}></div>
+            <div className="w-3 h-3 bg-primary rounded-full animate-bounce" 
+                 style={{ animationDelay: '150ms' }}></div>
+            <div className="w-3 h-3 bg-primary rounded-full animate-bounce" 
+                 style={{ animationDelay: '300ms' }}></div>
           </div>
         </div>
-        
-        {/* Custom CSS for progress bar animation */}
-        <style dangerouslySetInnerHTML={{
-          __html: `
-            @keyframes loading-progress {
-              0% { width: 0%; }
-              20% { width: 15%; }
-              40% { width: 35%; }
-              60% { width: 60%; }
-              80% { width: 85%; }
-              100% { width: 100%; }
-            }
-          `
-        }} />
+
+        {/* Background Pattern (Optional) */}
+        <div className="absolute inset-0 opacity-5">
+          <div className="absolute inset-0" 
+               style={{
+                 backgroundImage: 'radial-gradient(circle at 1px 1px, currentColor 1px, transparent 0)',
+                 backgroundSize: '20px 20px'
+               }}>
+          </div>
+        </div>
       </div>
     )
   }
