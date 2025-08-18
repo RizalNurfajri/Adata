@@ -20,6 +20,92 @@ import {
 } from 'lucide-react'
 import ThemeToggle from '@/components/ThemeToggle'
 
+// Komponen Loading Screen dengan Lottie
+const LoadingScreen = ({ onComplete }: { onComplete: () => void }) => {
+  const [isLoaded, setIsLoaded] = useState(false)
+
+  useEffect(() => {
+    // Simulasi loading time minimum 2 detik
+    const timer = setTimeout(() => {
+      setIsLoaded(true)
+      // Delay sedikit untuk animasi fade out
+      setTimeout(onComplete, 500)
+    }, 2000)
+
+    return () => clearTimeout(timer)
+  }, [onComplete])
+
+  return (
+    <div className={`fixed inset-0 z-[100] flex flex-col items-center justify-center bg-gradient-to-br from-background via-background to-primary/5 transition-all duration-500 ${isLoaded ? 'opacity-0' : 'opacity-100'}`}>
+      {/* Background Pattern */}
+      <div className="absolute inset-0 opacity-10">
+        <div className="absolute top-1/4 left-1/4 w-64 h-64 bg-primary rounded-full blur-3xl animate-pulse" />
+        <div className="absolute bottom-1/4 right-1/4 w-48 h-48 bg-accent rounded-full blur-2xl animate-pulse delay-700" />
+      </div>
+
+      {/* Logo dan Animasi */}
+      <div className="relative z-10 text-center space-y-8">
+        {/* Logo */}
+        <div className="flex items-center justify-center space-x-3 animate-in fade-in-0 slide-in-from-top-4 duration-1000">
+          <img src="/logo.webp" alt="Adata" className="h-16 w-16 animate-bounce" />
+          <span className="text-4xl font-bold text-foreground">Adata</span>
+        </div>
+
+        {/* Lottie Animation Container */}
+        <div className="w-64 h-64 mx-auto animate-in fade-in-0 zoom-in-95 duration-1000 delay-300">
+          <iframe 
+            src="https://lottie.host/5ba352dc-9619-4171-86ea-c433edb3e19f/LY2AOvb8Fo.json"
+            style={{ width: '100%', height: '100%', border: 'none' }}
+            title="Loading Animation"
+          />
+        </div>
+
+        {/* Loading Text */}
+        <div className="space-y-3 animate-in fade-in-0 slide-in-from-bottom-4 duration-1000 delay-500">
+          <p className="text-lg font-medium text-foreground">
+            Mempersiapkan Dashboard Anda
+          </p>
+          
+          {/* Loading Dots */}
+          <div className="flex justify-center space-x-1">
+            <div className="w-2 h-2 bg-primary rounded-full animate-bounce" />
+            <div className="w-2 h-2 bg-primary rounded-full animate-bounce delay-100" />
+            <div className="w-2 h-2 bg-primary rounded-full animate-bounce delay-200" />
+          </div>
+
+          {/* Progress Bar */}
+          <div className="w-64 mx-auto bg-muted rounded-full h-1 overflow-hidden">
+            <div className="h-full bg-gradient-to-r from-primary to-accent animate-[loading_2s_ease-in-out]" />
+          </div>
+        </div>
+
+        {/* Welcome Message */}
+        <p className="text-sm text-muted-foreground animate-in fade-in-0 duration-1000 delay-1000">
+          Selamat datang di platform pembelajaran RKS 3 A
+        </p>
+      </div>
+
+      {/* Custom CSS untuk animasi progress bar */}
+      <style jsx>{`
+        @keyframes loading {
+          0% {
+            width: 0%;
+            opacity: 0.3;
+          }
+          50% {
+            width: 60%;
+            opacity: 1;
+          }
+          100% {
+            width: 100%;
+            opacity: 0.8;
+          }
+        }
+      `}</style>
+    </div>
+  )
+}
+
 export default function Layout({ children }: { children: React.ReactNode }) {
   const { user, profile, signOut } = useAuth()
   const location = useLocation()
@@ -28,6 +114,29 @@ export default function Layout({ children }: { children: React.ReactNode }) {
   const [isProfileDropdownOpen, setIsProfileDropdownOpen] = useState(false)
   const [showLogoutConfirmation, setShowLogoutConfirmation] = useState(false)
   const [showBackToTop, setShowBackToTop] = useState(false)
+  const [isInitialLoad, setIsInitialLoad] = useState(true)
+  const [showLoadingScreen, setShowLoadingScreen] = useState(true)
+
+  // Handle initial loading screen
+  useEffect(() => {
+    // Cek apakah ini adalah first visit
+    const hasVisited = sessionStorage.getItem('hasVisited')
+    
+    if (!hasVisited) {
+      // First visit, show loading screen
+      sessionStorage.setItem('hasVisited', 'true')
+      setShowLoadingScreen(true)
+    } else {
+      // Not first visit, skip loading
+      setShowLoadingScreen(false)
+      setIsInitialLoad(false)
+    }
+  }, [])
+
+  const handleLoadingComplete = () => {
+    setShowLoadingScreen(false)
+    setIsInitialLoad(false)
+  }
 
   // Handle scroll untuk back to top button
   useEffect(() => {
@@ -63,6 +172,8 @@ export default function Layout({ children }: { children: React.ReactNode }) {
       setIsSidebarOpen(false)
       setIsProfileDropdownOpen(false)
       setShowLogoutConfirmation(false)
+      // Reset loading screen untuk next visit
+      sessionStorage.removeItem('hasVisited')
       // Redirect ke halaman login setelah logout
       navigate('/login')
     } catch (error) {
@@ -120,20 +231,27 @@ export default function Layout({ children }: { children: React.ReactNode }) {
     }
   ]
 
+  // Show loading screen during initial load
+  if (showLoadingScreen) {
+    return <LoadingScreen onComplete={handleLoadingComplete} />
+  }
+
   return (
-    <div className="min-h-screen bg-background flex flex-col">
+    <div className={`min-h-screen bg-background flex flex-col transition-all duration-1000 ${
+      isInitialLoad ? 'opacity-0 scale-95' : 'opacity-100 scale-100'
+    }`}>
       {/* Top Navigation Bar */}
-      <nav className="border-b bg-card sticky top-0 z-50">
+      <nav className="border-b bg-card sticky top-0 z-50 animate-in slide-in-from-top-4 duration-700">
         <div className="px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
             {/* Logo */}
-            <Link to="/" className="flex items-center space-x-2">
-              <img src="/logo.webp" alt="Adata" className="h-6 w-6" />
+            <Link to="/" className="flex items-center space-x-2 animate-in fade-in-0 slide-in-from-left-4 duration-700 delay-200">
+              <img src="/logo.webp" alt="Adata" className="h-6 w-6 hover:scale-110 transition-transform duration-300" />
               <span className="text-xl font-bold text-foreground">Adata</span>
             </Link>
 
             {/* Right side items */}
-            <div className="flex items-center space-x-4">
+            <div className="flex items-center space-x-4 animate-in fade-in-0 slide-in-from-right-4 duration-700 delay-300">
               <ThemeToggle />
               
               {/* Menu button - always visible when user is logged in */}
@@ -159,7 +277,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
       {/* Content Wrapper - Flex grow untuk mengisi ruang yang tersisa */}
       <div className="flex flex-1">
         {/* Main Content */}
-        <main className="flex-1 p-4 sm:p-6 lg:p-8">
+        <main className="flex-1 p-4 sm:p-6 lg:p-8 animate-in fade-in-0 slide-in-from-bottom-4 duration-700 delay-400">
           {children}
         </main>
 
@@ -354,11 +472,11 @@ export default function Layout({ children }: { children: React.ReactNode }) {
       )}
 
       {/* Footer - Sticky Footer */}
-      <footer className="border-t bg-card">
+      <footer className="border-t bg-card animate-in fade-in-0 slide-in-from-bottom-4 duration-700 delay-500">
         <div className="px-4 sm:px-6 lg:px-8">
           <div className="flex justify-center items-center h-16">
             <div className="text-sm text-muted-foreground">
-              © 2025 Adata. Made With ♥ For RKS A.
+              © 2025 Adata. Made With ♥ For RKS 3 A.
             </div>
           </div>
         </div>
