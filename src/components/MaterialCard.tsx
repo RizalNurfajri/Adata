@@ -308,78 +308,61 @@ export default memo(function MaterialCard({ material, onDeleted }: MaterialCardP
           </p>
         )}
 
-        {/* Tombol rapi & responsif: wrap bila sempit, sejajar kanan di ≥sm */}
-        <div className="mt-auto flex flex-wrap gap-2 justify-between sm:justify-end">
-          {material.link && (
-            <>
-              <Button asChild variant="outline" size="sm">
-                <a
-                  href={getViewerUrl(material.link)}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex items-center"
-                  onMouseEnter={() => {
-                    const prefetchLink = document.createElement('link')
-                    prefetchLink.rel = 'prefetch'
-                    prefetchLink.href = getViewerUrl(material.link!)
-                    document.head.appendChild(prefetchLink)
-                  }}
-                >
-                  <ExternalLink className="h-4 w-4 mr-1" />
-                  Lihat
-                </a>
-              </Button>
+{/* Tombol: selalu ngumpul di kanan, tetap bisa wrap rapi */}
+<div className="mt-auto flex flex-wrap items-center gap-2 justify-end sm:flex-nowrap">
+  {material.link && (
+    <>
+      <Button asChild variant="outline" size="sm" className="shrink-0">
+        <a
+          href={getViewerUrl(material.link)}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="flex items-center"
+        >
+          <ExternalLink className="h-4 w-4 mr-1" />
+          Lihat
+        </a>
+      </Button>
 
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() =>
-                  handleDownload(
-                    material.link!,
-                    getFilename(material.link!, material.judul)
-                  )
-                }
-                disabled={isDownloading}
-                className="flex items-center"
-              >
-                {isDownloading ? (
-                  <Loader2 className="h-4 w-4 mr-1 animate-spin" />
-                ) : (
-                  <Download className="h-4 w-4 mr-1" />
-                )}
-                {isDownloading ? 'Downloading...' : 'Download'}
-              </Button>
-            </>
-          )}
+      <Button
+        variant="outline"
+        size="sm"
+        onClick={() => handleDownload(material.link!, getFilename(material.link!, material.judul))}
+        disabled={isDownloading}
+        className="flex items-center shrink-0"
+      >
+        {isDownloading ? (
+          <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+        ) : (
+          <Download className="h-4 w-4 mr-1" />
+        )}
+        {isDownloading ? 'Downloading...' : 'Download'}
+      </Button>
+    </>
+  )}
 
-          {profile?.role === 'admin' && (
-            <>
-              <Button asChild variant="outline" size="sm">
-                <Link
-                  to={`/edit/${material.id}`}
-                  onMouseEnter={() => {
-                    const prefetchLink = document.createElement('link')
-                    prefetchLink.rel = 'prefetch'
-                    prefetchLink.href = `/edit/${material.id}`
-                    document.head.appendChild(prefetchLink)
-                  }}
-                >
-                  <Edit className="h-4 w-4 mr-1" />
-                  Edit
-                </Link>
-              </Button>
-              <Button
-                variant="destructive"
-                size="sm"
-                onClick={handleDelete}
-                disabled={isDeleting || isDownloading}
-              >
-                <Trash2 className="h-4 w-4 mr-1" />
-                {isDeleting ? 'Menghapus...' : 'Hapus'}
-              </Button>
-            </>
-          )}
-        </div>
+  {profile?.role === 'admin' && (
+    <>
+      <Button asChild variant="outline" size="sm" className="shrink-0">
+        <Link to={`/edit/${material.id}`}>
+          <Edit className="h-4 w-4 mr-1" />
+          Edit
+        </Link>
+      </Button>
+
+      <Button
+        variant="destructive"
+        size="sm"
+        onClick={handleDelete}
+        disabled={isDeleting || isDownloading}
+        className="shrink-0"
+      >
+        <Trash2 className="h-4 w-4 mr-1" />
+        {isDeleting ? 'Menghapus...' : 'Hapus'}
+      </Button>
+    </>
+  )}
+</div>
       </CardContent>
     </Card>
   )
