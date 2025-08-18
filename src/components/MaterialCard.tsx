@@ -75,20 +75,20 @@ export default memo(function MaterialCard({ material, onDeleted }: MaterialCardP
   // Optimized download function with preconnect hint and better error handling
   const handleDownload = useCallback(async (fileUrl: string, filename: string) => {
     if (isDownloading) return // Prevent multiple downloads
-    
+
     setIsDownloading(true)
-    
+
     // Add preconnect hint for better performance
     const preconnectLink = document.createElement('link')
     preconnectLink.rel = 'preconnect'
     preconnectLink.href = new URL(fileUrl).origin
     document.head.appendChild(preconnectLink)
-    
+
     try {
       // Create abort controller for timeout
       const controller = new AbortController()
       const timeoutId = setTimeout(() => controller.abort(), 30000) // 30 second timeout
-      
+
       // Show loading toast
       toast({
         title: 'Memulai download...',
@@ -105,28 +105,27 @@ export default memo(function MaterialCard({ material, onDeleted }: MaterialCardP
         mode: 'cors',
         credentials: 'omit'
       })
-      
+
       clearTimeout(timeoutId)
-      
+
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`)
       }
-      
+
       // Get file size if available
       const contentLength = response.headers.get('Content-Length')
       const fileSize = contentLength ? parseInt(contentLength) : null
-      
+
       // Convert to blob with progress tracking
       const blob = await response.blob()
-      
+
       // Validate blob
       if (blob.size === 0) {
         throw new Error('File kosong atau tidak dapat didownload')
       }
-      
+
       // Create optimized download using modern APIs
       if ('showSaveFilePicker' in window) {
-        // Use File System Access API if available (modern browsers)
         try {
           const fileHandle = await (window as any).showSaveFilePicker({
             suggestedName: filename,
@@ -146,18 +145,18 @@ export default memo(function MaterialCard({ material, onDeleted }: MaterialCardP
         // Traditional download method
         downloadFallback(blob, filename)
       }
-      
+
       // Success toast
       toast({
         title: 'Berhasil!',
         description: `File "${filename}" berhasil didownload${fileSize ? ` (${(fileSize / (1024 * 1024)).toFixed(2)} MB)` : ''}`,
       })
-      
+
     } catch (error: any) {
       console.error('Download error:', error)
-      
+
       let errorMessage = 'Gagal mendownload file'
-      
+
       if (error.name === 'AbortError') {
         errorMessage = 'Download timeout - file terlalu besar atau koneksi lambat'
       } else if (error.message.includes('HTTP error')) {
@@ -165,13 +164,13 @@ export default memo(function MaterialCard({ material, onDeleted }: MaterialCardP
       } else if (error.message.includes('Failed to fetch')) {
         errorMessage = 'Masalah koneksi internet'
       }
-      
+
       toast({
         title: 'Download Gagal',
         description: errorMessage,
         variant: 'destructive',
       })
-      
+
       // Fallback - try opening in new tab
       if (fileUrl) {
         try {
@@ -210,20 +209,20 @@ export default memo(function MaterialCard({ material, onDeleted }: MaterialCardP
   const downloadFallback = useCallback((blob: Blob, filename: string) => {
     const url = window.URL.createObjectURL(blob)
     const a = document.createElement('a')
-    
+
     // Set download attributes
     a.style.display = 'none'
     a.href = url
     a.download = filename
     a.target = '_blank' // Open in new tab as fallback
-    
+
     // Append to body and trigger download
     document.body.appendChild(a)
-    
+
     // Use requestAnimationFrame for better performance
     requestAnimationFrame(() => {
       a.click()
-      
+
       // Cleanup with slight delay
       setTimeout(() => {
         window.URL.revokeObjectURL(url)
@@ -239,19 +238,19 @@ export default memo(function MaterialCard({ material, onDeleted }: MaterialCardP
     try {
       const urlParts = url.split('/')
       const rawFilename = urlParts[urlParts.length - 1]
-      
+
       if (rawFilename && rawFilename.includes('.')) {
         return decodeURIComponent(rawFilename)
       }
-      
+
       // Sanitize title for filename with improved logic
       const sanitizedTitle = title
-        .replace(/[<>:"/\\|?*\x00-\x1f]/g, '') // Remove invalid filename characters including control chars
-        .replace(/\s+/g, ' ') // Normalize spaces
-        .replace(/\.+$/, '') // Remove trailing dots
+        .replace(/[<>:"/\\|?*\x00-\x1f]/g, '')
+        .replace(/\s+/g, ' ')
+        .replace(/\.+$/, '')
         .trim()
-        .substring(0, 100) // Limit length
-      
+        .substring(0, 100)
+
       return `${sanitizedTitle || 'document'}.pdf`
     } catch {
       return `${title.substring(0, 50).replace(/[<>:"/\\|?*]/g, '') || 'document'}.pdf`
@@ -278,32 +277,39 @@ export default memo(function MaterialCard({ material, onDeleted }: MaterialCardP
   }, [])
 
   return (
-    <Card className="transition-all duration-200 hover:shadow-md will-change-transform">
+    <Card className="transition-all duration-200 hover:shadow-md will-change-transform flex flex-col">
       <CardHeader className="pb-3">
-        <div className="flex justify-between items-start">
-          <div className="flex-1 min-w-0"> {/* min-w-0 prevents text overflow */}
-            <CardTitle className="text-lg mb-2 truncate">{material.judul}</CardTitle>
+        {/* Stack di mobile, sejajar di ≥sm */}
+        <div className="flex flex-col gap-2 sm:flex-row sm:justify-between sm:items-start">
+          <div className="flex-1 min-w-0">
+            {/* Mobile: tanpa clamp; ≥sm: clamp 2 baris */}
+            <CardTitle className="text-base sm:text-lg mb-2 line-clamp-none sm:line-clamp-2 break-words break-all">
+              {material.judul}
+            </CardTitle>
             <div className="flex items-center space-x-2 text-sm text-muted-foreground">
               <Calendar className="h-4 w-4 flex-shrink-0" />
-              <span className="truncate">{formatDate(material.created_at)}</span>
+              <span>{formatDate(material.created_at)}</span>
             </div>
           </div>
-          <Badge 
+
+          <Badge
             variant={material.tipe === 'Teori' ? 'default' : 'secondary'}
-            className="ml-2 flex-shrink-0"
+            className="ml-0 sm:ml-2 self-start sm:self-auto flex-shrink-0"
           >
             {material.tipe}
           </Badge>
         </div>
       </CardHeader>
-      <CardContent>
+
+      <CardContent className="flex-1 flex flex-col justify-between">
         {material.deskripsi && (
           <p className="text-sm text-muted-foreground mb-4 line-clamp-3">
             {material.deskripsi}
           </p>
         )}
 
-        <div className="flex flex-wrap gap-2">
+        {/* Tombol rapi & responsif: wrap bila sempit, sejajar kanan di ≥sm */}
+        <div className="mt-auto flex flex-wrap gap-2 justify-between sm:justify-end">
           {material.link && (
             <>
               <Button asChild variant="outline" size="sm">
@@ -312,7 +318,6 @@ export default memo(function MaterialCard({ material, onDeleted }: MaterialCardP
                   target="_blank"
                   rel="noopener noreferrer"
                   className="flex items-center"
-                  // Add prefetch hint on hover
                   onMouseEnter={() => {
                     const prefetchLink = document.createElement('link')
                     prefetchLink.rel = 'prefetch'
@@ -325,10 +330,15 @@ export default memo(function MaterialCard({ material, onDeleted }: MaterialCardP
                 </a>
               </Button>
 
-              <Button 
-                variant="outline" 
+              <Button
+                variant="outline"
                 size="sm"
-                onClick={() => handleDownload(material.link!, getFilename(material.link!, material.judul))}
+                onClick={() =>
+                  handleDownload(
+                    material.link!,
+                    getFilename(material.link!, material.judul)
+                  )
+                }
                 disabled={isDownloading}
                 className="flex items-center"
               >
@@ -345,9 +355,8 @@ export default memo(function MaterialCard({ material, onDeleted }: MaterialCardP
           {profile?.role === 'admin' && (
             <>
               <Button asChild variant="outline" size="sm">
-                <Link 
+                <Link
                   to={`/edit/${material.id}`}
-                  // Prefetch the edit page
                   onMouseEnter={() => {
                     const prefetchLink = document.createElement('link')
                     prefetchLink.rel = 'prefetch'
