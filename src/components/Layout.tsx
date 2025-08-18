@@ -29,6 +29,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
   const [showLogoutConfirmation, setShowLogoutConfirmation] = useState(false)
   const [showBackToTop, setShowBackToTop] = useState(false)
   const [isLoading, setIsLoading] = useState(true)
+  const [animationLoaded, setAnimationLoaded] = useState(false)
 
   // Loading animation effect
   useEffect(() => {
@@ -37,6 +38,23 @@ export default function Layout({ children }: { children: React.ReactNode }) {
     }, 2500) // Show loading for 2.5 seconds
 
     return () => clearTimeout(timer)
+  }, [])
+
+  // Preload animation
+  useEffect(() => {
+    const iframe = document.createElement('iframe')
+    iframe.src = 'https://lottie.host/embed/5ba352dc-9619-4171-86ea-c433edb3e19f/LY2AOvb8Fo.json'
+    iframe.style.display = 'none'
+    iframe.onload = () => {
+      setAnimationLoaded(true)
+    }
+    document.body.appendChild(iframe)
+    
+    return () => {
+      if (document.body.contains(iframe)) {
+        document.body.removeChild(iframe)
+      }
+    }
   }, [])
 
   // Handle scroll untuk back to top button
@@ -136,11 +154,22 @@ export default function Layout({ children }: { children: React.ReactNode }) {
       <div className="fixed inset-0 z-[100] flex items-center justify-center bg-background">
         <div className="flex flex-col items-center space-y-6">
           {/* Lottie Animation Container */}
-          <div className="w-64 h-64 flex items-center justify-center">
+          <div className="w-64 h-64 flex items-center justify-center relative">
+            {/* Fallback spinner while Lottie loads */}
+            {!animationLoaded && (
+              <div className="absolute inset-0 flex items-center justify-center">
+                <div className="w-16 h-16 border-4 border-primary/20 border-t-primary rounded-full animate-spin"></div>
+              </div>
+            )}
+            
+            {/* Lottie Animation */}
             <iframe
               src="https://lottie.host/embed/5ba352dc-9619-4171-86ea-c433edb3e19f/LY2AOvb8Fo.json"
-              className="w-full h-full border-none"
+              className={`w-full h-full border-none transition-opacity duration-300 ${
+                animationLoaded ? 'opacity-100' : 'opacity-0'
+              }`}
               title="Loading Animation"
+              onLoad={() => setAnimationLoaded(true)}
             />
           </div>
           
