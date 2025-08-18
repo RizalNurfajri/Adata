@@ -47,7 +47,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
   // ====== TAMBAHAN: simulasi loading awal + animasi fade out ======
   useEffect(() => {
     // durasi loading awal (bisa kamu sesuaikan atau dihubungkan dengan fetch data)
-    const showMs = 1200
+    const showMs = 3000
     const fadeMs = 300
 
     const t1 = setTimeout(() => {
