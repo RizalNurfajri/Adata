@@ -281,11 +281,14 @@ export default memo(function MaterialCard({ material, onDeleted }: MaterialCardP
     <Card className="transition-all duration-200 hover:shadow-md will-change-transform">
       <CardHeader className="pb-3">
         <div className="flex justify-between items-start">
-          <div className="flex-1 min-w-0"> {/* min-w-0 prevents text overflow */}
-            <CardTitle className="text-lg mb-2 truncate">{material.judul}</CardTitle>
+          <div className="flex-1 min-w-0">
+            {/* Judul 2 baris rapi, tidak terpotong ellipsis */}
+            <CardTitle className="text-lg mb-2 line-clamp-2 break-words">
+              {material.judul}
+            </CardTitle>
             <div className="flex items-center space-x-2 text-sm text-muted-foreground">
               <Calendar className="h-4 w-4 flex-shrink-0" />
-              <span className="truncate">{formatDate(material.created_at)}</span>
+              <span>{formatDate(material.created_at)}</span>
             </div>
           </div>
           <Badge 
@@ -296,6 +299,7 @@ export default memo(function MaterialCard({ material, onDeleted }: MaterialCardP
           </Badge>
         </div>
       </CardHeader>
+
       <CardContent>
         {material.deskripsi && (
           <p className="text-sm text-muted-foreground mb-4 line-clamp-3">
@@ -303,7 +307,8 @@ export default memo(function MaterialCard({ material, onDeleted }: MaterialCardP
           </p>
         )}
 
-        <div className="flex flex-wrap gap-2">
+        {/* Tombol rapi & responsif: sejajar ke kanan, tetap wrap bila sempit */}
+        <div className="flex flex-wrap gap-2 justify-end">
           {material.link && (
             <>
               <Button asChild variant="outline" size="sm">
@@ -312,7 +317,6 @@ export default memo(function MaterialCard({ material, onDeleted }: MaterialCardP
                   target="_blank"
                   rel="noopener noreferrer"
                   className="flex items-center"
-                  // Add prefetch hint on hover
                   onMouseEnter={() => {
                     const prefetchLink = document.createElement('link')
                     prefetchLink.rel = 'prefetch'
@@ -347,7 +351,6 @@ export default memo(function MaterialCard({ material, onDeleted }: MaterialCardP
               <Button asChild variant="outline" size="sm">
                 <Link 
                   to={`/edit/${material.id}`}
-                  // Prefetch the edit page
                   onMouseEnter={() => {
                     const prefetchLink = document.createElement('link')
                     prefetchLink.rel = 'prefetch'
