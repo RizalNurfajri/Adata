@@ -277,89 +277,101 @@ export default memo(function MaterialCard({ material, onDeleted }: MaterialCardP
     return `https://docs.google.com/gview?url=${encodedUrl}&embedded=true`
   }, [])
 
-return (
-  <Card className="transition-all duration-200 hover:shadow-md will-change-transform flex flex-col">
-    <CardHeader className="pb-3">
-      <div className="flex justify-between items-start">
-        <div className="flex-1 min-w-0">
-          <CardTitle className="text-lg mb-2 line-clamp-2 break-words">
-            {material.judul}
-          </CardTitle>
-          <div className="flex items-center space-x-2 text-sm text-muted-foreground">
-            <Calendar className="h-4 w-4 flex-shrink-0" />
-            <span>{formatDate(material.created_at)}</span>
+  return (
+    <Card className="transition-all duration-200 hover:shadow-md will-change-transform">
+      <CardHeader className="pb-3">
+        <div className="flex justify-between items-start">
+          <div className="flex-1 min-w-0"> {/* min-w-0 prevents text overflow */}
+            <CardTitle className="text-lg mb-2 truncate">{material.judul}</CardTitle>
+            <div className="flex items-center space-x-2 text-sm text-muted-foreground">
+              <Calendar className="h-4 w-4 flex-shrink-0" />
+              <span className="truncate">{formatDate(material.created_at)}</span>
+            </div>
           </div>
+          <Badge 
+            variant={material.tipe === 'Teori' ? 'default' : 'secondary'}
+            className="ml-2 flex-shrink-0"
+          >
+            {material.tipe}
+          </Badge>
         </div>
-        <Badge 
-          variant={material.tipe === 'Teori' ? 'default' : 'secondary'}
-          className="ml-2 flex-shrink-0"
-        >
-          {material.tipe}
-        </Badge>
-      </div>
-    </CardHeader>
+      </CardHeader>
+      <CardContent>
+        {material.deskripsi && (
+          <p className="text-sm text-muted-foreground mb-4 line-clamp-3">
+            {material.deskripsi}
+          </p>
+        )}
 
-    <CardContent className="flex-1 flex flex-col justify-between">
-      {material.deskripsi && (
-        <p className="text-sm text-muted-foreground mb-4 line-clamp-3">
-          {material.deskripsi}
-        </p>
-      )}
+        <div className="flex flex-wrap gap-2">
+          {material.link && (
+            <>
+              <Button asChild variant="outline" size="sm">
+                <a
+                  href={getViewerUrl(material.link)}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center"
+                  // Add prefetch hint on hover
+                  onMouseEnter={() => {
+                    const prefetchLink = document.createElement('link')
+                    prefetchLink.rel = 'prefetch'
+                    prefetchLink.href = getViewerUrl(material.link!)
+                    document.head.appendChild(prefetchLink)
+                  }}
+                >
+                  <ExternalLink className="h-4 w-4 mr-1" />
+                  Lihat
+                </a>
+              </Button>
 
-      {/* Tombol selalu sejajar di bawah */}
-      <div className="mt-auto flex flex-wrap gap-2 justify-end">
-        {material.link && (
-          <>
-            <Button asChild variant="outline" size="sm">
-              <a
-                href={getViewerUrl(material.link)}
-                target="_blank"
-                rel="noopener noreferrer"
+              <Button 
+                variant="outline" 
+                size="sm"
+                onClick={() => handleDownload(material.link!, getFilename(material.link!, material.judul))}
+                disabled={isDownloading}
                 className="flex items-center"
               >
-                <ExternalLink className="h-4 w-4 mr-1" />
-                Lihat
-              </a>
-            </Button>
+                {isDownloading ? (
+                  <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+                ) : (
+                  <Download className="h-4 w-4 mr-1" />
+                )}
+                {isDownloading ? 'Downloading...' : 'Download'}
+              </Button>
+            </>
+          )}
 
-            <Button 
-              variant="outline" 
-              size="sm"
-              onClick={() => handleDownload(material.link!, getFilename(material.link!, material.judul))}
-              disabled={isDownloading}
-              className="flex items-center"
-            >
-              {isDownloading ? (
-                <Loader2 className="h-4 w-4 mr-1 animate-spin" />
-              ) : (
-                <Download className="h-4 w-4 mr-1" />
-              )}
-              {isDownloading ? 'Downloading...' : 'Download'}
-            </Button>
-          </>
-        )}
-
-        {profile?.role === 'admin' && (
-          <>
-            <Button asChild variant="outline" size="sm">
-              <Link to={`/edit/${material.id}`}>
-                <Edit className="h-4 w-4 mr-1" />
-                Edit
-              </Link>
-            </Button>
-            <Button
-              variant="destructive"
-              size="sm"
-              onClick={handleDelete}
-              disabled={isDeleting || isDownloading}
-            >
-              <Trash2 className="h-4 w-4 mr-1" />
-              {isDeleting ? 'Menghapus...' : 'Hapus'}
-            </Button>
-          </>
-        )}
-      </div>
-    </CardContent>
-  </Card>
-)
+          {profile?.role === 'admin' && (
+            <>
+              <Button asChild variant="outline" size="sm">
+                <Link 
+                  to={`/edit/${material.id}`}
+                  // Prefetch the edit page
+                  onMouseEnter={() => {
+                    const prefetchLink = document.createElement('link')
+                    prefetchLink.rel = 'prefetch'
+                    prefetchLink.href = `/edit/${material.id}`
+                    document.head.appendChild(prefetchLink)
+                  }}
+                >
+                  <Edit className="h-4 w-4 mr-1" />
+                  Edit
+                </Link>
+              </Button>
+              <Button
+                variant="destructive"
+                size="sm"
+                onClick={handleDelete}
+                disabled={isDeleting || isDownloading}
+              >
+                <Trash2 className="h-4 w-4 mr-1" />
+                {isDeleting ? 'Menghapus...' : 'Hapus'}
+              </Button>
+            </>
+          )}
+        </div>
+      </CardContent>
+    </Card>
+  )
 })
