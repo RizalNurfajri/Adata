@@ -1,5 +1,3 @@
-Layout
-
 import { useState, useEffect } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '@/hooks/useAuth'
@@ -31,6 +29,10 @@ export default function Layout({ children }: { children: React.ReactNode }) {
   const [showLogoutConfirmation, setShowLogoutConfirmation] = useState(false)
   const [showBackToTop, setShowBackToTop] = useState(false)
 
+  // ====== TAMBAHAN: state untuk overlay loading ======
+  const [isAppLoading, setIsAppLoading] = useState(true)
+  const [isAppFading, setIsAppFading] = useState(false)
+
   // Handle scroll untuk back to top button
   useEffect(() => {
     const handleScroll = () => {
@@ -40,6 +42,21 @@ export default function Layout({ children }: { children: React.ReactNode }) {
 
     window.addEventListener('scroll', handleScroll)
     return () => window.removeEventListener('scroll', handleScroll)
+  }, [])
+
+  // ====== TAMBAHAN: simulasi loading awal + animasi fade out ======
+  useEffect(() => {
+    // durasi loading awal (bisa kamu sesuaikan atau dihubungkan dengan fetch data)
+    const showMs = 1200
+    const fadeMs = 300
+
+    const t1 = setTimeout(() => {
+      setIsAppFading(true)     // mulai fade out
+      const t2 = setTimeout(() => setIsAppLoading(false), fadeMs) // selesai, hilangkan overlay
+      return () => clearTimeout(t2)
+    }, showMs)
+
+    return () => clearTimeout(t1)
   }, [])
 
   // Function untuk scroll ke atas dengan animasi feedback
@@ -365,6 +382,25 @@ export default function Layout({ children }: { children: React.ReactNode }) {
           </div>
         </div>
       </footer>
+
+      {/* ====== TAMBAHAN: Overlay Loading Lottie (z di atas modal) ====== */}
+      {isAppLoading && (
+        <div
+          className={`fixed inset-0 z-[70] flex items-center justify-center bg-background transition-opacity duration-300 ${
+            isAppFading ? 'opacity-0 pointer-events-none' : 'opacity-100'
+          }`}
+        >
+          {/* @ts-ignore: web component */}
+          <lottie-player
+            src="/animations/loading.json"
+            background="transparent"
+            speed="1"
+            loop
+            autoplay
+            style={{ width: '160px', height: '160px' }}
+          ></lottie-player>
+        </div>
+      )}
     </div>
   )
 }
