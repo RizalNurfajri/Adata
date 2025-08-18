@@ -20,6 +20,13 @@ import {
 } from 'lucide-react'
 import ThemeToggle from '@/components/ThemeToggle'
 
+// Declare lottie di global untuk TypeScript
+declare global {
+  interface Window {
+    lottie: any;
+  }
+}
+
 export default function Layout({ children }: { children: React.ReactNode }) {
   const { user, profile, signOut } = useAuth()
   const location = useLocation()
@@ -82,7 +89,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         // Simulate minimum loading time (2 seconds) untuk UX yang lebih baik
         setTimeout(() => {
           setIsLoading(false)
-        }, 5000)
+        }, 2000)
 
       } catch (error) {
         console.error('Error loading Lottie animation:', error)
@@ -199,31 +206,11 @@ export default function Layout({ children }: { children: React.ReactNode }) {
     return (
       <div className="fixed inset-0 z-[100] flex items-center justify-center bg-background">
         {/* Lottie Animation Container */}
-        <div className="flex flex-col items-center justify-center space-y-8">
+        <div className="flex flex-col items-center justify-center">
           <div 
             ref={lottieContainer}
             className="w-64 h-64 md:w-80 md:h-80"
           />
-          
-          {/* Loading Text */}
-          <div className="text-center space-y-2">
-            <h2 className="text-2xl md:text-3xl font-bold text-foreground">
-              Loading Adata
-            </h2>
-            <p className="text-muted-foreground text-sm md:text-base">
-              Menyiapkan pengalaman terbaik untuk Anda...
-            </p>
-          </div>
-
-          {/* Animated Progress Dots */}
-          <div className="flex space-x-2">
-            <div className="w-3 h-3 bg-primary rounded-full animate-bounce" 
-                 style={{ animationDelay: '0ms' }}></div>
-            <div className="w-3 h-3 bg-primary rounded-full animate-bounce" 
-                 style={{ animationDelay: '150ms' }}></div>
-            <div className="w-3 h-3 bg-primary rounded-full animate-bounce" 
-                 style={{ animationDelay: '300ms' }}></div>
-          </div>
         </div>
 
         {/* Background Pattern (Optional) */}
