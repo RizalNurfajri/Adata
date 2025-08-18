@@ -13,12 +13,12 @@ const NotFound = () => {
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-background px-4">
-      <div className="text-center space-y-6">
+      <div className="text-center space-y-6 -mt-12">  {/* naik 3rem */}
         {/* Lottie 404 lebih besar & responsif */}
         <div className="mx-auto w-full max-w-xl sm:max-w-2xl">
           {/* @ts-ignore: web component */}
           <lottie-player
-            src="/animations/404.json"   // atau URL langsung dari LottieFiles
+            src="/animations/404.json"
             background="transparent"
             speed="1"
             loop
