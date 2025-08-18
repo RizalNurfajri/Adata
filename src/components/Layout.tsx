@@ -89,7 +89,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         // Simulate minimum loading time (2 seconds) untuk UX yang lebih baik
         setTimeout(() => {
           setIsLoading(false)
-        }, 2000)
+        }, 3000)
 
       } catch (error) {
         console.error('Error loading Lottie animation:', error)
