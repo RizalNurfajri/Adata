@@ -1,4 +1,6 @@
-import { useState, useEffect, useRef } from 'react'
+Layout
+
+import { useState, useEffect } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '@/hooks/useAuth'
 import { Button } from '@/components/ui/button'
@@ -20,13 +22,6 @@ import {
 } from 'lucide-react'
 import ThemeToggle from '@/components/ThemeToggle'
 
-// Declare lottie di global untuk TypeScript
-declare global {
-  interface Window {
-    lottie: any;
-  }
-}
-
 export default function Layout({ children }: { children: React.ReactNode }) {
   const { user, profile, signOut } = useAuth()
   const location = useLocation()
@@ -35,80 +30,6 @@ export default function Layout({ children }: { children: React.ReactNode }) {
   const [isProfileDropdownOpen, setIsProfileDropdownOpen] = useState(false)
   const [showLogoutConfirmation, setShowLogoutConfirmation] = useState(false)
   const [showBackToTop, setShowBackToTop] = useState(false)
-  
-  // Loading state untuk Lottie
-  const [isLoading, setIsLoading] = useState(true)
-  const lottieContainer = useRef<HTMLDivElement>(null)
-  const animationInstance = useRef<any>(null)
-
-  // Initialize Lottie Animation
-  useEffect(() => {
-    let lottieAnimation: any = null;
-
-    const initLottie = async () => {
-      try {
-        // Load Lottie from CDN jika belum ada di window
-        if (!window.lottie) {
-          await new Promise((resolve, reject) => {
-            const script = document.createElement('script')
-            script.src = 'https://cdnjs.cloudflare.com/ajax/libs/lottie-web/5.12.2/lottie.min.js'
-            script.onload = resolve
-            script.onerror = reject
-            document.head.appendChild(script)
-          })
-        }
-
-        if (lottieContainer.current && window.lottie) {
-          try {
-            // Coba load dari assets folder dulu
-            const response = await fetch('/animations/loading.json')
-            const animationData = await response.json()
-            
-            lottieAnimation = window.lottie.loadAnimation({
-              container: lottieContainer.current,
-              renderer: 'svg',
-              loop: true,
-              autoplay: true,
-              animationData: animationData
-            })
-          } catch (fetchError) {
-            console.log('Loading from public folder failed, trying alternative...')
-            // Fallback: coba dari path langsung
-            lottieAnimation = window.lottie.loadAnimation({
-              container: lottieContainer.current,
-              renderer: 'svg',
-              loop: true,
-              autoplay: true,
-              path: '/animations/loading.json'
-            })
-          }
-          
-          animationInstance.current = lottieAnimation
-        }
-
-        // Simulate minimum loading time (2 seconds) untuk UX yang lebih baik
-        setTimeout(() => {
-          setIsLoading(false)
-        }, 3000)
-
-      } catch (error) {
-        console.error('Error loading Lottie animation:', error)
-        // Hide loading screen after 1 second if Lottie fails
-        setTimeout(() => {
-          setIsLoading(false)
-        }, 1000)
-      }
-    }
-
-    initLottie()
-
-    // Cleanup function
-    return () => {
-      if (animationInstance.current) {
-        animationInstance.current.destroy()
-      }
-    }
-  }, [])
 
   // Handle scroll untuk back to top button
   useEffect(() => {
@@ -200,31 +121,6 @@ export default function Layout({ children }: { children: React.ReactNode }) {
       show: profile?.role === 'admin'
     }
   ]
-
-  // Show loading screen saat masih loading
-  if (isLoading) {
-    return (
-      <div className="fixed inset-0 z-[100] flex items-center justify-center bg-background">
-        {/* Lottie Animation Container */}
-        <div className="flex flex-col items-center justify-center">
-          <div 
-            ref={lottieContainer}
-            className="w-64 h-64 md:w-80 md:h-80"
-          />
-        </div>
-
-        {/* Background Pattern (Optional) */}
-        <div className="absolute inset-0 opacity-5">
-          <div className="absolute inset-0" 
-               style={{
-                 backgroundImage: 'radial-gradient(circle at 1px 1px, currentColor 1px, transparent 0)',
-                 backgroundSize: '20px 20px'
-               }}>
-          </div>
-        </div>
-      </div>
-    )
-  }
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
