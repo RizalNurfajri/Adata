@@ -86,7 +86,7 @@ const NotFound = () => {
       {/* Lottie Animation Container Only */}
       <div 
         ref={lottieContainer}
-        className="w-64 h-64 md:w-80 md:h-80"
+        className="w-96 h-96 md:w-[32rem] md:h-[32rem] lg:w-[40rem] lg:h-[40rem]"
       />
 
       {/* Background Pattern */}
