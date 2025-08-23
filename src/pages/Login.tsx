@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -7,6 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { useAuth } from '@/hooks/useAuth'
 import { toast } from '@/hooks/use-toast'
 import { Loader2, BookOpen, Eye, EyeOff } from 'lucide-react' // ✅ Tambah import
+import HCaptcha from '@hcaptcha/react-hcaptcha'               // ✅ hCaptcha
 
 export default function Login() {
   const [email, setEmail] = useState('')
@@ -15,6 +16,10 @@ export default function Login() {
   const [showPassword, setShowPassword] = useState(false) // ✅ Tambah state
   const { signIn, user } = useAuth()
   const navigate = useNavigate()
+
+  // ✅ state/token & ref hCaptcha (invisible)
+  const [captchaToken, setCaptchaToken] = useState<string | null>(null)
+  const captchaRef = useRef<HCaptcha>(null)
 
   useEffect(() => {
     if (user) {
@@ -27,8 +32,20 @@ export default function Login() {
     setLoading(true)
 
     try {
-      const { error } = await signIn(email, password)
-      
+      // ✅ pastikan ada token; kalau belum, eksekusi invisible captcha dulu
+      if (!captchaToken) {
+        await captchaRef.current?.execute()
+        // setelah execute, onVerify akan terpicu & set token;
+        // biar simpel: kita lanjutkan flow setelah token ada, dengan return dulu
+        setLoading(false)
+        return
+      }
+
+      // ✅ kirim token ke auth (diasumsikan signIn meneruskan options ke Supabase)
+      //    Jika signIn kamu menerima (email, password, options), ini langsung kepake.
+      //    Jika signIn hanya (email, password), tambahkan dukungan options di useAuth.
+      const { error } = await signIn(email, password, { captchaToken })
+
       if (error) {
         toast({
           title: 'Error',
@@ -51,6 +68,9 @@ export default function Login() {
         variant: 'destructive',
       })
     } finally {
+      // ✅ reset token & captcha biar bersih
+      setCaptchaToken(null)
+      captchaRef.current?.resetCaptcha()
       setLoading(false)
     }
   }
@@ -104,6 +124,14 @@ export default function Login() {
                 </button>
               </div>
             </div>
+
+            {/* ✅ Invisible hCaptcha (tidak mengganggu UI) */}
+            <HCaptcha
+              ref={captchaRef}
+              sitekey={import.meta.env.VITE_HCAPTCHA_SITEKEY!}
+              size="invisible"
+              onVerify={(token) => setCaptchaToken(token)}
+            />
 
             <Button
               type="submit"
