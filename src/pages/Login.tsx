@@ -17,7 +17,7 @@ export default function Login() {
   const { signIn, user } = useAuth()
   const navigate = useNavigate()
 
-  // ✅ state/token & ref hCaptcha (invisible)
+  // ✅ state/token & ref hCaptcha
   const [captchaToken, setCaptchaToken] = useState<string | null>(null)
   const captchaRef = useRef<HCaptcha>(null)
 
@@ -32,26 +32,23 @@ export default function Login() {
     setLoading(true)
 
     try {
-      // ✅ pastikan ada token; kalau belum, eksekusi invisible captcha dulu
+      // ✅ kalau user belum centang captcha, execute & tunggu onVerify
       if (!captchaToken) {
         await captchaRef.current?.execute()
-        // setelah execute, onVerify akan terpicu & set token;
-        // biar simpel: kita lanjutkan flow setelah token ada, dengan return dulu
         setLoading(false)
         return
       }
 
       // ✅ kirim token ke auth (diasumsikan signIn meneruskan options ke Supabase)
-      //    Jika signIn kamu menerima (email, password, options), ini langsung kepake.
-      //    Jika signIn hanya (email, password), tambahkan dukungan options di useAuth.
       const { error } = await signIn(email, password, { captchaToken })
 
       if (error) {
         toast({
           title: 'Error',
-          description: error.message === 'Invalid login credentials' 
-            ? 'Email atau password salah' 
-            : error.message,
+          description:
+            error.message === 'Invalid login credentials'
+              ? 'Email atau password salah'
+              : error.message,
           variant: 'destructive',
         })
       } else {
@@ -107,7 +104,7 @@ export default function Login() {
               <div className="relative">
                 <Input
                   id="password"
-                  type={showPassword ? 'text' : 'password'} // ✅ Toggle
+                  type={showPassword ? 'text' : 'password'}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="Masukkan password"
@@ -125,19 +122,15 @@ export default function Login() {
               </div>
             </div>
 
-            {/* ✅ Invisible hCaptcha (tidak mengganggu UI) */}
+            {/* ✅ hCaptcha ditampilkan (size="normal") */}
             <HCaptcha
               ref={captchaRef}
               sitekey={import.meta.env.VITE_HCAPTCHA_SITEKEY!}
-              size="invisible"
+              size="normal"               // ← dari "invisible" jadi "normal"
               onVerify={(token) => setCaptchaToken(token)}
             />
 
-            <Button
-              type="submit"
-              className="w-full"
-              disabled={loading}
-            >
+            <Button type="submit" className="w-full" disabled={loading}>
               {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               Masuk
             </Button>

@@ -7,7 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { useAuth } from '@/hooks/useAuth'
 import { toast } from '@/hooks/use-toast'
 import { Loader2, BookOpen, Eye, EyeOff } from 'lucide-react'
-import HCaptcha from '@hcaptcha/react-hcaptcha'               // ✅ hCaptcha
+import HCaptcha from '@hcaptcha/react-hcaptcha'
 
 export default function Register() {
   const [email, setEmail] = useState('')
@@ -19,7 +19,7 @@ export default function Register() {
   const { signUp, user } = useAuth()
   const navigate = useNavigate()
 
-  // ✅ state/token & ref hCaptcha (invisible)
+  // ✅ state/token & ref hCaptcha
   const [captchaToken, setCaptchaToken] = useState<string | null>(null)
   const captchaRef = useRef<HCaptcha>(null)
 
@@ -53,7 +53,7 @@ export default function Register() {
     setLoading(true)
 
     try {
-      // ✅ pastikan ada token; kalau belum, eksekusi invisible captcha
+      // ✅ kalau belum centang captcha, execute & tunggu onVerify
       if (!captchaToken) {
         await captchaRef.current?.execute()
         setLoading(false)
@@ -66,9 +66,10 @@ export default function Register() {
       if (error) {
         toast({
           title: 'Error',
-          description: error.message === 'User already registered' 
-            ? 'Email sudah terdaftar' 
-            : error.message,
+          description:
+            error.message === 'User already registered'
+              ? 'Email sudah terdaftar'
+              : error.message,
           variant: 'destructive',
         })
       } else {
@@ -165,19 +166,15 @@ export default function Register() {
               </div>
             </div>
 
-            {/* ✅ Invisible hCaptcha ( UI) */}
+            {/* ✅ hCaptcha ditampilkan (size="normal") */}
             <HCaptcha
               ref={captchaRef}
               sitekey={import.meta.env.VITE_HCAPTCHA_SITEKEY!}
-              size="invisible"
+              size="normal"               // ← dari "invisible" jadi "normal"
               onVerify={(token) => setCaptchaToken(token)}
             />
 
-            <Button
-              type="submit"
-              className="w-full"
-              disabled={loading}
-            >
+            <Button type="submit" className="w-full" disabled={loading}>
               {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               Daftar
             </Button>
