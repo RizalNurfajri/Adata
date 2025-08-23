@@ -165,7 +165,7 @@ export default function Register() {
               </div>
             </div>
 
-            {/* ✅ Invisible hCaptcha (tidak mengganggu UI) */}
+            {/* ✅ Invisible hCaptcha ( UI) */}
             <HCaptcha
               ref={captchaRef}
               sitekey={import.meta.env.VITE_HCAPTCHA_SITEKEY!}
