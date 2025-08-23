@@ -20,22 +20,6 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
 
-/* ✅ Tambahan: deklarasi global penampung token hCaptcha */
-declare global {
-  interface Window {
-    __HCAPTCHA_TOKEN__?: string
-  }
-}
-
-/* ✅ Tambahan: helper untuk diset dari komponen (Login/Register) */
-export function setCaptchaTokenFromHCaptcha(token: string | null) {
-  if (token) {
-    window.__HCAPTCHA_TOKEN__ = token
-  } else {
-    delete window.__HCAPTCHA_TOKEN__
-  }
-}
-
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null)
   const [session, setSession] = useState<Session | null>(null)
@@ -90,40 +74,23 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, [])
 
   const signIn = async (email: string, password: string) => {
-    /* ✅ Ambil token kalau ada (tidak mengubah signature fungsi) */
-    const captchaToken = window.__HCAPTCHA_TOKEN__
-
     const { error } = await supabase.auth.signInWithPassword({
       email,
       password,
-      /* ✅ sisipkan options.captchaToken hanya kalau ada */
-      ...(captchaToken ? { options: { captchaToken } } : {}),
     })
-
-    /* ✅ setelah dipakai, kosongkan token supaya fresh di attempt berikutnya */
-    delete window.__HCAPTCHA_TOKEN__
-
     return { error }
   }
 
   const signUp = async (email: string, password: string) => {
     const redirectUrl = `${window.location.origin}/login`
-    /* ✅ Ambil token kalau ada */
-    const captchaToken = window.__HCAPTCHA_TOKEN__
-
+    
     const { error } = await supabase.auth.signUp({
       email,
       password,
       options: {
-        emailRedirectTo: redirectUrl,
-        /* ✅ kirim captchaToken jika tersedia */
-        ...(captchaToken ? { captchaToken } : {}),
+        emailRedirectTo: redirectUrl
       }
     })
-
-    /* ✅ bersihkan token */
-    delete window.__HCAPTCHA_TOKEN__
-
     return { error }
   }
 

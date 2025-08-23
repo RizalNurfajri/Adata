@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -7,7 +7,6 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { useAuth } from '@/hooks/useAuth'
 import { toast } from '@/hooks/use-toast'
 import { Loader2, BookOpen, Eye, EyeOff } from 'lucide-react'
-import HCaptcha from '@hcaptcha/react-hcaptcha'
 
 export default function Register() {
   const [email, setEmail] = useState('')
@@ -18,10 +17,6 @@ export default function Register() {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false)
   const { signUp, user } = useAuth()
   const navigate = useNavigate()
-
-  // ✅ state/token & ref hCaptcha
-  const [captchaToken, setCaptchaToken] = useState<string | null>(null)
-  const captchaRef = useRef<HCaptcha>(null)
 
   useEffect(() => {
     if (user) {
@@ -53,23 +48,14 @@ export default function Register() {
     setLoading(true)
 
     try {
-      // ✅ kalau belum centang captcha, execute & tunggu onVerify
-      if (!captchaToken) {
-        await captchaRef.current?.execute()
-        setLoading(false)
-        return
-      }
-
-      // ✅ kirim token ke auth (diasumsikan signUp meneruskan options ke Supabase)
-      const { error } = await signUp(email, password, { captchaToken })
+      const { error } = await signUp(email, password)
       
       if (error) {
         toast({
           title: 'Error',
-          description:
-            error.message === 'User already registered'
-              ? 'Email sudah terdaftar'
-              : error.message,
+          description: error.message === 'User already registered' 
+            ? 'Email sudah terdaftar' 
+            : error.message,
           variant: 'destructive',
         })
       } else {
@@ -86,9 +72,6 @@ export default function Register() {
         variant: 'destructive',
       })
     } finally {
-      // ✅ reset token & captcha biar bersih
-      setCaptchaToken(null)
-      captchaRef.current?.resetCaptcha()
       setLoading(false)
     }
   }
@@ -166,15 +149,11 @@ export default function Register() {
               </div>
             </div>
 
-            {/* ✅ hCaptcha ditampilkan (size="normal") */}
-            <HCaptcha
-              ref={captchaRef}
-              sitekey={import.meta.env.VITE_HCAPTCHA_SITEKEY!}
-              size="normal"               // ← dari "invisible" jadi "normal"
-              onVerify={(token) => setCaptchaToken(token)}
-            />
-
-            <Button type="submit" className="w-full" disabled={loading}>
+            <Button
+              type="submit"
+              className="w-full"
+              disabled={loading}
+            >
               {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               Daftar
             </Button>
