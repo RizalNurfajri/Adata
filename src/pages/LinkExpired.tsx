@@ -6,7 +6,7 @@ export default function LinkExpired() {
     <div className="min-h-screen flex flex-col items-center justify-center px-4 py-10">
       {/* Image illustration */}
       <img
-        src="https://i.imgur.com/V9Y3g31.png"
+        src="/exp.svg"
         alt="Login link expired illustration"
         className="w-64 h-auto mb-6"
       />
