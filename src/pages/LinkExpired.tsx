@@ -8,8 +8,8 @@ export default function LinkExpired() {
 
   // Mock Button component
   const Button = ({ className, variant, children, ...props }) => {
-    const baseClasses = "inline-flex items-center justify-center font-semibold transition-all duration-200 disabled:opacity-50 disabled:pointer-events-none";
-    const variantClasses = "bg-blue-500 hover:bg-blue-600 text-white";
+    const baseClasses = "inline-flex items-center justify-center font-semibold transition-all duration-300 disabled:opacity-50 disabled:pointer-events-none focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2";
+    const variantClasses = "bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white shadow-lg hover:shadow-xl transform hover:-translate-y-1";
     
     return (
       <button 
@@ -22,46 +22,73 @@ export default function LinkExpired() {
   };
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center p-6 bg-gradient-to-br from-slate-50 to-slate-100">
+    <div className="min-h-screen flex flex-col items-center justify-center p-6 bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100">
       
       {/* Image */}
-      <div className="mb-8">
+      <div className="mb-12 animate-pulse">
         <img 
-          src="https://i.imgur.com/Bbur9QY.jpeg" 
+          src="https://i.imgur.com/wfqAcM7.png" 
           alt="Link Expired Illustration"
-          className="w-96 h-80 object-contain rounded-lg shadow-lg"
+          className="w-64 h-64 md:w-80 md:h-80 object-contain drop-shadow-2xl"
         />
       </div>
 
       {/* Content */}
-      <div className="text-center max-w-lg space-y-6">
-        {/* Title */}
-        <h1 className="text-3xl md:text-4xl font-bold text-gray-800 mb-4">
-          Login Link Expired
-        </h1>
+      <div className="text-center max-w-2xl space-y-8">
+        {/* Title with decorative elements */}
+        <div className="space-y-4">
+          <div className="flex items-center justify-center space-x-4 mb-4">
+            <div className="w-16 h-1 bg-gradient-to-r from-transparent to-blue-400 rounded-full"></div>
+            <div className="w-3 h-3 bg-blue-500 rounded-full animate-bounce"></div>
+            <div className="w-16 h-1 bg-gradient-to-l from-transparent to-blue-400 rounded-full"></div>
+          </div>
+          
+          <h1 className="text-4xl md:text-5xl font-bold bg-gradient-to-r from-gray-800 to-gray-600 bg-clip-text text-transparent mb-2">
+            Oops! Link Expired
+          </h1>
+          
+          <div className="w-24 h-1 bg-gradient-to-r from-blue-500 to-purple-500 mx-auto rounded-full"></div>
+        </div>
         
         {/* Description */}
-        <p className="text-gray-600 text-lg leading-relaxed mb-8">
-          Hi there, your login link has expired, because you haven't used it. Login link expires after every 24 hours and can only be used once. You can request another link by clicking on the button below.
-        </p>
+        <div className="space-y-4">
+          <p className="text-gray-700 text-lg md:text-xl leading-relaxed font-medium">
+            Your login link has expired and can no longer be used.
+          </p>
+          <p className="text-gray-600 text-base md:text-lg leading-relaxed">
+            For security reasons, login links expire after 24 hours and can only be used once. 
+            Don't worry - you can easily request a new one below.
+          </p>
+        </div>
         
-        {/* Button */}
-        <div className="mb-8">
+        {/* Button with enhanced styling */}
+        <div className="pt-4">
           <Link to="/request-link">
-            <Button className="px-8 py-4 rounded-lg text-lg font-bold tracking-wide">
-              REQUEST ANOTHER LINK
+            <Button className="px-12 py-4 rounded-2xl text-lg font-bold tracking-wide">
+              Get New Login Link
             </Button>
           </Link>
         </div>
         
-        {/* Footer text */}
-        <p className="text-gray-500 text-sm">
-          If this issue continue to persist, 
-          <Link to="/contact" className="text-blue-500 hover:text-blue-600 underline ml-1">
-            let us know
-          </Link>.
-        </p>
+        {/* Additional help section */}
+        <div className="space-y-4 pt-8 border-t border-gray-200 border-opacity-50">
+          <p className="text-gray-500 text-sm">
+            Still having trouble? 
+            <Link to="/contact" className="text-blue-600 hover:text-blue-700 font-semibold ml-1 hover:underline transition-colors">
+              Contact our support team
+            </Link>
+          </p>
+          
+          <p className="text-gray-400 text-xs">
+            💡 Tip: Check your spam folder if you don't receive the new link within 5 minutes
+          </p>
+        </div>
       </div>
+      
+      {/* Decorative background elements */}
+      <div className="absolute top-10 left-10 w-20 h-20 bg-blue-200 rounded-full opacity-20 animate-pulse"></div>
+      <div className="absolute bottom-10 right-10 w-32 h-32 bg-purple-200 rounded-full opacity-20 animate-pulse" style={{animationDelay: '1s'}}></div>
+      <div className="absolute top-1/3 right-20 w-16 h-16 bg-indigo-200 rounded-full opacity-20 animate-pulse" style={{animationDelay: '2s'}}></div>
     </div>
   )
 }
