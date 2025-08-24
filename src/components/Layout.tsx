@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react'
+import { useState, useEffect } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '@/hooks/useAuth'
 import { Button } from '@/components/ui/button'
@@ -33,10 +33,6 @@ export default function Layout({ children }: { children: React.ReactNode }) {
   const [isAppLoading, setIsAppLoading] = useState(true)
   const [isAppFading, setIsAppFading] = useState(false)
 
-  // ====== TAMBAHAN: state toast + helper query params (NON-BREAKING) ======
-  const [toast, setToast] = useState<{ type: 'success'|'error'|'info', message: string }|null>(null)
-  const searchParams = useMemo(() => new URLSearchParams(location.search), [location.search])
-
   // Handle scroll untuk back to top button
   useEffect(() => {
     const handleScroll = () => {
@@ -62,34 +58,6 @@ export default function Layout({ children }: { children: React.ReactNode }) {
 
     return () => clearTimeout(t1)
   }, [])
-
-  // ====== TAMBAHAN: deteksi hash error OTP expired -> redirect ke /register?notice=link_expired ======
-  useEffect(() => {
-    const hash = location.hash || ''
-    if (hash.includes('error_code=otp_expired')) {
-      navigate('/register?notice=link_expired', { replace: true })
-    }
-  }, [location.hash, navigate])
-
-  // ====== TAMBAHAN: baca ?notice=... -> tampilkan toast -> bersihkan URL ======
-  useEffect(() => {
-    const notice = searchParams.get('notice')
-    if (!notice) return
-
-    if (notice === 'link_expired') {
-      setToast({ type: 'error', message: 'Link Expired — mohon registrasi ulang.' })
-    }
-    if (notice === 'login_success') {
-      setToast({ type: 'success', message: 'Berhasil masuk.' })
-    }
-
-    // Bersihkan query ?notice=... agar URL rapi
-    const cleanUrl = location.pathname + location.hash
-    navigate(cleanUrl, { replace: true })
-
-    const t = setTimeout(() => setToast(null), 4000)
-    return () => clearTimeout(t)
-  }, [searchParams, location.pathname, location.hash, navigate])
 
   // Function untuk scroll ke atas dengan animasi feedback
   const scrollToTop = () => {
@@ -404,6 +372,17 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         </div>
       )}
 
+      {/* Footer - Sticky Footer */}
+      <footer className="border-t bg-card">
+        <div className="px-4 sm:px-6 lg:px-8">
+          <div className="flex justify-center items-center h-16">
+            <div className="text-sm text-muted-foreground">
+              © 2025 Adata. Made With ♥ For RKS 3A.
+            </div>
+          </div>
+        </div>
+      </footer>
+
       {/* ====== TAMBAHAN: Overlay Loading Lottie (z di atas modal) ====== */}
       {isAppLoading && (
         <div
@@ -420,25 +399,6 @@ export default function Layout({ children }: { children: React.ReactNode }) {
             autoplay
             style={{ width: '160px', height: '160px' }}
           ></lottie-player>
-        </div>
-      )}
-
-      {/* ====== TAMBAHAN: Toast / Notifikasi ringan ====== */}
-      {toast && (
-        <div className="fixed top-4 right-4 z-[80]">
-          <div
-            className={[
-              'rounded-lg shadow-lg px-4 py-3 border',
-              toast.type === 'success' ? 'bg-emerald-50 dark:bg-emerald-900/20 border-emerald-200 dark:border-emerald-800 text-emerald-800 dark:text-emerald-200' : '',
-              toast.type === 'error' ? 'bg-rose-50 dark:bg-rose-900/20 border-rose-200 dark:border-rose-800 text-rose-800 dark:text-rose-200' : '',
-              toast.type === 'info' ? 'bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800 text-blue-800 dark:text-blue-200' : '',
-              'animate-in fade-in-0 slide-in-from-top-2 duration-200'
-            ].join(' ')}
-            role="status"
-            aria-live="polite"
-          >
-            {toast.message}
-          </div>
         </div>
       )}
     </div>

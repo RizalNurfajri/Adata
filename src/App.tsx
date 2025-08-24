@@ -17,6 +17,9 @@ import TambahMateri from "./pages/TambahMateri";
 import EditMateri from "./pages/EditMateri";
 import NotFound from "./pages/NotFound";
 
+// ➕ Tambahan import halaman khusus link expired
+import LinkExpired from "./pages/LinkExpired";
+
 const queryClient = new QueryClient();
 
 const App = () => (
@@ -38,6 +41,10 @@ const App = () => (
               <Route path="/semester/:id/:matkul/:tipe" element={<MaterialList />} />
               <Route path="/tambah" element={<TambahMateri />} />
               <Route path="/edit/:id" element={<EditMateri />} />
+
+              {/* ➕ Route baru untuk halaman link expired */}
+              <Route path="/link-expired" element={<LinkExpired />} />
+
               <Route path="*" element={<NotFound />} />
             </Routes>
           </Layout>
