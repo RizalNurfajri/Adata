@@ -13,18 +13,14 @@ const NotFound = () => {
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-background px-4">
-      <div className="text-center space-y-6 -mt-12">  {/* naik 3rem */}
-        {/* Lottie 404 lebih besar & responsif */}
+      <div className="text-center space-y-6 -mt-12"> {/* naik 3rem */}
+        {/* Gambar 404 responsif */}
         <div className="mx-auto w-full max-w-xl sm:max-w-2xl">
-          {/* @ts-ignore: web component */}
-          <lottie-player
-            src="/animations/404.json"
-            background="transparent"
-            speed="1"
-            loop
-            autoplay
-            style={{ width: "100%", height: "100%" }}
-          ></lottie-player>
+          <img
+            src="/404.webp"
+            alt="404 Not Found"
+            className="w-full h-auto"
+          />
         </div>
 
         <a
