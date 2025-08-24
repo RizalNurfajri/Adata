@@ -7,7 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { useAuth } from '@/hooks/useAuth'
 import { toast } from '@/hooks/use-toast'
 import { Loader2, BookOpen, Eye, EyeOff } from 'lucide-react'
-import { supabase } from '@/integrations/supabase/client'   // ✅ tambah: buat RPC
+import { supabase } from '@/integrations/supabase/client'   // ✅ buat RPC
 
 export default function Login() {
   const [email, setEmail] = useState('')
@@ -27,9 +27,12 @@ export default function Login() {
     e.preventDefault()
     setLoading(true)
 
+    // ✅ normalisasi email: trim + lowercase (TIDAK mengubah state/UX)
+    const normalizedEmail = email.trim().toLowerCase()
+
     try {
       // ✅ 1) Cek gate (cooldown) sebelum login
-      const { data: secondsLeft, error: gateErr } = await supabase.rpc('check_login_gate', { p_email: email })
+      const { data: secondsLeft, error: gateErr } = await supabase.rpc('check_login_gate', { p_email: normalizedEmail })
       if (!gateErr && secondsLeft && secondsLeft > 0) {
         const mins = Math.ceil(secondsLeft / 60)
         toast({
@@ -41,13 +44,13 @@ export default function Login() {
         return
       }
 
-      // ✅ 2) Coba login
-      const { error } = await signIn(email, password)
+      // ✅ 2) Coba login pakai email yang sudah dinormalisasi
+      const { error } = await signIn(normalizedEmail, password)
 
       if (error) {
         // Jika invalid credentials → catat kegagalan dan mungkin kunci
         if (error.message === 'Invalid login credentials') {
-          await supabase.rpc('record_login_failure', { p_email: email })
+          await supabase.rpc('record_login_failure', { p_email: normalizedEmail })
           toast({
             title: 'Error',
             description: 'Email atau password salah',
@@ -61,8 +64,8 @@ export default function Login() {
           })
         }
       } else {
-        // ✅ 3) Login sukses → reset counter
-        await supabase.rpc('reset_login_attempts', { p_email: email })
+        // ✅ 3) Login sukses → reset counter untuk email yang sudah dinormalisasi
+        await supabase.rpc('reset_login_attempts', { p_email: normalizedEmail })
         toast({ title: 'Berhasil', description: 'Login berhasil' })
         navigate('/')
       }
