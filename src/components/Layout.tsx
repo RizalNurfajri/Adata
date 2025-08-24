@@ -59,6 +59,21 @@ export default function Layout({ children }: { children: React.ReactNode }) {
     return () => clearTimeout(t1)
   }, [])
 
+  // ====== TAMBAHAN: Redirect jika hash mengandung error OTP expired ======
+  useEffect(() => {
+    const handle = () => {
+      const h = window.location.hash || ''
+      if (h.includes('error_code=otp_expired')) {
+        navigate('/link-expired', { replace: true })
+      }
+    }
+    // cek saat mount
+    handle()
+    // dengarkan perubahan hash (kalau hash di-update setelah render)
+    window.addEventListener('hashchange', handle)
+    return () => window.removeEventListener('hashchange', handle)
+  }, [navigate])
+
   // Function untuk scroll ke atas dengan animasi feedback
   const scrollToTop = () => {
     // Trigger visual feedback
