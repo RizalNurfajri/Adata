@@ -30,7 +30,17 @@ export default function Layout({ children }: { children: React.ReactNode }) {
   const [showBackToTop, setShowBackToTop] = useState(false)
 
   // ====== TAMBAHAN: state untuk overlay loading ======
-  const [isAppLoading, setIsAppLoading] = useState(true)
+  // Hanya tampil SEKALI saat user pertama kali masuk ke HOME ("/")
+  // Tidak tampil saat masuk pertama ke route lain (mis. /login) & tidak muncul lagi setelah itu (per tab)
+  const [isAppLoading, setIsAppLoading] = useState<boolean>(() => {
+    try {
+      const onHome = typeof window !== 'undefined' && window.location?.pathname === '/'
+      const shown = typeof window !== 'undefined' && sessionStorage.getItem('splashShown') === '1'
+      return onHome && !shown
+    } catch {
+      return false
+    }
+  })
   const [isAppFading, setIsAppFading] = useState(false)
 
   // Handle scroll untuk back to top button
@@ -44,20 +54,24 @@ export default function Layout({ children }: { children: React.ReactNode }) {
     return () => window.removeEventListener('scroll', handleScroll)
   }, [])
 
-  // ====== TAMBAHAN: simulasi loading awal + animasi fade out ======
+  // ====== TAMBAHAN: simulasi loading awal + animasi fade out (hanya jika diaktifkan) ======
   useEffect(() => {
+    if (!isAppLoading) return
     // durasi loading awal (bisa kamu sesuaikan atau dihubungkan dengan fetch data)
     const showMs = 3000
     const fadeMs = 300
 
     const t1 = setTimeout(() => {
       setIsAppFading(true)     // mulai fade out
-      const t2 = setTimeout(() => setIsAppLoading(false), fadeMs) // selesai, hilangkan overlay
+      const t2 = setTimeout(() => {
+        setIsAppLoading(false) // selesai, hilangkan overlay
+        try { sessionStorage.setItem('splashShown', '1') } catch {}
+      }, fadeMs)
       return () => clearTimeout(t2)
     }, showMs)
 
     return () => clearTimeout(t1)
-  }, [])
+  }, [isAppLoading])
 
   // ====== TAMBAHAN: Redirect jika hash mengandung error OTP expired ======
   useEffect(() => {
