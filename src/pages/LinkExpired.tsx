@@ -29,14 +29,6 @@ export default function LinkExpired() {
           REGISTRASI ULANG
         </Button>
       </Link>
-
-      {/* Footer help text */}
-      <p className="text-xs text-muted-foreground text-center mt-6">
-        If this issue continue to persist,{" "}
-        <a href="#" className="text-primary hover:underline">
-          let us know
-        </a>.
-      </p>
     </div>
   )
 }
