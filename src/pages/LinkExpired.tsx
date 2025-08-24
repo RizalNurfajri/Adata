@@ -13,7 +13,7 @@ export default function LinkExpired() {
 
       {/* Title */}
       <h1 className="text-2xl font-semibold text-center mb-2">
-        Register Link Expired
+        Link Registrasi Sudah Tidak Berlaku
       </h1>
 
       {/* Description */}
@@ -24,9 +24,9 @@ export default function LinkExpired() {
       </p>
 
       {/* Button */}
-      <Link to="/login">
+      <Link to="/register">
         <Button className="px-6 py-2 text-sm">
-          MINTA LINK BARU
+          REGISTRASI ULANG
         </Button>
       </Link>
 
