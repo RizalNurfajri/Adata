@@ -9,13 +9,10 @@ export function cn(...inputs: ClassValue[]) {
 export async function uploadToStorage(file: File, matkul?: string, tipe?: string): Promise<string | null> {
   try {
     let filePath: string
-    let fileName = file.name
-
-    // Sanitize filename to prevent issues
-    fileName = fileName.replace(/[^a-zA-Z0-9.-]/g, '_').toLowerCase()
+    const fileName = file.name // Gunakan nama file asli tanpa sanitasi
 
     if (matkul && tipe) {
-      // Sanitasi nama mata kuliah dan tipe untuk folder
+      // Hanya sanitasi folder path, bukan nama file
       const sanitizedMatkul = matkul
         .toLowerCase()
         .replace(/[^a-zA-Z0-9\s]/g, '') // Hapus karakter khusus
@@ -24,7 +21,7 @@ export async function uploadToStorage(file: File, matkul?: string, tipe?: string
 
       const sanitizedTipe = tipe.toLowerCase()
 
-      // Struktur: matkul/tipe/namafile
+      // Struktur: matkul/tipe/namafile (nama file tetap asli)
       filePath = `${sanitizedMatkul}/${sanitizedTipe}/${fileName}`
     } else {
       // Fallback ke nama file asli jika tidak ada parameter
