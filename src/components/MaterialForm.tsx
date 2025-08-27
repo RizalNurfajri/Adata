@@ -6,7 +6,7 @@ import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { toast } from '@/hooks/use-toast'
-import { uploadToStorage, deleteFromStorage, deleteFromStorageAlternative, extractFilePathFromUrl, renameFileInStorage } from '@/lib/utils'
+import { uploadToStorage, deleteFromStorageEnhanced, extractFilePathFromUrl } from '@/lib/utils'
 import { supabase } from '@/integrations/supabase/client'
 import { Loader2 } from 'lucide-react'
 
@@ -19,6 +19,7 @@ export default function MaterialForm({ isEdit = false, materialId }: MaterialFor
   const navigate = useNavigate()
   const [loading, setLoading] = useState(false)
   const [originalLink, setOriginalLink] = useState<string>('')
+  const [originalData, setOriginalData] = useState<any>(null)
   const [formData, setFormData] = useState({
     title: '',
     description: '',
@@ -48,6 +49,7 @@ export default function MaterialForm({ isEdit = false, materialId }: MaterialFor
         }
 
         setOriginalLink(data.link || '')
+        setOriginalData(data)
         setFormData({
           title: data.judul,
           description: data.deskripsi ?? '',
@@ -76,23 +78,12 @@ export default function MaterialForm({ isEdit = false, materialId }: MaterialFor
     setFile(selectedFile)
   }
 
-  const deleteOldFile = async (fileUrl: string): Promise<boolean> => {
-    if (!fileUrl) return true
-
-    let deleted = await deleteFromStorage(fileUrl)
-
-    if (!deleted) {
-      deleted = await deleteFromStorageAlternative(fileUrl)
-    }
-
-    return deleted
-  }
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setLoading(true)
 
     try {
+      // Check for duplicate title (except for current material when editing)
       if (!isEdit) {
         const { data: existing, error: checkError } = await supabase
           .from('materials')
@@ -112,59 +103,75 @@ export default function MaterialForm({ isEdit = false, materialId }: MaterialFor
         }
       }
 
-      let uploadedLink = formData.link
+      let finalLink = originalLink
 
+      // Handle file operations
       if (file) {
-        // Kasus: Upload file baru
-        // Pass mata kuliah dan tipe ke fungsi upload untuk struktur folder
-        const url = await uploadToStorage(file, formData.subject, formData.type)
-        if (!url) throw new Error('Gagal upload file PDF')
-        uploadedLink = url
+        // Case 1: New file uploaded
+        console.log('Uploading new file...')
+        const newUrl = await uploadToStorage(file, formData.subject, formData.type)
+        if (!newUrl) {
+          throw new Error('Gagal upload file')
+        }
+        
+        finalLink = newUrl
 
-        if (isEdit && originalLink && originalLink !== uploadedLink) {
-          await deleteOldFile(originalLink)
+        // Delete old file if this is an edit and we have an original link
+        if (isEdit && originalLink) {
+          console.log('Deleting old file:', originalLink)
+          const deleted = await deleteFromStorageEnhanced(originalLink)
+          if (!deleted) {
+            console.warn('Failed to delete old file:', originalLink)
+          }
         }
       } else if (isEdit && originalLink) {
-        // Kasus: Edit tanpa upload file baru, tapi cek apakah struktur folder perlu diubah
-        const currentFileName = originalLink.split('/').pop() || ''
-        const currentFilePath = extractFilePathFromUrl(originalLink)
+        // Case 2: No new file, but check if we need to reorganize existing file
+        const subjectChanged = originalData && originalData.matkul !== formData.subject
+        const typeChanged = originalData && originalData.tipe !== formData.type
         
-        if (currentFilePath) {
-          // Sanitasi nama mata kuliah dan tipe untuk folder yang diharapkan
-          const sanitizedMatkul = formData.subject
-            .toLowerCase()
-            .replace(/[^a-zA-Z0-9\s]/g, '') // Hapus karakter khusus
-            .replace(/\s+/g, '-') // Ganti spasi dengan dash
-            .trim()
-
-          const sanitizedTipe = formData.type.toLowerCase()
+        if (subjectChanged || typeChanged) {
+          console.log('Subject or type changed, need to reorganize file...')
           
-          // Path yang diharapkan berdasarkan data form saat ini
-          const expectedPath = `${sanitizedMatkul}/${sanitizedTipe}/${currentFileName}`
-          
-          // Jika struktur folder tidak sesuai, pindahkan file
-          if (currentFilePath !== expectedPath) {
-            const renamedUrl = await renameFileInStorage(
-              originalLink, 
-              currentFileName, 
-              formData.subject, 
-              formData.type
-            )
+          // Download the existing file
+          const filePath = extractFilePathFromUrl(originalLink)
+          if (filePath) {
+            const { data: fileData, error: downloadError } = await supabase.storage
+              .from('materi-pdf')
+              .download(filePath)
             
-            if (renamedUrl) {
-              uploadedLink = renamedUrl
-              toast({
-                title: 'Info',
-                description: 'File berhasil dipindahkan ke struktur folder yang benar',
-              })
+            if (downloadError || !fileData) {
+              console.error('Failed to download existing file for reorganization:', downloadError)
+              // Keep the original link if we can't reorganize
+              finalLink = originalLink
             } else {
-              // Jika gagal rename, tetap gunakan link lama
-              console.warn('Gagal memindahkan file ke struktur folder baru, menggunakan link lama')
+              // Create a File object from the downloaded data
+              const fileName = filePath.split('/').pop() || 'file.pdf'
+              const reorganizedFile = new File([fileData], fileName, { type: fileData.type })
+              
+              // Upload to new location
+              const newUrl = await uploadToStorage(reorganizedFile, formData.subject, formData.type)
+              if (newUrl) {
+                finalLink = newUrl
+                
+                // Delete old file
+                const deleted = await deleteFromStorageEnhanced(originalLink)
+                if (!deleted) {
+                  console.warn('Failed to delete old file during reorganization:', originalLink)
+                }
+              } else {
+                console.error('Failed to upload file to new location')
+                // Keep the original link if reorganization fails
+                finalLink = originalLink
+              }
             }
           }
+        } else {
+          // No changes to subject or type, keep existing link
+          finalLink = originalLink
         }
       }
 
+      // Update or insert the material
       if (isEdit && materialId) {
         const { error } = await supabase
           .from('materials')
@@ -174,7 +181,7 @@ export default function MaterialForm({ isEdit = false, materialId }: MaterialFor
             matkul: formData.subject,
             semester: parseInt(formData.semester.split(' ')[1]),
             tipe: formData.type,
-            link: uploadedLink
+            link: finalLink
           })
           .eq('id', materialId)
 
@@ -188,7 +195,7 @@ export default function MaterialForm({ isEdit = false, materialId }: MaterialFor
             matkul: formData.subject,
             semester: parseInt(formData.semester.split(' ')[1]),
             tipe: formData.type,
-            link: uploadedLink
+            link: finalLink
           }])
 
         if (error) throw error
@@ -201,6 +208,7 @@ export default function MaterialForm({ isEdit = false, materialId }: MaterialFor
 
       navigate('/admin/dashboard')
     } catch (err: any) {
+      console.error('Form submission error:', err)
       toast({
         title: 'Error',
         description: err.message || 'Terjadi kesalahan saat memproses data',
@@ -273,6 +281,7 @@ export default function MaterialForm({ isEdit = false, materialId }: MaterialFor
           type="file" 
           accept=".pdf,.pka,.doc,.docx,.ppt,.pptx" 
           onChange={handleFileChange} 
+          required={!isEdit} // Only required for new materials
         />
         <p className="text-xs text-muted-foreground mt-1">
           Format yang didukung: PDF, PKA, DOC, DOCX, PPT, PPTX
