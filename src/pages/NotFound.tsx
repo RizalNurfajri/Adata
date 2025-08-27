@@ -14,7 +14,7 @@ const NotFound = () => {
   return (
     <div className="min-h-screen flex items-center justify-center bg-background px-4">
       <div className="text-center space-y-6 -mt-12"> {/* naik 3rem */}
-        {/* Gambar 404 responsif lebih kecil */}
+        {/* 404 responsif lebih kecil */}
         <div className="mx-auto w-full max-w-lg"> {/* dari sm:max-w-2xl jadi max-w-lg */}
           <img
             src="/404.webp"
