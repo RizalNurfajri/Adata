@@ -19,10 +19,6 @@ export default function MaterialForm({ isEdit = false, materialId }: MaterialFor
   const navigate = useNavigate()
   const [loading, setLoading] = useState(false)
   const [originalLink, setOriginalLink] = useState<string>('')
-  const [originalData, setOriginalData] = useState({
-    subject: '',
-    type: ''
-  })
   const [formData, setFormData] = useState({
     title: '',
     description: '',
@@ -52,10 +48,6 @@ export default function MaterialForm({ isEdit = false, materialId }: MaterialFor
         }
 
         setOriginalLink(data.link || '')
-        setOriginalData({
-          subject: data.matkul,
-          type: data.tipe
-        })
         setFormData({
           title: data.judul,
           description: data.deskripsi ?? '',
@@ -88,80 +80,12 @@ export default function MaterialForm({ isEdit = false, materialId }: MaterialFor
     if (!fileUrl) return true
 
     let deleted = await deleteFromStorage(fileUrl)
+
     if (!deleted) {
       deleted = await deleteFromStorageAlternative(fileUrl)
     }
+
     return deleted
-  }
-
-  // Fungsi untuk memindahkan file jika struktur folder berubah
-  const handleFileReorganization = async (currentLink: string): Promise<string> => {
-    if (!currentLink) return currentLink
-
-    const currentFileName = currentLink.split('/').pop() || ''
-    
-    // Cek apakah mata kuliah atau tipe berubah
-    const subjectChanged = originalData.subject !== formData.subject
-    const typeChanged = originalData.type !== formData.type
-    
-    if (subjectChanged || typeChanged) {
-      console.log('Perubahan terdeteksi, memindahkan file...')
-      
-      const newUrl = await renameFileInStorage(
-        currentLink,
-        currentFileName,
-        formData.subject,
-        formData.type
-      )
-      
-      if (newUrl) {
-        console.log('File berhasil dipindahkan ke:', newUrl)
-        toast({
-          title: 'Info',
-          description: 'File berhasil dipindahkan ke struktur folder yang baru',
-        })
-        return newUrl
-      } else {
-        console.warn('Gagal memindahkan file, tetap menggunakan lokasi lama')
-        // Jika gagal pindah, coba download dan upload ulang
-        return await forceFileReorganization(currentLink)
-      }
-    }
-    
-    return currentLink
-  }
-
-  // Fungsi fallback untuk memindahkan file dengan cara download dan upload ulang
-  const forceFileReorganization = async (currentLink: string): Promise<string> => {
-    try {
-      // Download file dari URL lama
-      const response = await fetch(currentLink)
-      if (!response.ok) throw new Error('Gagal download file')
-      
-      const blob = await response.blob()
-      const fileName = currentLink.split('/').pop() || 'file.pdf'
-      
-      // Buat File object dari blob
-      const file = new File([blob], fileName, { type: blob.type })
-      
-      // Upload ke lokasi baru
-      const newUrl = await uploadToStorage(file, formData.subject, formData.type)
-      
-      if (newUrl) {
-        // Hapus file lama
-        await deleteOldFile(currentLink)
-        toast({
-          title: 'Info',
-          description: 'File berhasil dipindahkan dengan metode alternatif',
-        })
-        return newUrl
-      }
-      
-      throw new Error('Gagal upload ke lokasi baru')
-    } catch (error) {
-      console.error('Force reorganization failed:', error)
-      return currentLink // Return link lama jika gagal total
-    }
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -169,8 +93,7 @@ export default function MaterialForm({ isEdit = false, materialId }: MaterialFor
     setLoading(true)
 
     try {
-      // Validasi duplikasi judul (kecuali untuk edit dengan judul yang sama)
-      if (!isEdit || (isEdit && originalData.subject !== formData.title)) {
+      if (!isEdit) {
         const { data: existing, error: checkError } = await supabase
           .from('materials')
           .select('judul')
@@ -192,47 +115,83 @@ export default function MaterialForm({ isEdit = false, materialId }: MaterialFor
       let uploadedLink = formData.link
 
       if (file) {
-        // Upload file baru
+        // Kasus: Upload file baru
+        // Pass mata kuliah dan tipe ke fungsi upload untuk struktur folder
         const url = await uploadToStorage(file, formData.subject, formData.type)
         if (!url) throw new Error('Gagal upload file PDF')
         uploadedLink = url
 
-        // Hapus file lama jika ada
         if (isEdit && originalLink && originalLink !== uploadedLink) {
           await deleteOldFile(originalLink)
         }
       } else if (isEdit && originalLink) {
-        // Handle reorganisasi file jika struktur berubah
-        uploadedLink = await handleFileReorganization(originalLink)
-      }
+        // Kasus: Edit tanpa upload file baru, tapi cek apakah struktur folder perlu diubah
+        const currentFileName = originalLink.split('/').pop() || ''
+        const currentFilePath = extractFilePathFromUrl(originalLink)
+        
+        if (currentFilePath) {
+          // Sanitasi nama mata kuliah dan tipe untuk folder yang diharapkan
+          const sanitizedMatkul = formData.subject
+            .toLowerCase()
+            .replace(/[^a-zA-Z0-9\s]/g, '') // Hapus karakter khusus
+            .replace(/\s+/g, '-') // Ganti spasi dengan dash
+            .trim()
 
-      // Update/Insert ke database
-      const dbData = {
-        judul: formData.title,
-        deskripsi: formData.description,
-        matkul: formData.subject,
-        semester: parseInt(formData.semester.split(' ')[1]),
-        tipe: formData.type as 'Teori' | 'Praktikum',
-        link: uploadedLink
+          const sanitizedTipe = formData.type.toLowerCase()
+          
+          // Path yang diharapkan berdasarkan data form saat ini
+          const expectedPath = `${sanitizedMatkul}/${sanitizedTipe}/${currentFileName}`
+          
+          // Jika struktur folder tidak sesuai, pindahkan file
+          if (currentFilePath !== expectedPath) {
+            const renamedUrl = await renameFileInStorage(
+              originalLink, 
+              currentFileName, 
+              formData.subject, 
+              formData.type
+            )
+            
+            if (renamedUrl) {
+              uploadedLink = renamedUrl
+              toast({
+                title: 'Info',
+                description: 'File berhasil dipindahkan ke struktur folder yang benar',
+              })
+            } else {
+              // Jika gagal rename, tetap gunakan link lama
+              console.warn('Gagal memindahkan file ke struktur folder baru, menggunakan link lama')
+            }
+          }
+        }
       }
 
       if (isEdit && materialId) {
         const { error } = await supabase
           .from('materials')
-          .update(dbData)
+          .update({
+            judul: formData.title,
+            deskripsi: formData.description,
+            matkul: formData.subject,
+            semester: parseInt(formData.semester.split(' ')[1]),
+            tipe: formData.type,
+            link: uploadedLink
+          })
           .eq('id', materialId)
 
         if (error) throw error
-        
-        console.log('Data berhasil diupdate:', dbData)
       } else {
         const { error } = await supabase
           .from('materials')
-          .insert([dbData])
+          .insert([{
+            judul: formData.title,
+            deskripsi: formData.description,
+            matkul: formData.subject,
+            semester: parseInt(formData.semester.split(' ')[1]),
+            tipe: formData.type,
+            link: uploadedLink
+          }])
 
         if (error) throw error
-        
-        console.log('Data berhasil ditambahkan:', dbData)
       }
 
       toast({
@@ -242,7 +201,6 @@ export default function MaterialForm({ isEdit = false, materialId }: MaterialFor
 
       navigate('/admin/dashboard')
     } catch (err: any) {
-      console.error('Submit error:', err)
       toast({
         title: 'Error',
         description: err.message || 'Terjadi kesalahan saat memproses data',
@@ -271,11 +229,6 @@ export default function MaterialForm({ isEdit = false, materialId }: MaterialFor
         <div className="flex-1">
           <Label>Mata Kuliah</Label>
           <Input name="subject" value={formData.subject} onChange={handleChange} placeholder="Contoh: Jaringan Komputer" required />
-          {isEdit && originalData.subject !== formData.subject && (
-            <p className="text-xs text-yellow-600 mt-1">
-              ⚠️ Mengubah mata kuliah akan memindahkan file ke folder yang sesuai
-            </p>
-          )}
         </div>
         <div className="w-40">
           <Label>Semester</Label>
@@ -305,11 +258,6 @@ export default function MaterialForm({ isEdit = false, materialId }: MaterialFor
             <SelectItem value="Praktikum">Praktikum</SelectItem>
           </SelectContent>
         </Select>
-        {isEdit && originalData.type !== formData.type && (
-          <p className="text-xs text-yellow-600 mt-1">
-            ⚠️ Mengubah tipe akan memindahkan file ke folder yang sesuai
-          </p>
-        )}
       </div>
 
       <div>
