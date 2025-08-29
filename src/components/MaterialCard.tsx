@@ -29,6 +29,7 @@ export default memo(function MaterialCard({ material, onDeleted }: MaterialCardP
   const { profile } = useAuth()
   const [isDeleting, setIsDeleting] = useState(false)
   const [isDownloading, setIsDownloading] = useState(false)
+  const [isViewerLoading, setIsViewerLoading] = useState(false)
 
   // Memoize functions to prevent unnecessary re-renders
   const handleDelete = useCallback(async () => {
@@ -71,6 +72,76 @@ export default memo(function MaterialCard({ material, onDeleted }: MaterialCardP
       setIsDeleting(false)
     }
   }, [material.id, material.link, onDeleted])
+
+  // Enhanced view handler with better error handling
+  const handleViewClick = useCallback(async (url: string) => {
+    if (isViewerLoading) return
+
+    setIsViewerLoading(true)
+    
+    try {
+      // Show loading notification
+      toast({
+        title: 'Memuat PDF...',
+        description: 'Silakan tunggu sebentar sampai PDF dimuat',
+      })
+
+      // Preload the file to check if it's accessible
+      const preloadResponse = await fetch(url, { method: 'HEAD' })
+      
+      if (!preloadResponse.ok) {
+        throw new Error('File tidak dapat diakses')
+      }
+
+      // Use PDF.js viewer for better compatibility
+      const viewerUrl = getPdfJsViewerUrl(url)
+      const newWindow = window.open(viewerUrl, '_blank', 'noopener,noreferrer')
+      
+      if (!newWindow) {
+        throw new Error('Popup diblokir browser')
+      }
+
+      // Check if window loaded successfully after a short delay
+      setTimeout(() => {
+        try {
+          if (newWindow.location.href === 'about:blank') {
+            newWindow.close()
+            // Fallback to Google Docs viewer
+            const fallbackUrl = getGoogleDocsViewerUrl(url)
+            window.open(fallbackUrl, '_blank', 'noopener,noreferrer')
+          }
+        } catch (e) {
+          // Cross-origin error is expected and means the viewer loaded successfully
+          console.log('Viewer loaded successfully')
+        }
+      }, 1000)
+
+    } catch (error: any) {
+      console.error('View error:', error)
+      
+      let errorMessage = 'Gagal membuka file'
+      if (error.message.includes('tidak dapat diakses')) {
+        errorMessage = 'File tidak dapat diakses atau sudah tidak tersedia'
+      } else if (error.message.includes('Popup diblokir')) {
+        errorMessage = 'Popup diblokir browser. Mohon izinkan popup untuk situs ini'
+      }
+
+      toast({
+        title: 'Error',
+        description: errorMessage,
+        variant: 'destructive',
+      })
+
+      // Final fallback - try direct download
+      try {
+        window.open(url, '_blank', 'noopener,noreferrer')
+      } catch (fallbackError) {
+        console.error('Final fallback failed:', fallbackError)
+      }
+    } finally {
+      setIsViewerLoading(false)
+    }
+  }, [isViewerLoading])
 
   // Optimized download function with preconnect hint and better error handling
   const handleDownload = useCallback(async (fileUrl: string, filename: string) => {
@@ -270,10 +341,22 @@ export default memo(function MaterialCard({ material, onDeleted }: MaterialCardP
     }
   }, [])
 
-  // Optimize Google Docs viewer URL
-  const getViewerUrl = useCallback((link: string) => {
+  // Primary viewer using PDF.js (more reliable)
+  const getPdfJsViewerUrl = useCallback((link: string) => {
+    const encodedUrl = encodeURIComponent(link)
+    return `https://mozilla.github.io/pdf.js/web/viewer.html?file=${encodedUrl}`
+  }, [])
+
+  // Fallback viewer using Google Docs
+  const getGoogleDocsViewerUrl = useCallback((link: string) => {
     const encodedUrl = encodeURIComponent(link)
     return `https://docs.google.com/gview?url=${encodedUrl}&embedded=true`
+  }, [])
+
+  // Keep original function name for backward compatibility
+  const getViewerUrl = useCallback((link: string) => {
+    // Use PDF.js as primary viewer to avoid about:blank issues
+    return getPdfJsViewerUrl(link)
   }, [])
 
   return (
@@ -312,16 +395,19 @@ export default memo(function MaterialCard({ material, onDeleted }: MaterialCardP
 <div className="mt-auto flex flex-wrap items-center gap-2 justify-end sm:flex-nowrap">
   {material.link && (
     <>
-      <Button asChild variant="outline" size="sm" className="shrink-0">
-        <a
-          href={getViewerUrl(material.link)}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="flex items-center"
-        >
+      <Button 
+        variant="outline" 
+        size="sm" 
+        onClick={() => handleViewClick(material.link!)}
+        disabled={isViewerLoading}
+        className="flex items-center shrink-0"
+      >
+        {isViewerLoading ? (
+          <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+        ) : (
           <ExternalLink className="h-4 w-4 mr-1" />
-          Lihat
-        </a>
+        )}
+        {isViewerLoading ? 'Loading...' : 'Lihat'}
       </Button>
 
       <Button
