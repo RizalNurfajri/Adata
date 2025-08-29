@@ -73,7 +73,7 @@ export default memo(function MaterialCard({ material, onDeleted }: MaterialCardP
     }
   }, [material.id, material.link, onDeleted])
 
-  // Enhanced view handler with better error handling
+  // Fixed view handler - no more duplicate tabs
   const handleViewClick = useCallback(async (url: string) => {
     if (isViewerLoading) return
 
@@ -86,35 +86,26 @@ export default memo(function MaterialCard({ material, onDeleted }: MaterialCardP
         description: 'Silakan tunggu sebentar sampai PDF dimuat',
       })
 
-      // Preload the file to check if it's accessible
+      // Check file accessibility first
       const preloadResponse = await fetch(url, { method: 'HEAD' })
       
       if (!preloadResponse.ok) {
         throw new Error('File tidak dapat diakses')
       }
 
-      // Use PDF.js viewer for better compatibility
+      // Try PDF.js viewer first
       const viewerUrl = getPdfJsViewerUrl(url)
       const newWindow = window.open(viewerUrl, '_blank', 'noopener,noreferrer')
       
       if (!newWindow) {
-        throw new Error('Popup diblokir browser')
-      }
-
-      // Check if window loaded successfully after a short delay
-      setTimeout(() => {
-        try {
-          if (newWindow.location.href === 'about:blank') {
-            newWindow.close()
-            // Fallback to Google Docs viewer
-            const fallbackUrl = getGoogleDocsViewerUrl(url)
-            window.open(fallbackUrl, '_blank', 'noopener,noreferrer')
-          }
-        } catch (e) {
-          // Cross-origin error is expected and means the viewer loaded successfully
-          console.log('Viewer loaded successfully')
+        // If popup is blocked, try Google Docs viewer as fallback
+        const fallbackUrl = getGoogleDocsViewerUrl(url)
+        const fallbackWindow = window.open(fallbackUrl, '_blank', 'noopener,noreferrer')
+        
+        if (!fallbackWindow) {
+          throw new Error('Popup diblokir browser')
         }
-      }, 1000)
+      }
 
     } catch (error: any) {
       console.error('View error:', error)
