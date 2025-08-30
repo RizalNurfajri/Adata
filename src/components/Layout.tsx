@@ -171,11 +171,11 @@ export default function Layout({ children }: { children: React.ReactNode }) {
   return (
     <div className="min-h-screen bg-background flex flex-col">
       {/* Top Navigation Bar */}
-      <nav className="border-b bg-card sticky top-0 z-50">
+      <header className="border-b bg-card/95 backdrop-blur-sm sticky top-0 z-50 shadow-sm">
         <div className="px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
             {/* Logo */}
-            <Link to="/" className="flex items-center space-x-2">
+            <Link to="/" className="flex items-center space-x-2 transition-opacity hover:opacity-80">
               <img src="/logo.webp" alt="Adata" className="h-6 w-6" />
               <span className="text-xl font-bold text-foreground">Adata</span>
             </Link>
@@ -202,13 +202,15 @@ export default function Layout({ children }: { children: React.ReactNode }) {
             </div>
           </div>
         </div>
-      </nav>
+      </header>
 
       {/* Content Wrapper - Flex grow untuk mengisi ruang yang tersisa */}
-      <div className="flex flex-1">
+      <div className="flex flex-1 relative">
         {/* Main Content */}
-        <main className="flex-1 p-4 sm:p-6 lg:p-8">
-          {children}
+        <main className="flex-1 p-4 sm:p-6 lg:p-8 min-h-0">
+          <div className="max-w-full">
+            {children}
+          </div>
         </main>
 
         {/* Right Sidebar Overlay */}
@@ -222,24 +224,24 @@ export default function Layout({ children }: { children: React.ReactNode }) {
           >
             {/* Backdrop */}
             <div 
-              className={`fixed inset-0 bg-black transition-opacity duration-300 ${
-                isSidebarOpen ? 'bg-opacity-50' : 'bg-opacity-0'
+              className={`fixed inset-0 bg-black/50 backdrop-blur-sm transition-opacity duration-300 ${
+                isSidebarOpen ? 'opacity-100' : 'opacity-0'
               }`}
               onClick={closeSidebar} 
             />
             
             {/* Sidebar */}
             <aside 
-              className={`fixed right-0 top-0 w-full sm:w-96 md:w-80 bg-card h-full shadow-xl transform transition-transform duration-300 ease-in-out flex flex-col ${
+              className={`fixed right-0 top-0 w-full sm:w-96 md:w-80 bg-card border-l border-border h-full shadow-2xl transform transition-transform duration-300 ease-in-out flex flex-col ${
                 isSidebarOpen 
                   ? 'translate-x-0' 
                   : 'translate-x-full'
               }`}
             >
               {/* Sidebar Header */}
-              <div className="p-4 sm:p-6">
+              <div className="p-4 sm:p-6 border-b border-border/50">
                 <div className="flex items-center justify-between">
-                  <h2 className="text-lg font-semibold">
+                  <h2 className="text-lg font-semibold text-foreground">
                     Menu
                   </h2>
                   <Button 
@@ -254,7 +256,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
               </div>
               
               {/* Navigation Section */}
-              <div className="flex-1 px-6 pt-2 pb-6 space-y-1">
+              <div className="flex-1 px-6 pt-4 pb-6 space-y-1 overflow-y-auto">
                 {navigationItems
                   .filter(item => item.show)
                   .map((item) => {
@@ -279,13 +281,13 @@ export default function Layout({ children }: { children: React.ReactNode }) {
               </div>
 
               {/* User Profile Section - Fixed at bottom */}
-              <div className="relative mx-3 mb-3">
+              <div className="relative mx-3 mb-3 border-t border-border/50 pt-3">
                 {/* Dropdown Menu - Opens upward */}
                 {isProfileDropdownOpen && (
-                  <div className="absolute bottom-full left-0 right-0 bg-card shadow-lg border border-border rounded-t-lg mb-1">
+                  <div className="absolute bottom-full left-0 right-0 bg-card shadow-lg border border-border rounded-t-lg mb-1 overflow-hidden">
                     <Button 
                       variant="ghost" 
-                      className="w-full justify-start text-left px-4 py-3 rounded-t-lg hover:bg-accent/50" 
+                      className="w-full justify-start text-left px-4 py-3 rounded-t-lg hover:bg-destructive/10 hover:text-destructive transition-colors" 
                       onClick={handleLogoutClick}
                     >
                       <LogOut className="h-4 w-4 mr-3" />
@@ -297,23 +299,26 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                 {/* Profile Button */}
                 <Button
                   variant="ghost"
-                  className="w-full px-4 py-3 justify-between text-left h-auto hover:bg-accent/50 rounded-lg"
+                  className="w-full px-4 py-3 justify-between text-left h-auto hover:bg-accent/50 rounded-lg transition-all duration-200"
                   onClick={toggleProfileDropdown}
                 >
                   <div className="flex items-center space-x-3">
-                    <div className="w-8 h-8 bg-primary rounded-full flex items-center justify-center text-primary-foreground text-sm font-medium">
+                    <div className="w-8 h-8 bg-primary rounded-full flex items-center justify-center text-primary-foreground text-sm font-medium ring-2 ring-primary/20">
                       {user.email.charAt(0).toUpperCase()}
                     </div>
-                    <div className="flex flex-col">
-                      <span className="text-sm font-medium text-foreground">
+                    <div className="flex flex-col min-w-0">
+                      <span className="text-sm font-medium text-foreground truncate">
                         {user.email.split('@')[0]}
+                      </span>
+                      <span className="text-xs text-muted-foreground truncate">
+                        {user.email}
                       </span>
                     </div>
                   </div>
                   {isProfileDropdownOpen ? (
-                    <ChevronUp className="h-4 w-4 text-muted-foreground" />
+                    <ChevronUp className="h-4 w-4 text-muted-foreground transition-transform duration-200" />
                   ) : (
-                    <ChevronDown className="h-4 w-4 text-muted-foreground" />
+                    <ChevronDown className="h-4 w-4 text-muted-foreground transition-transform duration-200" />
                   )}
                 </Button>
               </div>
@@ -324,7 +329,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
 
       {/* Back to Top Button */}
       <div
-        className={`fixed bottom-6 right-6 z-50 transition-all duration-500 ease-out ${
+        className={`fixed bottom-24 right-6 z-50 transition-all duration-500 ease-out ${
           showBackToTop 
             ? 'opacity-100 scale-100 translate-y-0' 
             : 'opacity-0 scale-75 translate-y-8 pointer-events-none'
@@ -358,10 +363,10 @@ export default function Layout({ children }: { children: React.ReactNode }) {
 
       {/* Logout Confirmation Modal */}
       {showLogoutConfirmation && (
-        <div className="fixed inset-0 z-[60] flex items-center justify-center">
+        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
           {/* Backdrop */}
           <div 
-            className="fixed inset-0 bg-black/60 backdrop-blur-sm"
+            className="fixed inset-0 bg-black/60 backdrop-blur-sm transition-opacity duration-300"
             onClick={cancelLogout}
           />
           
@@ -401,12 +406,16 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         </div>
       )}
 
-      {/* Footer - Sticky Footer */}
-      <footer className="border-t bg-card">
+      {/* Footer - Properly positioned at bottom */}
+      <footer className="border-t bg-card/95 backdrop-blur-sm mt-auto">
         <div className="px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-center items-center h-16">
-            <div className="text-sm text-muted-foreground">
+          <div className="flex flex-col sm:flex-row justify-center sm:justify-between items-center h-16 sm:h-14">
+            <div className="text-sm text-muted-foreground text-center sm:text-left">
               © 2025 Adata. Made With ♥ For RKS 3A.
+            </div>
+            {/* Optional: Tambah link atau info tambahan di kanan */}
+            <div className="hidden sm:flex items-center space-x-4 text-xs text-muted-foreground">
+              <span>v1.0.0</span>
             </div>
           </div>
         </div>

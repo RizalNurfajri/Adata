@@ -51,82 +51,59 @@ export default function Home() {
   }
 
   return (
-    <div className="min-h-screen">
-      <div className="container mx-auto px-6 py-8 max-w-7xl">
-        {/* Hero Section */}
-        <div className="text-center py-16 mb-16">
-          <div className="flex justify-center mb-8">
-            <div className="p-4 rounded-full shadow-lg border">
-              <GraduationCap className="h-16 w-16 text-primary" />
-            </div>
-          </div>
-          <h1 className="text-5xl font-bold mb-6">Adata</h1>
-          <p className="text-xl text-muted-foreground max-w-3xl mx-auto leading-relaxed">
-            Website sederhana untuk mengakses materi kuliah dengan mudah
-          </p>
-          <div className="mt-12 w-24 h-1 bg-primary/20 mx-auto rounded-full"></div>
+    <div className="space-y-8">
+      {/* Hero Section */}
+      <div className="text-center py-12">
+        <div className="flex justify-center mb-6">
+          <GraduationCap className="h-16 w-16 text-primary" />
+        </div>
+        <h1 className="text-4xl font-bold mb-4">Adata</h1>
+        <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
+          Website sederhana untuk mengakses materi kuliah dengan mudah
+        </p>
+      </div>
+
+      {/* Semesters Section */}
+      <div>
+        <div className="flex items-center space-x-2 mb-6">
+          <BookOpen className="h-6 w-6 text-primary" />
+          <h2 className="text-2xl font-bold">Pilih Semester</h2>
         </div>
 
-        {/* Semesters Section */}
-        <div>
-          <div className="flex items-center justify-center space-x-3 mb-12">
-            <div className="p-2 rounded-lg border">
-              <BookOpen className="h-6 w-6 text-primary" />
-            </div>
-            <h2 className="text-3xl font-bold">Pilih Semester</h2>
-          </div>
-
-          {loading ? (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
-              {[...Array(8)].map((_, i) => (
-                <Card key={i} className="animate-pulse shadow-md">
-                  <CardHeader className="pb-4">
-                    <div className="h-6 bg-muted rounded-lg"></div>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="h-4 bg-muted rounded-lg mb-2"></div>
-                    <div className="h-4 bg-muted rounded-lg w-3/4"></div>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
-          ) : semesters.length === 0 ? (
-            <div className="flex justify-center">
-              <Card className="text-center py-16 px-12 max-w-lg shadow-lg">
-                <CardContent className="space-y-6">
-                  <div className="flex justify-center">
-                    <div className="p-4 rounded-full border">
-                      <BookOpen className="h-12 w-12 text-muted-foreground" />
-                    </div>
-                  </div>
-                  <div>
-                    <h3 className="text-xl font-semibold mb-3">Belum Ada Materi</h3>
-                    <p className="text-muted-foreground leading-relaxed">
-                      Belum ada materi yang tersedia. Admin dapat menambahkan materi baru.
-                    </p>
-                  </div>
+        {loading ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+            {[...Array(8)].map((_, i) => (
+              <Card key={i} className="animate-pulse">
+                <CardHeader>
+                  <div className="h-6 bg-muted rounded"></div>
+                </CardHeader>
+                <CardContent>
+                  <div className="h-4 bg-muted rounded"></div>
                 </CardContent>
               </Card>
-            </div>
-          ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
-              {semesters.map((semesterData) => (
-                <div 
-                  key={semesterData.semester} 
-                  className="transform hover:scale-105 hover:shadow-lg transition-all duration-300 ease-in-out"
-                >
-                  <SemesterCard
-                    semester={semesterData.semester}
-                    materialCount={semesterData.materialCount}
-                  />
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-
-        {/* Footer Spacing */}
-        <div className="py-20"></div>
+            ))}
+          </div>
+        ) : semesters.length === 0 ? (
+          <Card className="text-center py-12">
+            <CardContent>
+              <BookOpen className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
+              <h3 className="text-lg font-medium mb-2">Belum Ada Materi</h3>
+              <p className="text-muted-foreground">
+                Belum ada materi yang tersedia. Admin dapat menambahkan materi baru.
+              </p>
+            </CardContent>
+          </Card>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+            {semesters.map((semesterData) => (
+              <SemesterCard
+                key={semesterData.semester}
+                semester={semesterData.semester}
+                materialCount={semesterData.materialCount}
+              />
+            ))}
+          </div>
+        )}
       </div>
     </div>
   )
