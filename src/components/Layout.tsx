@@ -29,9 +29,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
   const [showLogoutConfirmation, setShowLogoutConfirmation] = useState(false)
   const [showBackToTop, setShowBackToTop] = useState(false)
 
-  // ====== TAMBAHAN: state untuk overlay loading ======
-  // Hanya tampil SEKALI saat user pertama kali masuk ke HOME ("/")
-  // Tidak tampil saat masuk pertama ke route lain (mis. /login) & tidak muncul lagi setelah itu (per tab)
+  // Loading state untuk splash screen - hanya tampil di home page sekali per session
   const [isAppLoading, setIsAppLoading] = useState<boolean>(() => {
     try {
       const onHome = typeof window !== 'undefined' && window.location?.pathname === '/'
@@ -43,60 +41,95 @@ export default function Layout({ children }: { children: React.ReactNode }) {
   })
   const [isAppFading, setIsAppFading] = useState(false)
 
-  // Handle scroll untuk back to top button
+  // Handle scroll untuk back to top button dengan throttling
   useEffect(() => {
+    let ticking = false
+    
     const handleScroll = () => {
-      const scrollTop = window.pageYOffset || document.documentElement.scrollTop
-      setShowBackToTop(scrollTop > 300) // Show button after scrolling 300px
+      if (!ticking) {
+        requestAnimationFrame(() => {
+          const scrollTop = window.pageYOffset || document.documentElement.scrollTop
+          setShowBackToTop(scrollTop > 300)
+          ticking = false
+        })
+        ticking = true
+      }
     }
 
-    window.addEventListener('scroll', handleScroll)
+    window.addEventListener('scroll', handleScroll, { passive: true })
     return () => window.removeEventListener('scroll', handleScroll)
   }, [])
 
-  // ====== TAMBAHAN: simulasi loading awal + animasi fade out (hanya jika diaktifkan) ======
+  // Loading animation dengan timing yang lebih baik
   useEffect(() => {
     if (!isAppLoading) return
-    // durasi loading awal (bisa kamu sesuaikan atau dihubungkan dengan fetch data)
-    const showMs = 3000
-    const fadeMs = 300
+    
+    const showMs = 2500 // Dikurangi sedikit untuk UX yang lebih responsif
+    const fadeMs = 400
 
-    const t1 = setTimeout(() => {
-      setIsAppFading(true)     // mulai fade out
-      const t2 = setTimeout(() => {
-        setIsAppLoading(false) // selesai, hilangkan overlay
-        try { sessionStorage.setItem('splashShown', '1') } catch {}
+    const loadingTimer = setTimeout(() => {
+      setIsAppFading(true)
+      const fadeTimer = setTimeout(() => {
+        setIsAppLoading(false)
+        try { 
+          sessionStorage.setItem('splashShown', '1') 
+        } catch (e) {
+          console.warn('Session storage not available')
+        }
       }, fadeMs)
-      return () => clearTimeout(t2)
+      return () => clearTimeout(fadeTimer)
     }, showMs)
 
-    return () => clearTimeout(t1)
+    return () => clearTimeout(loadingTimer)
   }, [isAppLoading])
 
-  // ====== TAMBAHAN: Redirect jika hash mengandung error OTP expired ======
+  // Handle OTP expired redirect
   useEffect(() => {
-    const handle = () => {
-      const h = window.location.hash || ''
-      if (h.includes('error_code=otp_expired')) {
+    const handleHashChange = () => {
+      const hash = window.location.hash || ''
+      if (hash.includes('error_code=otp_expired')) {
         navigate('/link-expired', { replace: true })
       }
     }
-    // cek saat mount
-    handle()
-    // dengarkan perubahan hash (kalau hash di-update setelah render)
-    window.addEventListener('hashchange', handle)
-    return () => window.removeEventListener('hashchange', handle)
+    
+    // Check on mount
+    handleHashChange()
+    // Listen untuk hash changes
+    window.addEventListener('hashchange', handleHashChange)
+    return () => window.removeEventListener('hashchange', handleHashChange)
   }, [navigate])
 
-  // Function untuk scroll ke atas dengan animasi feedback
+  // Close sidebar on route change
+  useEffect(() => {
+    setIsSidebarOpen(false)
+    setIsProfileDropdownOpen(false)
+  }, [location.pathname])
+
+  // Close dropdowns ketika klik outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      const target = event.target as HTMLElement
+      
+      // Close profile dropdown jika klik di luar
+      if (isProfileDropdownOpen && !target.closest('[data-profile-dropdown]')) {
+        setIsProfileDropdownOpen(false)
+      }
+    }
+
+    if (isProfileDropdownOpen) {
+      document.addEventListener('mousedown', handleClickOutside)
+      return () => document.removeEventListener('mousedown', handleClickOutside)
+    }
+  }, [isProfileDropdownOpen])
+
+  // Scroll to top dengan feedback visual yang lebih smooth
   const scrollToTop = () => {
-    // Trigger visual feedback
-    const button = document.querySelector('[data-back-to-top]')
+    const button = document.querySelector('[data-back-to-top]') as HTMLElement
     if (button) {
-      button.classList.add('animate-pulse')
+      button.style.transform = 'scale(0.9) translateY(2px)'
       setTimeout(() => {
-        button.classList.remove('animate-pulse')
-      }, 300)
+        button.style.transform = ''
+      }, 150)
     }
     
     window.scrollTo({
@@ -111,7 +144,6 @@ export default function Layout({ children }: { children: React.ReactNode }) {
       setIsSidebarOpen(false)
       setIsProfileDropdownOpen(false)
       setShowLogoutConfirmation(false)
-      // Redirect ke halaman login setelah logout
       navigate('/login')
     } catch (error) {
       console.error('Error signing out:', error)
@@ -120,6 +152,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
 
   const handleLogoutClick = () => {
     setShowLogoutConfirmation(true)
+    setIsProfileDropdownOpen(false) // Close dropdown saat modal muncul
   }
 
   const cancelLogout = () => {
@@ -130,6 +163,10 @@ export default function Layout({ children }: { children: React.ReactNode }) {
 
   const toggleSidebar = () => {
     setIsSidebarOpen(!isSidebarOpen)
+    // Close profile dropdown jika sidebar ditutup
+    if (isSidebarOpen) {
+      setIsProfileDropdownOpen(false)
+    }
   }
 
   const closeSidebar = () => {
@@ -168,29 +205,53 @@ export default function Layout({ children }: { children: React.ReactNode }) {
     }
   ]
 
+  // Prevent body scroll ketika sidebar terbuka
+  useEffect(() => {
+    if (isSidebarOpen) {
+      document.body.style.overflow = 'hidden'
+    } else {
+      document.body.style.overflow = 'unset'
+    }
+    
+    // Cleanup saat component unmount
+    return () => {
+      document.body.style.overflow = 'unset'
+    }
+  }, [isSidebarOpen])
+
   return (
     <div className="min-h-screen bg-background flex flex-col">
       {/* Top Navigation Bar */}
-      <nav className="border-b bg-card sticky top-0 z-50">
+      <nav className="border-b bg-card/95 backdrop-blur-sm sticky top-0 z-50 shadow-sm">
         <div className="px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
-            {/* Logo */}
-            <Link to="/" className="flex items-center space-x-2">
-              <img src="/logo.webp" alt="Adata" className="h-6 w-6" />
+            {/* Logo dengan hover effect */}
+            <Link 
+              to="/" 
+              className="flex items-center space-x-2 group transition-transform duration-200 hover:scale-105"
+            >
+              <img 
+                src="/logo.webp" 
+                alt="Adata" 
+                className="h-6 w-6 transition-transform duration-200 group-hover:rotate-12" 
+              />
               <span className="text-xl font-bold text-foreground">Adata</span>
             </Link>
 
             {/* Right side items */}
-            <div className="flex items-center space-x-4">
+            <div className="flex items-center space-x-2">
               <ThemeToggle />
               
-              {/* Menu button - always visible when user is logged in */}
+              {/* Menu button dengan indicator untuk sidebar state */}
               {user && (
                 <Button
                   variant="ghost"
                   size="sm"
                   onClick={toggleSidebar}
-                  className="relative transition-transform duration-200 hover:scale-105"
+                  className={`relative transition-all duration-200 hover:scale-105 hover:bg-accent/80 ${
+                    isSidebarOpen ? 'bg-accent text-accent-foreground' : ''
+                  }`}
+                  aria-label="Toggle menu"
                 >
                   <Menu 
                     className={`h-5 w-5 transition-transform duration-300 ${
@@ -204,127 +265,141 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         </div>
       </nav>
 
-      {/* Content Wrapper - Flex grow untuk mengisi ruang yang tersisa */}
-      <div className="flex flex-1">
-        {/* Main Content */}
-        <main className="flex-1 p-4 sm:p-6 lg:p-8">
+      {/* Content Wrapper */}
+      <div className="flex flex-1 relative">
+        {/* Main Content dengan padding yang konsisten */}
+        <main className="flex-1 p-4 sm:p-6 lg:p-8 max-w-full overflow-x-hidden">
           {children}
         </main>
 
-        {/* Right Sidebar Overlay */}
+        {/* Right Sidebar Overlay dengan improved animations */}
         {user && (
-          <div 
-            className={`fixed inset-0 z-40 transition-opacity duration-300 ${
-              isSidebarOpen 
-                ? 'opacity-100 pointer-events-auto' 
-                : 'opacity-0 pointer-events-none'
-            }`}
-          >
-            {/* Backdrop */}
+          <>
+            {/* Backdrop dengan blur effect */}
             <div 
-              className={`fixed inset-0 bg-black transition-opacity duration-300 ${
-                isSidebarOpen ? 'bg-opacity-50' : 'bg-opacity-0'
+              className={`fixed inset-0 z-40 transition-all duration-300 ease-out ${
+                isSidebarOpen 
+                  ? 'opacity-100 pointer-events-auto backdrop-blur-sm' 
+                  : 'opacity-0 pointer-events-none'
               }`}
+              style={{ 
+                backgroundColor: isSidebarOpen ? 'rgba(0, 0, 0, 0.5)' : 'transparent' 
+              }}
               onClick={closeSidebar} 
             />
             
-            {/* Sidebar */}
+            {/* Sidebar dengan improved shadow dan animations */}
             <aside 
-              className={`fixed right-0 top-0 w-full sm:w-96 md:w-80 bg-card h-full shadow-xl transform transition-transform duration-300 ease-in-out flex flex-col ${
+              className={`fixed right-0 top-0 w-full sm:w-96 md:w-80 bg-card/95 backdrop-blur-sm h-full shadow-2xl transform transition-all duration-300 ease-out flex flex-col border-l border-border/50 ${
                 isSidebarOpen 
                   ? 'translate-x-0' 
                   : 'translate-x-full'
               }`}
+              style={{
+                boxShadow: isSidebarOpen 
+                  ? '-10px 0 30px -5px rgba(0, 0, 0, 0.3)' 
+                  : 'none'
+              }}
             >
-              {/* Sidebar Header */}
-              <div className="p-4 sm:p-6">
+              {/* Sidebar Header dengan better spacing */}
+              <div className="p-6 border-b border-border/50">
                 <div className="flex items-center justify-between">
-                  <h2 className="text-lg font-semibold">
+                  <h2 className="text-lg font-semibold text-foreground">
                     Menu
                   </h2>
                   <Button 
                     variant="ghost" 
                     size="sm" 
                     onClick={closeSidebar}
-                    className="transition-transform duration-200 hover:scale-110 hover:rotate-90"
+                    className="transition-all duration-200 hover:scale-110 hover:rotate-90 hover:bg-accent/80"
+                    aria-label="Close menu"
                   >
                     <X className="h-5 w-5" />
                   </Button>
                 </div>
               </div>
               
-              {/* Navigation Section */}
-              <div className="flex-1 px-6 pt-2 pb-6 space-y-1">
+              {/* Navigation Section dengan better spacing */}
+              <div className="flex-1 px-4 py-6 space-y-2 overflow-y-auto">
                 {navigationItems
                   .filter(item => item.show)
                   .map((item) => {
                     const Icon = item.icon
+                    const active = isActive(item.path)
+                    
                     return (
                       <Link
                         key={item.path}
                         to={item.path}
                         onClick={closeSidebar}
-                        className={`flex items-center space-x-3 px-4 py-3 rounded-lg text-sm font-medium transition-all duration-300 hover:scale-[1.02] ${
-                          isActive(item.path)
-                            ? 'bg-primary text-primary-foreground shadow-sm transform translate-x-1'
-                            : 'text-muted-foreground hover:text-foreground hover:bg-accent hover:translate-x-1'
+                        className={`flex items-center space-x-3 px-4 py-3 rounded-xl text-sm font-medium transition-all duration-200 group ${
+                          active
+                            ? 'bg-primary text-primary-foreground shadow-md scale-[1.02]'
+                            : 'text-muted-foreground hover:text-foreground hover:bg-accent/80 hover:scale-[1.01]'
                         }`}
                       >
-                        <Icon className="h-5 w-5" />
-                        <span>{item.name}</span>
+                        <Icon className={`h-5 w-5 transition-transform duration-200 ${
+                          active ? '' : 'group-hover:scale-110'
+                        }`} />
+                        <span className="font-medium">{item.name}</span>
                       </Link>
                     )
                   })
                 }
               </div>
 
-              {/* User Profile Section - Fixed at bottom */}
-              <div className="relative mx-3 mb-3">
-                {/* Dropdown Menu - Opens upward */}
+              {/* User Profile Section dengan better positioning */}
+              <div className="relative mx-4 mb-4" data-profile-dropdown>
+                {/* Dropdown Menu - Opens upward dengan better animation */}
                 {isProfileDropdownOpen && (
-                  <div className="absolute bottom-full left-0 right-0 bg-card shadow-lg border border-border rounded-t-lg mb-1">
+                  <div className="absolute bottom-full left-0 right-0 bg-card/95 backdrop-blur-sm shadow-xl border border-border/50 rounded-xl mb-2 overflow-hidden animate-in slide-in-from-bottom-2 duration-200">
                     <Button 
                       variant="ghost" 
-                      className="w-full justify-start text-left px-4 py-3 rounded-t-lg hover:bg-accent/50" 
+                      className="w-full justify-start text-left px-4 py-3 rounded-xl hover:bg-accent/80 transition-colors duration-200" 
                       onClick={handleLogoutClick}
                     >
-                      <LogOut className="h-4 w-4 mr-3" />
-                      Keluar dari Akun
+                      <LogOut className="h-4 w-4 mr-3 text-red-500" />
+                      <span className="text-red-600 dark:text-red-400 font-medium">
+                        Keluar dari Akun
+                      </span>
                     </Button>
                   </div>
                 )}
 
-                {/* Profile Button */}
+                {/* Profile Button dengan better styling */}
                 <Button
                   variant="ghost"
-                  className="w-full px-4 py-3 justify-between text-left h-auto hover:bg-accent/50 rounded-lg"
+                  className="w-full px-4 py-3 justify-between text-left h-auto hover:bg-accent/80 rounded-xl transition-all duration-200 border border-border/30"
                   onClick={toggleProfileDropdown}
                 >
                   <div className="flex items-center space-x-3">
-                    <div className="w-8 h-8 bg-primary rounded-full flex items-center justify-center text-primary-foreground text-sm font-medium">
+                    <div className="w-9 h-9 bg-gradient-to-br from-primary to-primary/80 rounded-full flex items-center justify-center text-primary-foreground text-sm font-bold shadow-sm">
                       {user.email.charAt(0).toUpperCase()}
                     </div>
                     <div className="flex flex-col">
-                      <span className="text-sm font-medium text-foreground">
+                      <span className="text-sm font-semibold text-foreground">
                         {user.email.split('@')[0]}
+                      </span>
+                      <span className="text-xs text-muted-foreground">
+                        {profile?.role === 'admin' ? 'Administrator' : 'Pengguna'}
                       </span>
                     </div>
                   </div>
-                  {isProfileDropdownOpen ? (
-                    <ChevronUp className="h-4 w-4 text-muted-foreground" />
-                  ) : (
+                  <div className={`transition-transform duration-200 ${
+                    isProfileDropdownOpen ? 'rotate-180' : 'rotate-0'
+                  }`}>
                     <ChevronDown className="h-4 w-4 text-muted-foreground" />
-                  )}
+                  </div>
                 </Button>
               </div>
             </aside>
-          </div>
+          </>
         )}
       </div>
 
-      {/* Back to Top Button */}
+      {/* Back to Top Button dengan improved positioning dan animation */}
       <div
-        className={`fixed bottom-6 right-6 z-50 transition-all duration-500 ease-out ${
+        className={`fixed bottom-6 right-6 z-30 transition-all duration-500 ease-out ${
           showBackToTop 
             ? 'opacity-100 scale-100 translate-y-0' 
             : 'opacity-0 scale-75 translate-y-8 pointer-events-none'
@@ -333,50 +408,45 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         <Button
           data-back-to-top
           onClick={scrollToTop}
-          className="relative w-14 h-14 rounded-full shadow-2xl transition-all duration-300 ease-out
+          className="relative w-12 h-12 rounded-full shadow-lg transition-all duration-300 ease-out
                      bg-primary hover:bg-primary/90 
                      hover:scale-110 hover:shadow-xl hover:-translate-y-1
                      active:scale-95 active:translate-y-0
                      group overflow-hidden"
           size="sm"
+          aria-label="Scroll to top"
         >
-          {/* Background animation effect */}
-          <div className="absolute inset-0 bg-gradient-to-r from-primary/20 via-primary-foreground/10 to-primary/20 
+          {/* Background shimmer effect */}
+          <div className="absolute inset-0 bg-gradient-to-r from-transparent via-primary-foreground/20 to-transparent 
                           translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-700 ease-out" />
           
-          {/* Arrow icon with bounce animation */}
-          <ArrowUp className="h-6 w-6 relative z-10 transition-all duration-300 
-                            group-hover:scale-110 group-hover:-translate-y-0.5
-                            group-active:scale-90" />
-          
-          {/* Ripple effect on hover */}
-          <div className="absolute inset-0 rounded-full bg-primary-foreground/20 scale-0 
-                          group-hover:scale-100 group-hover:opacity-0 
-                          transition-all duration-500 ease-out opacity-100" />
+          {/* Arrow icon */}
+          <ArrowUp className="h-5 w-5 relative z-10 transition-all duration-200 
+                            group-hover:scale-110 group-hover:-translate-y-0.5" />
         </Button>
       </div>
 
-      {/* Logout Confirmation Modal */}
+      {/* Logout Confirmation Modal dengan improved design */}
       {showLogoutConfirmation && (
-        <div className="fixed inset-0 z-[60] flex items-center justify-center">
-          {/* Backdrop */}
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          {/* Backdrop dengan blur */}
           <div 
-            className="fixed inset-0 bg-black/60 backdrop-blur-sm"
+            className="fixed inset-0 bg-black/60 backdrop-blur-sm transition-opacity duration-200"
             onClick={cancelLogout}
           />
           
-          {/* Modal */}
-          <div className="relative bg-card border border-border rounded-lg shadow-2xl p-6 mx-4 max-w-md w-full animate-in fade-in-0 zoom-in-95 duration-200">
-            <div className="flex items-center space-x-3 mb-4">
-              <div className="w-10 h-10 bg-orange-100 dark:bg-orange-900/30 rounded-full flex items-center justify-center">
-                <AlertTriangle className="h-5 w-5 text-orange-600 dark:text-orange-400" />
+          {/* Modal dengan better animation */}
+          <div className="relative bg-card/95 backdrop-blur-sm border border-border/50 rounded-2xl shadow-2xl p-6 mx-4 max-w-md w-full animate-in fade-in-0 zoom-in-95 duration-300">
+            <div className="flex items-start space-x-4 mb-6">
+              <div className="w-12 h-12 bg-orange-100 dark:bg-orange-900/30 rounded-full flex items-center justify-center flex-shrink-0">
+                <AlertTriangle className="h-6 w-6 text-orange-600 dark:text-orange-400" />
               </div>
-              <div>
-                <h3 className="text-lg font-semibold text-foreground">
+              <div className="flex-1">
+                <h3 className="text-lg font-semibold text-foreground mb-2">
                   Konfirmasi Keluar
                 </h3>
-                <p className="text-sm text-muted-foreground mt-1">
-                  Apakah Anda yakin ingin keluar dari akun?
+                <p className="text-sm text-muted-foreground leading-relaxed">
+                  Apakah Anda yakin ingin keluar dari akun? Anda perlu login kembali untuk mengakses aplikasi.
                 </p>
               </div>
             </div>
@@ -385,14 +455,14 @@ export default function Layout({ children }: { children: React.ReactNode }) {
               <Button 
                 variant="outline" 
                 onClick={cancelLogout}
-                className="px-4 py-2"
+                className="px-6 py-2 transition-all duration-200 hover:scale-105"
               >
                 Batal
               </Button>
               <Button 
                 variant="destructive" 
                 onClick={handleSignOut}
-                className="px-4 py-2"
+                className="px-6 py-2 transition-all duration-200 hover:scale-105"
               >
                 Ya, Keluar
               </Button>
@@ -401,33 +471,46 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         </div>
       )}
 
-      {/* Footer - Sticky Footer */}
-      <footer className="border-t bg-card">
+      {/* Footer dengan better responsive design */}
+      <footer className="border-t bg-card/50 backdrop-blur-sm">
         <div className="px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-center items-center h-16">
-            <div className="text-sm text-muted-foreground">
-              © 2025 Adata. Made With ♥ For RKS 3A.
+          <div className="flex justify-center items-center h-14">
+            <div className="text-sm text-muted-foreground text-center">
+              © 2025 Adata. Made With{' '}
+              <span className="text-red-500 inline-block animate-pulse">♥</span>
+              {' '}For RKS 3A.
             </div>
           </div>
         </div>
       </footer>
 
-      {/* ====== TAMBAHAN: Overlay Loading Lottie (z di atas modal) ====== */}
+      {/* Loading Overlay dengan improved z-index dan transition */}
       {isAppLoading && (
         <div
-          className={`fixed inset-0 z-[70] flex items-center justify-center bg-background transition-opacity duration-300 ${
-            isAppFading ? 'opacity-0 pointer-events-none' : 'opacity-100'
+          className={`fixed inset-0 z-[60] flex items-center justify-center bg-background transition-all duration-400 ease-out ${
+            isAppFading ? 'opacity-0 scale-105' : 'opacity-100 scale-100'
           }`}
+          style={{ 
+            pointerEvents: isAppFading ? 'none' : 'auto' 
+          }}
         >
-          {/* @ts-ignore: web component */}
-          <lottie-player
-            src="/animations/loading.json"
-            background="transparent"
-            speed="1"
-            loop
-            autoplay
-            style={{ width: '160px', height: '160px' }}
-          ></lottie-player>
+          {/* Loading animation container */}
+          <div className="flex flex-col items-center space-y-4">
+            {/* @ts-ignore: web component */}
+            <lottie-player
+              src="/animations/loading.json"
+              background="transparent"
+              speed="1"
+              loop
+              autoplay
+              style={{ width: '140px', height: '140px' }}
+            />
+            
+            {/* Optional loading text */}
+            <div className="text-sm text-muted-foreground font-medium">
+              Memuat aplikasi...
+            </div>
+          </div>
         </div>
       )}
     </div>
