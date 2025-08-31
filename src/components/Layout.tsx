@@ -180,15 +180,11 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                 src="/logo-light.webp"
                 alt="Adata"
                 className="h-6 w-auto dark:hidden"
-                width={100}
-                height={28}
               />
               <img
                 src="/logo-dark.webp"
                 alt="Adata"
                 className="h-6 w-auto hidden dark:block"
-                width={100}
-                height={28}
               />
             </Link>
 
