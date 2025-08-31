@@ -182,7 +182,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
               className="h-8 block dark:hidden"
             />
             <img
-              src="/adata-logo-dark.png"
+              src="/logo-dark.png"
               alt="Adata"
               className="h-8 hidden dark:block"
             />
