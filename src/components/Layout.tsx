@@ -196,7 +196,6 @@ export default function Layout({ children }: { children: React.ReactNode }) {
               loading="eager"
               decoding="async"
             />
-          </Link>
             </Link>
 
             {/* Right side items */}
