@@ -29,9 +29,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
   const [showLogoutConfirmation, setShowLogoutConfirmation] = useState(false)
   const [showBackToTop, setShowBackToTop] = useState(false)
 
-  // ====== TAMBAHAN: state untuk overlay loading ======
-  // Hanya tampil SEKALI saat user pertama kali masuk ke HOME ("/")
-  // Tidak tampil saat masuk pertama ke route lain (mis. /login) & tidak muncul lagi setelah itu (per tab)
+  // Splash screen state
   const [isAppLoading, setIsAppLoading] = useState<boolean>(() => {
     try {
       const onHome = typeof window !== 'undefined' && window.location?.pathname === '/'
@@ -43,28 +41,25 @@ export default function Layout({ children }: { children: React.ReactNode }) {
   })
   const [isAppFading, setIsAppFading] = useState(false)
 
-  // Handle scroll untuk back to top button
   useEffect(() => {
     const handleScroll = () => {
       const scrollTop = window.pageYOffset || document.documentElement.scrollTop
-      setShowBackToTop(scrollTop > 300) // Show button after scrolling 300px
+      setShowBackToTop(scrollTop > 300)
     }
 
     window.addEventListener('scroll', handleScroll)
     return () => window.removeEventListener('scroll', handleScroll)
   }, [])
 
-  // ====== TAMBAHAN: simulasi loading awal + animasi fade out (hanya jika diaktifkan) ======
   useEffect(() => {
     if (!isAppLoading) return
-    // durasi loading awal (bisa kamu sesuaikan atau dihubungkan dengan fetch data)
     const showMs = 3000
     const fadeMs = 300
 
     const t1 = setTimeout(() => {
-      setIsAppFading(true)     // mulai fade out
+      setIsAppFading(true)
       const t2 = setTimeout(() => {
-        setIsAppLoading(false) // selesai, hilangkan overlay
+        setIsAppLoading(false)
         try { sessionStorage.setItem('splashShown', '1') } catch {}
       }, fadeMs)
       return () => clearTimeout(t2)
@@ -73,7 +68,6 @@ export default function Layout({ children }: { children: React.ReactNode }) {
     return () => clearTimeout(t1)
   }, [isAppLoading])
 
-  // ====== TAMBAHAN: Redirect jika hash mengandung error OTP expired ======
   useEffect(() => {
     const handle = () => {
       const h = window.location.hash || ''
@@ -81,16 +75,12 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         navigate('/link-expired', { replace: true })
       }
     }
-    // cek saat mount
     handle()
-    // dengarkan perubahan hash (kalau hash di-update setelah render)
     window.addEventListener('hashchange', handle)
     return () => window.removeEventListener('hashchange', handle)
   }, [navigate])
 
-  // Function untuk scroll ke atas dengan animasi feedback
   const scrollToTop = () => {
-    // Trigger visual feedback
     const button = document.querySelector('[data-back-to-top]')
     if (button) {
       button.classList.add('animate-pulse')
@@ -111,7 +101,6 @@ export default function Layout({ children }: { children: React.ReactNode }) {
       setIsSidebarOpen(false)
       setIsProfileDropdownOpen(false)
       setShowLogoutConfirmation(false)
-      // Redirect ke halaman login setelah logout
       navigate('/login')
     } catch (error) {
       console.error('Error signing out:', error)
@@ -127,45 +116,18 @@ export default function Layout({ children }: { children: React.ReactNode }) {
   }
 
   const isActive = (path: string) => location.pathname === path
-
-  const toggleSidebar = () => {
-    setIsSidebarOpen(!isSidebarOpen)
-  }
-
+  const toggleSidebar = () => setIsSidebarOpen(!isSidebarOpen)
   const closeSidebar = () => {
     setIsSidebarOpen(false)
     setIsProfileDropdownOpen(false)
   }
-
-  const toggleProfileDropdown = () => {
-    setIsProfileDropdownOpen(!isProfileDropdownOpen)
-  }
+  const toggleProfileDropdown = () => setIsProfileDropdownOpen(!isProfileDropdownOpen)
 
   const navigationItems = [
-    {
-      name: 'Semester',
-      path: '/',
-      icon: Home,
-      show: true
-    },
-    {
-      name: 'Dashboard',
-      path: '/dashboard',
-      icon: BarChart3,
-      show: !!user
-    },
-    {
-      name: 'Tambah Materi',
-      path: '/tambah',
-      icon: Plus,
-      show: profile?.role === 'admin'
-    },
-    {
-      name: 'Admin',
-      path: '/admin/dashboard',
-      icon: Settings,
-      show: profile?.role === 'admin'
-    }
+    { name: 'Semester', path: '/', icon: Home, show: true },
+    { name: 'Dashboard', path: '/dashboard', icon: BarChart3, show: !!user },
+    { name: 'Tambah Materi', path: '/tambah', icon: Plus, show: profile?.role === 'admin' },
+    { name: 'Admin', path: '/admin/dashboard', icon: Settings, show: profile?.role === 'admin' }
   ]
 
   return (
@@ -176,33 +138,31 @@ export default function Layout({ children }: { children: React.ReactNode }) {
           <div className="flex justify-between items-center h-16">
             {/* Logo */}
             <Link to="/" className="flex items-center space-x-2">
-              {/* Logo Light Mode */}
-            <img
-              src="/logo-light.webp"
-              alt="Adata"
-              className="h-6 w-auto dark:hidden"
-              width={100}
-              height={28}
-              loading="eager"
-              decoding="async"
-            />
-            {/* Logo Dark Mode */}
-            <img
-              src="/logo-dark.webp"
-              alt="Adata"
-              className="h-6 w-auto hidden dark:block"
-              width={100}
-              height={28}
-              loading="eager"
-              decoding="async"
-            />
+              {/* Light Mode Logo */}
+              <img
+                src="/logo-light.webp"
+                alt="Adata"
+                className="h-6 w-auto dark:hidden"
+                width={100}
+                height={28}
+                loading="eager"
+                decoding="async"
+              />
+              {/* Dark Mode Logo */}
+              <img
+                src="/logo-dark.webp"
+                alt="Adata"
+                className="h-6 w-auto hidden dark:block"
+                width={100}
+                height={28}
+                loading="eager"
+                decoding="async"
+              />
             </Link>
 
             {/* Right side items */}
             <div className="flex items-center space-x-4">
               <ThemeToggle />
-              
-              {/* Menu button - always visible when user is logged in */}
               {user && (
                 <Button
                   variant="ghost"
@@ -222,56 +182,42 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         </div>
       </nav>
 
-      {/* Content Wrapper - Flex grow untuk mengisi ruang yang tersisa */}
+      {/* Content */}
       <div className="flex flex-1">
-        {/* Main Content */}
         <main className="flex-1 p-4 sm:p-6 lg:p-8">
           {children}
         </main>
 
-        {/* Right Sidebar Overlay */}
+        {/* Sidebar */}
         {user && (
           <div 
             className={`fixed inset-0 z-40 transition-opacity duration-300 ${
-              isSidebarOpen 
-                ? 'opacity-100 pointer-events-auto' 
-                : 'opacity-0 pointer-events-none'
+              isSidebarOpen ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'
             }`}
           >
-            {/* Backdrop */}
             <div 
               className={`fixed inset-0 bg-black transition-opacity duration-300 ${
                 isSidebarOpen ? 'bg-opacity-50' : 'bg-opacity-0'
               }`}
               onClick={closeSidebar} 
             />
-            
-            {/* Sidebar */}
             <aside 
               className={`fixed right-0 top-0 w-full sm:w-96 md:w-80 bg-card h-full shadow-xl transform transition-transform duration-300 ease-in-out flex flex-col ${
-                isSidebarOpen 
-                  ? 'translate-x-0' 
-                  : 'translate-x-full'
+                isSidebarOpen ? 'translate-x-0' : 'translate-x-full'
               }`}
             >
-              {/* Sidebar Header */}
-              <div className="p-4 sm:p-6">
-                <div className="flex items-center justify-between">
-                  <h2 className="text-lg font-semibold">
-                    Menu
-                  </h2>
-                  <Button 
-                    variant="ghost" 
-                    size="sm" 
-                    onClick={closeSidebar}
-                    className="transition-transform duration-200 hover:scale-110 hover:rotate-90"
-                  >
-                    <X className="h-5 w-5" />
-                  </Button>
-                </div>
+              <div className="p-4 sm:p-6 flex items-center justify-between">
+                <h2 className="text-lg font-semibold">Menu</h2>
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  onClick={closeSidebar}
+                  className="transition-transform duration-200 hover:scale-110 hover:rotate-90"
+                >
+                  <X className="h-5 w-5" />
+                </Button>
               </div>
               
-              {/* Navigation Section */}
               <div className="flex-1 px-6 pt-2 pb-6 space-y-1">
                 {navigationItems
                   .filter(item => item.show)
@@ -292,13 +238,11 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                         <span>{item.name}</span>
                       </Link>
                     )
-                  })
-                }
+                  })}
               </div>
 
-              {/* User Profile Section - Fixed at bottom */}
+              {/* Profile Section */}
               <div className="relative mx-3 mb-3">
-                {/* Dropdown Menu - Opens upward */}
                 {isProfileDropdownOpen && (
                   <div className="absolute bottom-full left-0 right-0 bg-card shadow-lg border border-border rounded-t-lg mb-1">
                     <Button 
@@ -311,8 +255,6 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                     </Button>
                   </div>
                 )}
-
-                {/* Profile Button */}
                 <Button
                   variant="ghost"
                   className="w-full px-4 py-3 justify-between text-left h-auto hover:bg-accent/50 rounded-lg"
@@ -358,68 +300,43 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                      group overflow-hidden"
           size="sm"
         >
-          {/* Background animation effect */}
           <div className="absolute inset-0 bg-gradient-to-r from-primary/20 via-primary-foreground/10 to-primary/20 
                           translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-700 ease-out" />
-          
-          {/* Arrow icon with bounce animation */}
           <ArrowUp className="h-6 w-6 relative z-10 transition-all duration-300 
                             group-hover:scale-110 group-hover:-translate-y-0.5
                             group-active:scale-90" />
-          
-          {/* Ripple effect on hover */}
           <div className="absolute inset-0 rounded-full bg-primary-foreground/20 scale-0 
                           group-hover:scale-100 group-hover:opacity-0 
                           transition-all duration-500 ease-out opacity-100" />
         </Button>
       </div>
 
-      {/* Logout Confirmation Modal */}
+      {/* Logout Confirmation */}
       {showLogoutConfirmation && (
         <div className="fixed inset-0 z-[60] flex items-center justify-center">
-          {/* Backdrop */}
           <div 
             className="fixed inset-0 bg-black/60 backdrop-blur-sm"
             onClick={cancelLogout}
           />
-          
-          {/* Modal */}
           <div className="relative bg-card border border-border rounded-lg shadow-2xl p-6 mx-4 max-w-md w-full animate-in fade-in-0 zoom-in-95 duration-200">
             <div className="flex items-center space-x-3 mb-4">
               <div className="w-10 h-10 bg-orange-100 dark:bg-orange-900/30 rounded-full flex items-center justify-center">
                 <AlertTriangle className="h-5 w-5 text-orange-600 dark:text-orange-400" />
               </div>
               <div>
-                <h3 className="text-lg font-semibold text-foreground">
-                  Konfirmasi Keluar
-                </h3>
-                <p className="text-sm text-muted-foreground mt-1">
-                  Apakah Anda yakin ingin keluar dari akun?
-                </p>
+                <h3 className="text-lg font-semibold text-foreground">Konfirmasi Keluar</h3>
+                <p className="text-sm text-muted-foreground mt-1">Apakah Anda yakin ingin keluar dari akun?</p>
               </div>
             </div>
-            
             <div className="flex space-x-3 justify-end">
-              <Button 
-                variant="outline" 
-                onClick={cancelLogout}
-                className="px-4 py-2"
-              >
-                Batal
-              </Button>
-              <Button 
-                variant="destructive" 
-                onClick={handleSignOut}
-                className="px-4 py-2"
-              >
-                Ya, Keluar
-              </Button>
+              <Button variant="outline" onClick={cancelLogout} className="px-4 py-2">Batal</Button>
+              <Button variant="destructive" onClick={handleSignOut} className="px-4 py-2">Ya, Keluar</Button>
             </div>
           </div>
         </div>
       )}
 
-      {/* Footer - Sticky Footer */}
+      {/* Footer */}
       <footer className="border-t bg-card">
         <div className="px-4 sm:px-6 lg:px-8">
           <div className="flex justify-center items-center h-16">
@@ -430,14 +347,14 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         </div>
       </footer>
 
-      {/* ====== TAMBAHAN: Overlay Loading Lottie (z di atas modal) ====== */}
+      {/* Splash screen overlay */}
       {isAppLoading && (
         <div
           className={`fixed inset-0 z-[70] flex items-center justify-center bg-background transition-opacity duration-300 ${
             isAppFading ? 'opacity-0 pointer-events-none' : 'opacity-100'
           }`}
         >
-          {/* @ts-ignore: web component */}
+          {/* @ts-ignore */}
           <lottie-player
             src="/animations/loading.json"
             background="transparent"
