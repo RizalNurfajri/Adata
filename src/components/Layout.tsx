@@ -176,18 +176,27 @@ export default function Layout({ children }: { children: React.ReactNode }) {
           <div className="flex justify-between items-center h-16">
             {/* Logo */}
             <Link to="/" className="flex items-center space-x-2">
-              <img src="/logo.webp" alt="Adata" className="h-6 w-6" />
-              {/* Logo Adata yang menyesuaikan tema */}
-              <img 
-                src="/logo-light.webp" 
-                alt="Adata" 
-                className="h-8 block dark:hidden" 
-              />
-              <img 
-                src="/logo-dark.webp" 
-                alt="Adata" 
-                className="h-8 hidden dark:block" 
-              />
+              {/* Logo Light Mode */}
+            <img
+              src="/logo-light.webp"
+              alt="Adata"
+              className="h-6 w-auto dark:hidden"
+              width={100}
+              height={28}
+              loading="eager"
+              decoding="async"
+            />
+            {/* Logo Dark Mode */}
+            <img
+              src="/logo-dark.webp"
+              alt="Adata"
+              className="h-6 w-auto hidden dark:block"
+              width={100}
+              height={28}
+              loading="eager"
+              decoding="async"
+            />
+          </Link>
             </Link>
 
             {/* Right side items */}
