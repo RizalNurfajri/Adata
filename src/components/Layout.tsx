@@ -29,9 +29,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
   const [showLogoutConfirmation, setShowLogoutConfirmation] = useState(false)
   const [showBackToTop, setShowBackToTop] = useState(false)
 
-  // ====== TAMBAHAN: state untuk overlay loading ======
-  // Hanya tampil SEKALI saat user pertama kali masuk ke HOME ("/")
-  // Tidak tampil saat masuk pertama ke route lain (mis. /login) & tidak muncul lagi setelah itu (per tab)
+  // Loading overlay state - only show once when first entering HOME ("/")
   const [isAppLoading, setIsAppLoading] = useState<boolean>(() => {
     try {
       const onHome = typeof window !== 'undefined' && window.location?.pathname === '/'
@@ -43,29 +41,31 @@ export default function Layout({ children }: { children: React.ReactNode }) {
   })
   const [isAppFading, setIsAppFading] = useState(false)
 
-  // Handle scroll untuk back to top button
+  // Handle scroll for back to top button
   useEffect(() => {
     const handleScroll = () => {
       const scrollTop = window.pageYOffset || document.documentElement.scrollTop
-      setShowBackToTop(scrollTop > 300) // Show button after scrolling 300px
+      setShowBackToTop(scrollTop > 300)
     }
 
     window.addEventListener('scroll', handleScroll)
     return () => window.removeEventListener('scroll', handleScroll)
   }, [])
 
-  // ====== TAMBAHAN: simulasi loading awal + animasi fade out (hanya jika diaktifkan) ======
+  // Loading simulation with fade out animation
   useEffect(() => {
     if (!isAppLoading) return
-    // durasi loading awal (bisa kamu sesuaikan atau dihubungkan dengan fetch data)
+    
     const showMs = 3000
     const fadeMs = 300
 
     const t1 = setTimeout(() => {
-      setIsAppFading(true)     // mulai fade out
+      setIsAppFading(true)
       const t2 = setTimeout(() => {
-        setIsAppLoading(false) // selesai, hilangkan overlay
-        try { sessionStorage.setItem('splashShown', '1') } catch {}
+        setIsAppLoading(false)
+        try { 
+          sessionStorage.setItem('splashShown', '1') 
+        } catch {}
       }, fadeMs)
       return () => clearTimeout(t2)
     }, showMs)
@@ -73,24 +73,22 @@ export default function Layout({ children }: { children: React.ReactNode }) {
     return () => clearTimeout(t1)
   }, [isAppLoading])
 
-  // ====== TAMBAHAN: Redirect jika hash mengandung error OTP expired ======
+  // Redirect if hash contains OTP expired error
   useEffect(() => {
-    const handle = () => {
-      const h = window.location.hash || ''
-      if (h.includes('error_code=otp_expired')) {
+    const handleHashChange = () => {
+      const hash = window.location.hash || ''
+      if (hash.includes('error_code=otp_expired')) {
         navigate('/link-expired', { replace: true })
       }
     }
-    // cek saat mount
-    handle()
-    // dengarkan perubahan hash (kalau hash di-update setelah render)
-    window.addEventListener('hashchange', handle)
-    return () => window.removeEventListener('hashchange', handle)
+    
+    handleHashChange() // Check on mount
+    window.addEventListener('hashchange', handleHashChange)
+    return () => window.removeEventListener('hashchange', handleHashChange)
   }, [navigate])
 
-  // Function untuk scroll ke atas dengan animasi feedback
+  // Smooth scroll to top with visual feedback
   const scrollToTop = () => {
-    // Trigger visual feedback
     const button = document.querySelector('[data-back-to-top]')
     if (button) {
       button.classList.add('animate-pulse')
@@ -111,7 +109,6 @@ export default function Layout({ children }: { children: React.ReactNode }) {
       setIsSidebarOpen(false)
       setIsProfileDropdownOpen(false)
       setShowLogoutConfirmation(false)
-      // Redirect ke halaman login setelah logout
       navigate('/login')
     } catch (error) {
       console.error('Error signing out:', error)
@@ -184,7 +181,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
             <div className="flex items-center space-x-4">
               <ThemeToggle />
               
-              {/* Menu button - always visible when user is logged in */}
+              {/* Menu button */}
               {user && (
                 <Button
                   variant="ghost"
@@ -204,7 +201,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         </div>
       </nav>
 
-      {/* Content Wrapper - Flex grow untuk mengisi ruang yang tersisa */}
+      {/* Content Wrapper */}
       <div className="flex flex-1">
         {/* Main Content */}
         <main className="flex-1 p-4 sm:p-6 lg:p-8">
@@ -239,9 +236,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
               {/* Sidebar Header */}
               <div className="p-4 sm:p-6">
                 <div className="flex items-center justify-between">
-                  <h2 className="text-lg font-semibold">
-                    Menu
-                  </h2>
+                  <h2 className="text-lg font-semibold">Menu</h2>
                   <Button 
                     variant="ghost" 
                     size="sm" 
@@ -278,9 +273,9 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                 }
               </div>
 
-              {/* User Profile Section - Fixed at bottom */}
+              {/* User Profile Section */}
               <div className="relative mx-3 mb-3">
-                {/* Dropdown Menu - Opens upward */}
+                {/* Dropdown Menu */}
                 {isProfileDropdownOpen && (
                   <div className="absolute bottom-full left-0 right-0 bg-card shadow-lg border border-border rounded-t-lg mb-1">
                     <Button 
@@ -340,16 +335,13 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                      group overflow-hidden"
           size="sm"
         >
-          {/* Background animation effect */}
           <div className="absolute inset-0 bg-gradient-to-r from-primary/20 via-primary-foreground/10 to-primary/20 
                           translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-700 ease-out" />
           
-          {/* Arrow icon with bounce animation */}
           <ArrowUp className="h-6 w-6 relative z-10 transition-all duration-300 
                             group-hover:scale-110 group-hover:-translate-y-0.5
                             group-active:scale-90" />
           
-          {/* Ripple effect on hover */}
           <div className="absolute inset-0 rounded-full bg-primary-foreground/20 scale-0 
                           group-hover:scale-100 group-hover:opacity-0 
                           transition-all duration-500 ease-out opacity-100" />
@@ -359,13 +351,11 @@ export default function Layout({ children }: { children: React.ReactNode }) {
       {/* Logout Confirmation Modal */}
       {showLogoutConfirmation && (
         <div className="fixed inset-0 z-[60] flex items-center justify-center">
-          {/* Backdrop */}
           <div 
             className="fixed inset-0 bg-black/60 backdrop-blur-sm"
             onClick={cancelLogout}
           />
           
-          {/* Modal */}
           <div className="relative bg-card border border-border rounded-lg shadow-2xl p-6 mx-4 max-w-md w-full animate-in fade-in-0 zoom-in-95 duration-200">
             <div className="flex items-center space-x-3 mb-4">
               <div className="w-10 h-10 bg-orange-100 dark:bg-orange-900/30 rounded-full flex items-center justify-center">
@@ -401,18 +391,22 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         </div>
       )}
 
-      {/* Footer - Sticky Footer */}
+      {/* Footer with blinking love icon */}
       <footer className="border-t bg-card">
         <div className="px-4 sm:px-6 lg:px-8">
           <div className="flex justify-center items-center h-16">
             <div className="text-sm text-muted-foreground">
-              © 2025 Adata. Made With ♥ For RKS 3A.
+              © 2025 Adata. Made With{' '}
+              <span className="inline-block animate-pulse text-red-500">
+                ♥
+              </span>{' '}
+              For RKS 3A.
             </div>
           </div>
         </div>
       </footer>
 
-      {/* ====== TAMBAHAN: Overlay Loading Lottie (z di atas modal) ====== */}
+      {/* Loading Overlay */}
       {isAppLoading && (
         <div
           className={`fixed inset-0 z-[70] flex items-center justify-center bg-background transition-opacity duration-300 ${
@@ -430,6 +424,18 @@ export default function Layout({ children }: { children: React.ReactNode }) {
           ></lottie-player>
         </div>
       )}
+
+      {/* Add CSS for blinking animation */}
+      <style jsx>{`
+        @keyframes blink {
+          0%, 50% { opacity: 1; }
+          51%, 100% { opacity: 0.3; }
+        }
+        
+        .animate-pulse {
+          animation: blink 1.5s ease-in-out infinite;
+        }
+      `}</style>
     </div>
   )
 }
