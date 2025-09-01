@@ -409,7 +409,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
           <div className="flex justify-center items-center h-16">
             <div className="text-sm text-muted-foreground">
               © 2025 Adata. Made With{' '}
-              <span className="inline-block animate-pulse text-red-500">
+              <span className="inline-block animate-pulse text-red-500 text-base">
                 ♥
               </span>{' '}
               For RKS 3A.
