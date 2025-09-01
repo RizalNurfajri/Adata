@@ -403,16 +403,12 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         </div>
       )}
 
-      {/* Footer with blinking love icon */}
+      {/* Footer - Sticky Footer */}
       <footer className="border-t bg-card">
         <div className="px-4 sm:px-6 lg:px-8">
           <div className="flex justify-center items-center h-16">
             <div className="text-sm text-muted-foreground">
-              © 2025 Adata. Made With{' '}
-              <span className="inline-block text-red-500 text-base">
-                ♥
-              </span>{' '}
-              For RKS 3A.
+              © 2025 Adata. Made With ♥ For RKS 3A.
             </div>
           </div>
         </div>
