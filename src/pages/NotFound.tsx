@@ -23,6 +23,17 @@ const NotFound = () => {
           />
         </div>
 
+        {/* Teks bahasa Indonesia */}
+        <div className="space-y-3">
+          <h1 className="text-2xl font-bold text-foreground">
+            Halaman Tidak Ditemukan
+          </h1>
+          <p className="text-muted-foreground max-w-md mx-auto">
+            Maaf, halaman yang Anda cari tidak dapat ditemukan. 
+            Mungkin halaman telah dipindahkan atau URL yang Anda masukkan salah.
+          </p>
+        </div>
+
         <a
           href="/"
           className="inline-block rounded-md px-5 py-2 border transition hover:opacity-90
