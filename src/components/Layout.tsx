@@ -52,6 +52,18 @@ export default function Layout({ children }: { children: React.ReactNode }) {
     return () => window.removeEventListener('scroll', handleScroll)
   }, [])
 
+  // Handle ESC key to close sidebar
+  useEffect(() => {
+    const handleEscKey = (event: KeyboardEvent) => {
+      if (event.key === 'Escape' && isSidebarOpen) {
+        closeSidebar()
+      }
+    }
+
+    document.addEventListener('keydown', handleEscKey)
+    return () => document.removeEventListener('keydown', handleEscKey)
+  }, [isSidebarOpen])
+
   // Loading simulation with fade out animation
   useEffect(() => {
     if (!isAppLoading) return
@@ -425,15 +437,16 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         </div>
       )}
 
-      {/* Add CSS for blinking animation */}
+      {/* Add CSS for smooth blinking animation */}
       <style jsx>{`
-        @keyframes blink {
-          0%, 50% { opacity: 1; }
-          51%, 100% { opacity: 0.3; }
+        @keyframes smoothBlink {
+          0%, 80% { opacity: 1; }
+          90% { opacity: 0.3; }
+          100% { opacity: 1; }
         }
         
         .animate-pulse {
-          animation: blink 1.5s ease-in-out infinite;
+          animation: smoothBlink 2s ease-in-out infinite;
         }
       `}</style>
     </div>

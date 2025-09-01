@@ -59,7 +59,7 @@ export default function Home() {
         </div>
         <h1 className="text-4xl font-bold mb-4">Adata</h1>
         <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
-          Website sederhana untuk mengakses materi kuliah dengan mudah
+          Website sederhana untuk mengakses materi kuliah kelas RKS 3A
         </p>
       </div>
 
