@@ -29,11 +29,12 @@ export default function Layout({ children }: { children: React.ReactNode }) {
   const [showLogoutConfirmation, setShowLogoutConfirmation] = useState(false)
   const [showBackToTop, setShowBackToTop] = useState(false)
 
-  // Loading overlay state - only show once when first entering HOME ("/")
+  // ====== Loading overlay state ======
   const [isAppLoading, setIsAppLoading] = useState<boolean>(() => {
     try {
-      const onHome = typeof window !== 'undefined' && window.location?.pathname === '/'
-      const shown = typeof window !== 'undefined' && sessionStorage.getItem('splashShown') === '1'
+      if (typeof window === 'undefined') return false
+      const onHome = window.location?.pathname === '/'
+      const shown = sessionStorage.getItem('splashShown') === '1'
       return onHome && !shown
     } catch {
       return false
@@ -41,39 +42,43 @@ export default function Layout({ children }: { children: React.ReactNode }) {
   })
   const [isAppFading, setIsAppFading] = useState(false)
 
-  // Handle scroll for back to top button
+  // Handle scroll untuk back to top button
   useEffect(() => {
     const handleScroll = () => {
       const scrollTop = window.pageYOffset || document.documentElement.scrollTop
       setShowBackToTop(scrollTop > 300)
     }
 
-    window.addEventListener('scroll', handleScroll)
+    window.addEventListener('scroll', handleScroll, { passive: true })
     return () => window.removeEventListener('scroll', handleScroll)
   }, [])
 
-  // Loading simulation with fade out animation
+  // ====== Loading simulation with smooth fade out ======
   useEffect(() => {
     if (!isAppLoading) return
     
     const showMs = 3000
-    const fadeMs = 300
+    const fadeMs = 500
 
-    const t1 = setTimeout(() => {
+    const timer = setTimeout(() => {
       setIsAppFading(true)
-      const t2 = setTimeout(() => {
+      
+      const fadeTimer = setTimeout(() => {
         setIsAppLoading(false)
         try { 
           sessionStorage.setItem('splashShown', '1') 
-        } catch {}
+        } catch (e) {
+          console.warn('SessionStorage not available:', e)
+        }
       }, fadeMs)
-      return () => clearTimeout(t2)
+      
+      return () => clearTimeout(fadeTimer)
     }, showMs)
 
-    return () => clearTimeout(t1)
+    return () => clearTimeout(timer)
   }, [isAppLoading])
 
-  // Redirect if hash contains OTP expired error
+  // ====== OTP expired redirect handler ======
   useEffect(() => {
     const handleHashChange = () => {
       const hash = window.location.hash || ''
@@ -82,7 +87,10 @@ export default function Layout({ children }: { children: React.ReactNode }) {
       }
     }
     
-    handleHashChange() // Check on mount
+    // Check on mount
+    handleHashChange()
+    
+    // Listen for hash changes
     window.addEventListener('hashchange', handleHashChange)
     return () => window.removeEventListener('hashchange', handleHashChange)
   }, [navigate])
@@ -94,7 +102,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
       button.classList.add('animate-pulse')
       setTimeout(() => {
         button.classList.remove('animate-pulse')
-      }, 300)
+      }, 400)
     }
     
     window.scrollTo({
@@ -106,6 +114,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
   const handleSignOut = async () => {
     try {
       await signOut()
+      // Reset all state
       setIsSidebarOpen(false)
       setIsProfileDropdownOpen(false)
       setShowLogoutConfirmation(false)
@@ -126,7 +135,11 @@ export default function Layout({ children }: { children: React.ReactNode }) {
   const isActive = (path: string) => location.pathname === path
 
   const toggleSidebar = () => {
-    setIsSidebarOpen(!isSidebarOpen)
+    setIsSidebarOpen(prev => !prev)
+    // Close dropdown when toggling sidebar
+    if (isProfileDropdownOpen) {
+      setIsProfileDropdownOpen(false)
+    }
   }
 
   const closeSidebar = () => {
@@ -135,8 +148,28 @@ export default function Layout({ children }: { children: React.ReactNode }) {
   }
 
   const toggleProfileDropdown = () => {
-    setIsProfileDropdownOpen(!isProfileDropdownOpen)
+    setIsProfileDropdownOpen(prev => !prev)
   }
+
+  // Close sidebar when route changes
+  useEffect(() => {
+    closeSidebar()
+  }, [location.pathname])
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      const target = event.target as HTMLElement
+      if (!target.closest('[data-profile-dropdown]')) {
+        setIsProfileDropdownOpen(false)
+      }
+    }
+
+    if (isProfileDropdownOpen) {
+      document.addEventListener('mousedown', handleClickOutside)
+      return () => document.removeEventListener('mousedown', handleClickOutside)
+    }
+  }, [isProfileDropdownOpen])
 
   const navigationItems = [
     {
@@ -187,10 +220,10 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                   variant="ghost"
                   size="sm"
                   onClick={toggleSidebar}
-                  className="relative transition-transform duration-200 hover:scale-105"
+                  className="relative transition-all duration-300 hover:scale-105"
                 >
                   <Menu 
-                    className={`h-5 w-5 transition-transform duration-300 ${
+                    className={`h-5 w-5 transition-transform duration-300 ease-in-out ${
                       isSidebarOpen ? 'rotate-90' : 'rotate-0'
                     }`} 
                   />
@@ -211,7 +244,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         {/* Right Sidebar Overlay */}
         {user && (
           <div 
-            className={`fixed inset-0 z-40 transition-opacity duration-300 ${
+            className={`fixed inset-0 z-40 transition-all duration-300 ease-in-out ${
               isSidebarOpen 
                 ? 'opacity-100 pointer-events-auto' 
                 : 'opacity-0 pointer-events-none'
@@ -219,7 +252,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
           >
             {/* Backdrop */}
             <div 
-              className={`fixed inset-0 bg-black transition-opacity duration-300 ${
+              className={`fixed inset-0 bg-black transition-opacity duration-300 ease-in-out ${
                 isSidebarOpen ? 'bg-opacity-50' : 'bg-opacity-0'
               }`}
               onClick={closeSidebar} 
@@ -227,7 +260,8 @@ export default function Layout({ children }: { children: React.ReactNode }) {
             
             {/* Sidebar */}
             <aside 
-              className={`fixed right-0 top-0 w-full sm:w-96 md:w-80 bg-card h-full shadow-xl transform transition-transform duration-300 ease-in-out flex flex-col ${
+              className={`fixed right-0 top-0 w-full sm:w-96 md:w-80 bg-card h-full shadow-xl 
+                         transform transition-transform duration-300 ease-in-out flex flex-col ${
                 isSidebarOpen 
                   ? 'translate-x-0' 
                   : 'translate-x-full'
@@ -241,7 +275,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                     variant="ghost" 
                     size="sm" 
                     onClick={closeSidebar}
-                    className="transition-transform duration-200 hover:scale-110 hover:rotate-90"
+                    className="transition-all duration-200 hover:scale-110 hover:rotate-90"
                   >
                     <X className="h-5 w-5" />
                   </Button>
@@ -259,7 +293,8 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                         key={item.path}
                         to={item.path}
                         onClick={closeSidebar}
-                        className={`flex items-center space-x-3 px-4 py-3 rounded-lg text-sm font-medium transition-all duration-300 hover:scale-[1.02] ${
+                        className={`flex items-center space-x-3 px-4 py-3 rounded-lg text-sm font-medium 
+                                   transition-all duration-200 ease-in-out hover:scale-[1.02] ${
                           isActive(item.path)
                             ? 'bg-primary text-primary-foreground shadow-sm transform translate-x-1'
                             : 'text-muted-foreground hover:text-foreground hover:bg-accent hover:translate-x-1'
@@ -274,13 +309,15 @@ export default function Layout({ children }: { children: React.ReactNode }) {
               </div>
 
               {/* User Profile Section */}
-              <div className="relative mx-3 mb-3">
+              <div className="relative mx-3 mb-3" data-profile-dropdown>
                 {/* Dropdown Menu */}
                 {isProfileDropdownOpen && (
-                  <div className="absolute bottom-full left-0 right-0 bg-card shadow-lg border border-border rounded-t-lg mb-1">
+                  <div className="absolute bottom-full left-0 right-0 bg-card shadow-lg border border-border 
+                                 rounded-t-lg mb-1 animate-in slide-in-from-bottom-2 duration-200">
                     <Button 
                       variant="ghost" 
-                      className="w-full justify-start text-left px-4 py-3 rounded-t-lg hover:bg-accent/50" 
+                      className="w-full justify-start text-left px-4 py-3 rounded-t-lg hover:bg-accent/50 
+                               transition-colors duration-200" 
                       onClick={handleLogoutClick}
                     >
                       <LogOut className="h-4 w-4 mr-3" />
@@ -292,24 +329,26 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                 {/* Profile Button */}
                 <Button
                   variant="ghost"
-                  className="w-full px-4 py-3 justify-between text-left h-auto hover:bg-accent/50 rounded-lg"
+                  className="w-full px-4 py-3 justify-between text-left h-auto hover:bg-accent/50 
+                           rounded-lg transition-all duration-200"
                   onClick={toggleProfileDropdown}
                 >
                   <div className="flex items-center space-x-3">
-                    <div className="w-8 h-8 bg-primary rounded-full flex items-center justify-center text-primary-foreground text-sm font-medium">
-                      {user.email.charAt(0).toUpperCase()}
+                    <div className="w-8 h-8 bg-primary rounded-full flex items-center justify-center 
+                                   text-primary-foreground text-sm font-medium">
+                      {user.email?.charAt(0).toUpperCase() || 'U'}
                     </div>
                     <div className="flex flex-col">
                       <span className="text-sm font-medium text-foreground">
-                        {user.email.split('@')[0]}
+                        {user.email?.split('@')[0] || 'User'}
                       </span>
                     </div>
                   </div>
-                  {isProfileDropdownOpen ? (
-                    <ChevronUp className="h-4 w-4 text-muted-foreground" />
-                  ) : (
+                  <div className={`transition-transform duration-200 ease-in-out ${
+                    isProfileDropdownOpen ? 'rotate-180' : 'rotate-0'
+                  }`}>
                     <ChevronDown className="h-4 w-4 text-muted-foreground" />
-                  )}
+                  </div>
                 </Button>
               </div>
             </aside>
@@ -335,13 +374,16 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                      group overflow-hidden"
           size="sm"
         >
+          {/* Background animation effect */}
           <div className="absolute inset-0 bg-gradient-to-r from-primary/20 via-primary-foreground/10 to-primary/20 
                           translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-700 ease-out" />
           
-          <ArrowUp className="h-6 w-6 relative z-10 transition-all duration-300 
+          {/* Arrow icon */}
+          <ArrowUp className="h-6 w-6 relative z-10 transition-all duration-300 ease-out
                             group-hover:scale-110 group-hover:-translate-y-0.5
                             group-active:scale-90" />
           
+          {/* Ripple effect */}
           <div className="absolute inset-0 rounded-full bg-primary-foreground/20 scale-0 
                           group-hover:scale-100 group-hover:opacity-0 
                           transition-all duration-500 ease-out opacity-100" />
@@ -351,14 +393,18 @@ export default function Layout({ children }: { children: React.ReactNode }) {
       {/* Logout Confirmation Modal */}
       {showLogoutConfirmation && (
         <div className="fixed inset-0 z-[60] flex items-center justify-center">
+          {/* Backdrop */}
           <div 
-            className="fixed inset-0 bg-black/60 backdrop-blur-sm"
+            className="fixed inset-0 bg-black/60 backdrop-blur-sm transition-opacity duration-300"
             onClick={cancelLogout}
           />
           
-          <div className="relative bg-card border border-border rounded-lg shadow-2xl p-6 mx-4 max-w-md w-full animate-in fade-in-0 zoom-in-95 duration-200">
+          {/* Modal */}
+          <div className="relative bg-card border border-border rounded-lg shadow-2xl p-6 mx-4 max-w-md w-full 
+                         animate-in fade-in-0 zoom-in-95 duration-300 ease-out">
             <div className="flex items-center space-x-3 mb-4">
-              <div className="w-10 h-10 bg-orange-100 dark:bg-orange-900/30 rounded-full flex items-center justify-center">
+              <div className="w-10 h-10 bg-orange-100 dark:bg-orange-900/30 rounded-full 
+                             flex items-center justify-center">
                 <AlertTriangle className="h-5 w-5 text-orange-600 dark:text-orange-400" />
               </div>
               <div>
@@ -375,14 +421,14 @@ export default function Layout({ children }: { children: React.ReactNode }) {
               <Button 
                 variant="outline" 
                 onClick={cancelLogout}
-                className="px-4 py-2"
+                className="px-4 py-2 transition-all duration-200 hover:scale-105"
               >
                 Batal
               </Button>
               <Button 
                 variant="destructive" 
                 onClick={handleSignOut}
-                className="px-4 py-2"
+                className="px-4 py-2 transition-all duration-200 hover:scale-105"
               >
                 Ya, Keluar
               </Button>
@@ -391,16 +437,12 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         </div>
       )}
 
-      {/* Footer with blinking love icon */}
+      {/* Footer */}
       <footer className="border-t bg-card">
         <div className="px-4 sm:px-6 lg:px-8">
           <div className="flex justify-center items-center h-16">
             <div className="text-sm text-muted-foreground">
-              © 2025 Adata. Made With{' '}
-              <span className="inline-block animate-pulse text-red-500">
-                ♥
-              </span>{' '}
-              For RKS 3A.
+              © 2025 Adata. Made With ♥ For RKS 3A.
             </div>
           </div>
         </div>
@@ -409,7 +451,8 @@ export default function Layout({ children }: { children: React.ReactNode }) {
       {/* Loading Overlay */}
       {isAppLoading && (
         <div
-          className={`fixed inset-0 z-[70] flex items-center justify-center bg-background transition-opacity duration-300 ${
+          className={`fixed inset-0 z-[70] flex items-center justify-center bg-background 
+                     transition-opacity duration-500 ease-out ${
             isAppFading ? 'opacity-0 pointer-events-none' : 'opacity-100'
           }`}
         >
@@ -421,21 +464,9 @@ export default function Layout({ children }: { children: React.ReactNode }) {
             loop
             autoplay
             style={{ width: '160px', height: '160px' }}
-          ></lottie-player>
+          />
         </div>
       )}
-
-      {/* Add CSS for blinking animation */}
-      <style jsx>{`
-        @keyframes blink {
-          0%, 50% { opacity: 1; }
-          51%, 100% { opacity: 0.3; }
-        }
-        
-        .animate-pulse {
-          animation: blink 1.5s ease-in-out infinite;
-        }
-      `}</style>
     </div>
   )
 }
