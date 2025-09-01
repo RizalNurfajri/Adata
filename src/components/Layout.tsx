@@ -52,18 +52,6 @@ export default function Layout({ children }: { children: React.ReactNode }) {
     return () => window.removeEventListener('scroll', handleScroll)
   }, [])
 
-  // Handle ESC key to close sidebar
-  useEffect(() => {
-    const handleEscKey = (event: KeyboardEvent) => {
-      if (event.key === 'Escape' && isSidebarOpen) {
-        closeSidebar()
-      }
-    }
-
-    document.addEventListener('keydown', handleEscKey)
-    return () => document.removeEventListener('keydown', handleEscKey)
-  }, [isSidebarOpen])
-
   // Loading simulation with fade out animation
   useEffect(() => {
     if (!isAppLoading) return
@@ -403,12 +391,16 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         </div>
       )}
 
-      {/* Footer - Sticky Footer */}
+      {/* Footer with blinking love icon */}
       <footer className="border-t bg-card">
         <div className="px-4 sm:px-6 lg:px-8">
           <div className="flex justify-center items-center h-16">
             <div className="text-sm text-muted-foreground">
-              © 2025 Adata. Made With ♥ For RKS 3A.
+              © 2025 Adata. Made With{' '}
+              <span className="inline-block animate-pulse text-red-500">
+                ♥
+              </span>{' '}
+              For RKS 3A.
             </div>
           </div>
         </div>
@@ -432,6 +424,18 @@ export default function Layout({ children }: { children: React.ReactNode }) {
           ></lottie-player>
         </div>
       )}
+
+      {/* Add CSS for blinking animation */}
+      <style jsx>{`
+        @keyframes blink {
+          0%, 50% { opacity: 1; }
+          51%, 100% { opacity: 0.3; }
+        }
+        
+        .animate-pulse {
+          animation: blink 1.5s ease-in-out infinite;
+        }
+      `}</style>
     </div>
   )
 }
