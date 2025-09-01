@@ -409,7 +409,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
           <div className="flex justify-center items-center h-16">
             <div className="text-sm text-muted-foreground">
               © 2025 Adata. Made With{' '}
-              <span className="inline-block animate-pulse text-red-500 text-base">
+              <span className="inline-block text-red-500 text-base">
                 ♥
               </span>{' '}
               For RKS 3A.
@@ -436,19 +436,6 @@ export default function Layout({ children }: { children: React.ReactNode }) {
           ></lottie-player>
         </div>
       )}
-
-      {/* Add CSS for smooth blinking animation */}
-      <style jsx>{`
-        @keyframes smoothBlink {
-          0%, 80% { opacity: 1; }
-          90% { opacity: 0.3; }
-          100% { opacity: 1; }
-        }
-        
-        .animate-pulse {
-          animation: smoothBlink 2s ease-in-out infinite;
-        }
-      `}</style>
     </div>
   )
 }
