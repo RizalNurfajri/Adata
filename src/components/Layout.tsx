@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect } from 'react'
 import { createPortal } from 'react-dom'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '@/hooks/useAuth'
@@ -13,23 +13,15 @@ import {
   BarChart3,
   Settings,
   Mail,
-  Loader2,
-  BookOpen,
-  Bookmark,
-  Info,
-  Send,
+  UserCircle,
   ChevronDown,
-  Bell,
-  Github,
-  ExternalLink,
-  FileUp,
-  ShieldCheck,
-  PhoneCall,
+  ChevronUp,
+  AlertTriangle,
   ArrowUp
 } from 'lucide-react'
 import ThemeToggle from '@/components/ThemeToggle'
 
-// === Performance helpers for Sidebar ===
+/* ===== Sidebar helper: kunci scroll body saat sidebar terbuka ===== */
 function useLockBodyScroll(lock: boolean) {
   useEffect(() => {
     if (!lock) return
@@ -39,6 +31,7 @@ function useLockBodyScroll(lock: boolean) {
   }, [lock])
 }
 
+/* ===== Sidebar (versi aman): hanya dirender saat open, animasi transform/opacity) ===== */
 function Sidebar({
   open,
   onClose,
@@ -48,49 +41,39 @@ function Sidebar({
   onClose: () => void
   children: React.ReactNode
 }) {
-  useLockBodyScroll(open)
+  if (!open) return null
+  useLockBodyScroll(true)
 
-  const [mounted, setMounted] = useState(false)
-  const [showContent, setShowContent] = useState(false)
-  const panelRef = useRef<HTMLDivElement | null>(null)
+  const [visible, setVisible] = useState(false)
+  const closeWithAnim = () => {
+    setVisible(false)
+    setTimeout(() => onClose(), 200)
+  }
 
   useEffect(() => {
-    if (open) {
-      setMounted(true)
-      const t = setTimeout(() => setShowContent(true), 150)
-      return () => clearTimeout(t)
-    } else {
-      setShowContent(false)
-      const t = setTimeout(() => setMounted(false), 220)
-      return () => clearTimeout(t)
-    }
-  }, [open])
-
-  if (!mounted) return null
+    const t = setTimeout(() => setVisible(true), 0)
+    return () => clearTimeout(t)
+  }, [])
 
   return createPortal(
     <div
       className="fixed inset-0 z-[1000]"
-      onMouseDown={(e) => {
-        if (e.target === e.currentTarget) onClose()
-      }}
+      onMouseDown={(e) => { if (e.target === e.currentTarget) closeWithAnim() }}
     >
-      {/* Overlay – opacity only */}
       <div
-        className={`absolute inset-0 bg-black will-change-[opacity] transition-opacity duration-200 ${
-          open ? 'opacity-50' : 'opacity-0'
+        className={`absolute inset-0 bg-black transition-opacity duration-200 will-change-[opacity] ${
+          visible ? 'opacity-50' : 'opacity-0'
         }`}
       />
-      {/* Panel – transform only */}
       <div
-        ref={panelRef}
         role="dialog"
         aria-modal="true"
-        className="absolute right-0 top-0 h-full w-full sm:w-96 md:w-80 bg-card shadow-xl border-l border-border flex flex-col will-change-transform transition-transform duration-200"
-        style={{ transform: open ? 'translate3d(0,0,0)' : 'translate3d(100%,0,0)' }}
+        className="absolute right-0 top-0 h-full w-[86vw] max-w-sm bg-card border-l border-border shadow-lg
+                   transition-transform duration-200 will-change-transform flex flex-col"
+        style={{ transform: visible ? 'translate3d(0,0,0)' : 'translate3d(100%,0,0)' }}
         onMouseDown={(e) => e.stopPropagation()}
       >
-        {showContent ? children : null}
+        {children}
       </div>
     </div>,
     document.body
@@ -123,56 +106,51 @@ export default function Layout({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     const handleScroll = () => {
       const scrollTop = window.pageYOffset || document.documentElement.scrollTop
-      if (scrollTop > 400) {
-        setShowBackToTop(true)
-      } else {
-        setShowBackToTop(false)
-      }
+      setShowBackToTop(scrollTop > 300)
     }
 
-    window.addEventListener('scroll', handleScroll)
-    handleScroll()
+    window.addEventListener('scroll', handleScroll, { passive: true })
     return () => window.removeEventListener('scroll', handleScroll)
   }, [])
 
+  // ====== Loading simulation with smooth fade out ======
   useEffect(() => {
     if (!isAppLoading) return
-    const t1 = setTimeout(() => setIsAppFading(true), 1200)
-    const t2 = setTimeout(() => {
-      setIsAppLoading(false)
-      setIsAppFading(false)
-      try { sessionStorage.setItem('splashShown', '1') } catch {}
-    }, 1600)
-    return () => { clearTimeout(t1); clearTimeout(t2) }
+    
+    const showMs = 3000
+    const fadeMs = 500
+
+    const timer = setTimeout(() => {
+      setIsAppFading(true)
+      
+      const fadeTimer = setTimeout(() => {
+        setIsAppLoading(false)
+        try { 
+          sessionStorage.setItem('splashShown', '1') 
+        } catch (e) {
+          console.warn('SessionStorage not available:', e)
+        }
+      }, fadeMs)
+      
+      return () => clearTimeout(fadeTimer)
+    }, showMs)
+
+    return () => clearTimeout(timer)
   }, [isAppLoading])
 
-  const openSidebar = () => setIsSidebarOpen(true)
-  const closeSidebar = () => setIsSidebarOpen(false)
-  const toggleProfileDropdown = () => setIsProfileDropdownOpen(v => !v)
-
-  const isActive = (path: string) => location.pathname === path
-
-  const navigationItems = [
-    { name: 'Beranda', path: '/', icon: Home, show: true },
-    { name: 'Materi', path: '/materials', icon: BookOpen, show: !!user },
-    { name: 'Favorit', path: '/favorites', icon: Bookmark, show: !!user },
-    { name: 'Statistik', path: '/stats', icon: BarChart3, show: !!user },
-    { name: 'Tentang', path: '/about', icon: Info, show: true },
-    { name: 'Kontak', path: '/contact', icon: Mail, show: true },
-  ]
-
-  // Navigasi hash (#section) -> smooth scroll
+  // ====== OTP expired redirect handler ======
   useEffect(() => {
     const handleHashChange = () => {
-      const { hash } = window.location
-      if (!hash) return
-      const el = document.querySelector(hash)
-      if (el) {
-        el.scrollIntoView({ behavior: 'smooth', block: 'start' })
+      const hash = window.location.hash || ''
+      if (hash.includes('error_code=otp_expired')) {
+        navigate('/link-expired', { replace: true })
       }
     }
     
+    // Check on mount
     handleHashChange()
+    
+    // Listen for hash changes
     window.addEventListener('hashchange', handleHashChange)
     return () => window.removeEventListener('hashchange', handleHashChange)
   }, [navigate])
@@ -181,75 +159,157 @@ export default function Layout({ children }: { children: React.ReactNode }) {
   const scrollToTop = () => {
     const button = document.querySelector('[data-back-to-top]')
     if (button) {
-      button.classList.add('animate-ping-once')
-      setTimeout(() => button.classList.remove('animate-ping-once'), 600)
+      button.classList.add('animate-pulse')
+      setTimeout(() => {
+        button.classList.remove('animate-pulse')
+      }, 400)
     }
-    window.scrollTo({ top: 0, behavior: 'smooth' })
+    
+    window.scrollTo({
+      top: 0,
+      behavior: 'smooth'
+    })
+  }
+
+  const handleSignOut = async () => {
+    try {
+      await signOut()
+      // Reset all state
+      setIsSidebarOpen(false)
+      setIsProfileDropdownOpen(false)
+      setShowLogoutConfirmation(false)
+      navigate('/login')
+    } catch (error) {
+      console.error('Error signing out:', error)
+    }
   }
 
   const handleLogoutClick = () => {
     setShowLogoutConfirmation(true)
   }
 
-  const confirmLogout = async () => {
+  const cancelLogout = () => {
     setShowLogoutConfirmation(false)
-    await signOut()
-    navigate('/')
   }
 
-  const cancelLogout = () => setShowLogoutConfirmation(false)
+  const isActive = (path: string) => location.pathname === path
+
+  const toggleSidebar = () => {
+    setIsSidebarOpen(prev => !prev)
+    if (isProfileDropdownOpen) setIsProfileDropdownOpen(false)
+  }
+
+  const closeSidebar = () => {
+    setIsSidebarOpen(false)
+    setIsProfileDropdownOpen(false)
+  }
+
+  const toggleProfileDropdown = () => {
+    setIsProfileDropdownOpen(prev => !prev)
+  }
+
+  // Close sidebar when route changes
+  useEffect(() => {
+    closeSidebar()
+  }, [location.pathname])
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      const target = event.target as HTMLElement
+      if (!target.closest('[data-profile-dropdown]')) {
+        setIsProfileDropdownOpen(false)
+      }
+    }
+
+    if (isProfileDropdownOpen) {
+      document.addEventListener('mousedown', handleClickOutside)
+      return () => document.removeEventListener('mousedown', handleClickOutside)
+    }
+  }, [isProfileDropdownOpen])
+
+  const navigationItems = [
+    {
+      name: 'Semester',
+      path: '/',
+      icon: Home,
+      show: true
+    },
+    {
+      name: 'Dashboard',
+      path: '/dashboard',
+      icon: BarChart3,
+      show: !!user
+    },
+    {
+      name: 'Tambah Materi',
+      path: '/tambah',
+      icon: Plus,
+      show: profile?.role === 'admin'
+    },
+    {
+      name: 'Admin',
+      path: '/admin/dashboard',
+      icon: Settings,
+      show: profile?.role === 'admin'
+    }
+  ]
 
   return (
-    <div className="min-h-screen bg-background text-foreground">
-      {/* Top Bar */}
-      <header className="sticky top-0 z-30 border-b bg-background/80 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-        <div className="mx-auto max-w-6xl px-3 sm:px-6 lg:px-8 h-14 flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <Button
-              variant="ghost"
-              className="md:hidden"
-              onClick={openSidebar}
-              aria-label="Buka menu"
-            >
-              <Menu className="h-5 w-5" />
-            </Button>
-            <Link to="/" className="flex items-center gap-2">
-              <img src="/logo.webp" alt="Adata" width={28} height={28} />
-              <span className="font-semibold hidden sm:inline">Adata</span>
+    <div className="min-h-screen bg-background flex flex-col">
+      {/* Top Navigation Bar */}
+      <nav className="border-b bg-card sticky top-0 z-50">
+        <div className="px-4 sm:px-6 lg:px-8">
+          <div className="flex justify-between items-center h-16">
+            {/* Logo */}
+            <Link to="/" className="flex items-center space-x-2">
+              <img src="/logo.webp" alt="Adata" className="h-6 w-6" />
+              <span className="text-xl font-bold text-foreground">Adata</span>
             </Link>
-          </div>
 
-          <div className="flex items-center gap-1">
-            <ThemeToggle />
-            {user ? (
-              <Button variant="ghost" size="icon" className="hidden md:inline-flex" asChild>
-                <Link to="/materials" aria-label="Upload">
-                  <FileUp className="h-5 w-5" />
-                </Link>
-              </Button>
-            ) : null}
+            {/* Right side items */}
+            <div className="flex items-center space-x-4">
+              <ThemeToggle />
+              
+              {/* Menu button */}
+              {user && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={toggleSidebar}
+                  className="relative transition-all duration-300 hover:scale-105"
+                >
+                  <Menu 
+                    className={`h-5 w-5 transition-transform duration-300 ease-in-out ${
+                      isSidebarOpen ? 'rotate-90' : 'rotate-0'
+                    }`} 
+                  />
+                </Button>
+              )}
+            </div>
           </div>
         </div>
-      </header>
+      </nav>
 
-      {/* Main Content */}
-      <div className="mx-auto max-w-6xl px-3 sm:px-6 lg:px-8">
-        <main className="py-6 sm:py-8 lg:py-10 transition-opacity duration-300 ease-out">
+      {/* Content Wrapper */}
+      <div className="flex flex-1">
+        {/* Main Content */}
+        <main className="flex-1 p-4 sm:p-6 lg:p-8">
           {children}
         </main>
 
-        {/* Right Sidebar Overlay */}
+        {/* ==== Right Sidebar (pakai block dari kamu) ==== */}
         {user && (
           <Sidebar open={isSidebarOpen} onClose={closeSidebar}>
             {/* Sidebar Header */}
-            <div className="p-4 sm:p-6">
+            <div className="p-4 border-b border-border/40">
               <div className="flex items-center justify-between">
                 <h2 className="text-lg font-semibold">Menu</h2>
                 <Button 
                   variant="ghost" 
                   size="sm" 
                   onClick={closeSidebar}
-                  className="transition-all duration-200 hover:scale-110 hover:rotate-90"
+                  className="transition-transform duration-150 hover:scale-110"
                 >
                   <X className="h-5 w-5" />
                 </Button>
@@ -257,39 +317,38 @@ export default function Layout({ children }: { children: React.ReactNode }) {
             </div>
 
             {/* Navigation Section */}
-            <div className="flex-1 px-6 pt-2 pb-6 space-y-1 overflow-auto">
+            <div className="flex-1 px-3 py-3 space-y-1 overflow-auto">
               {navigationItems
                 .filter(item => item.show)
                 .map((item) => {
                   const Icon = item.icon
+                  const active = isActive(item.path)
                   return (
                     <Link
                       key={item.path}
                       to={item.path}
                       onClick={closeSidebar}
-                      className={`flex items-center space-x-3 px-4 py-3 rounded-lg text-sm font-medium 
-                                 transition-all duration-200 ease-in-out hover:scale-[1.02] ${
-                        isActive(item.path)
-                          ? 'bg-primary text-primary-foreground shadow-sm transform translate-x-1'
-                          : 'text-muted-foreground hover:text-foreground hover:bg-accent hover:translate-x-1'
-                      }`}
+                      className={`flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium
+                                  transition-colors duration-150
+                                  ${active
+                                    ? 'bg-primary text-primary-foreground shadow-sm'
+                                    : 'text-muted-foreground hover:text-foreground hover:bg-accent'
+                                  }`}
                     >
                       <Icon className="h-5 w-5" />
                       <span>{item.name}</span>
                     </Link>
                   )
-                })
-              }
+                })}
             </div>
 
             {/* User Profile Section */}
-            <div className="relative mx-3 mb-3" data-profile-dropdown>
-              {/* Dropdown Menu */}
+            <div className="mx-3 mb-3" data-profile-dropdown>
               {isProfileDropdownOpen && (
-                <div className="mb-1 rounded-lg border border-border bg-card shadow-md overflow-hidden">
+                <div className="mb-1 rounded-t-lg border border-border bg-card shadow">
                   <Button 
                     variant="ghost" 
-                    className="w-full justify-start text-left px-4 py-3 hover:bg-accent/50 rounded-none" 
+                    className="w-full justify-start text-left px-4 py-3 rounded-t-lg hover:bg-accent/50" 
                     onClick={handleLogoutClick}
                   >
                     <LogOut className="h-4 w-4 mr-3" />
@@ -298,16 +357,14 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                 </div>
               )}
 
-              {/* Profile Button */}
               <Button
                 variant="ghost"
-                className="w-full px-4 py-3 justify-between text-left h-auto hover:bg-accent/50 
-                         rounded-lg transition-all duration-200"
+                className="w-full px-4 py-3 justify-between text-left h-auto hover:bg-accent/50 rounded-lg"
                 onClick={toggleProfileDropdown}
               >
-                <div className="flex items-center space-x-3">
+                <div className="flex items-center gap-3">
                   <div className="w-8 h-8 bg-primary rounded-full flex items-center justify-center 
-                                 text-primary-foreground text-sm font-medium">
+                                  text-primary-foreground text-sm font-medium">
                     {user.email?.charAt(0).toUpperCase() || 'U'}
                   </div>
                   <div className="flex flex-col">
@@ -316,93 +373,114 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                     </span>
                   </div>
                 </div>
-                <div className={`transition-transform duration-200 ease-in-out ${
-                  isProfileDropdownOpen ? 'rotate-180' : 'rotate-0'
-                }`}>
+                <div className={`transition-transform duration-150 ${isProfileDropdownOpen ? 'rotate-180' : ''}`}>
                   <ChevronDown className="h-4 w-4 text-muted-foreground" />
                 </div>
               </Button>
             </div>
           </Sidebar>
         )}
-
-        {/* Footer */}
-        <footer className="py-10 text-center text-sm text-muted-foreground">
-          <div className="flex items-center justify-center gap-3">
-            <a href="https://github.com/RizalNurfajri" target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 hover:underline">
-              <Github className="h-4 w-4" />
-              GitHub
-            </a>
-            <span>•</span>
-            <a href="mailto:rizal@example.com" className="inline-flex items-center gap-1 hover:underline">
-              <Mail className="h-4 w-4" />
-              Email
-            </a>
-            <span>•</span>
-            <a href="tel:+6281234567890" className="inline-flex items-center gap-1 hover:underline">
-              <PhoneCall className="h-4 w-4" />
-              Kontak
-            </a>
-          </div>
-          <div className="mt-3">© {new Date().getFullYear()} Adata — Made with Luv</div>
-        </footer>
       </div>
 
       {/* Back to Top Button */}
-      {showBackToTop && (
-        <button
+      <div
+        className={`fixed bottom-6 right-6 z-50 transition-all duration-500 ease-out ${
+          showBackToTop 
+            ? 'opacity-100 scale-100 translate-y-0' 
+            : 'opacity-0 scale-75 translate-y-8 pointer-events-none'
+        }`}
+      >
+        <Button
           data-back-to-top
           onClick={scrollToTop}
-          className="fixed bottom-5 right-5 z-20 
-                     h-12 w-12 rounded-full bg-primary text-primary-foreground
-                     shadow-lg hover:shadow-xl transition-all duration-200
-                     hover:-translate-y-0.5 active:translate-y-0
+          className="relative w-14 h-14 rounded-full shadow-2xl transition-all duration-300 ease-out
+                     bg-primary hover:bg-primary/90 
+                     hover:scale-110 hover:shadow-xl hover:-translate-y-1
                      active:scale-95 active:translate-y-0
                      group overflow-hidden"
           size="sm"
         >
-          {/* Background animation effect */}
           <div className="absolute inset-0 bg-gradient-to-r from-primary/20 via-primary-foreground/10 to-primary/20 
                           translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-700 ease-out" />
-          
-          {/* Arrow icon */}
           <ArrowUp className="h-6 w-6 relative z-10 transition-all duration-300 ease-out
                             group-hover:scale-110 group-hover:-translate-y-0.5
                             group-active:scale-90" />
-          
-          {/* Ripple effect */}
-          <div className="absolute inset-0 pointer-events-none">
-            <span className="absolute inset-0 rounded-full opacity-0 group-active:opacity-40 
-                             bg-primary-foreground/30 transition-opacity duration-300" />
-          </div>
-        </button>
-      )}
+          <div className="absolute inset-0 rounded-full bg-primary-foreground/20 scale-0 
+                          group-hover:scale-100 group-hover:opacity-0 
+                          transition-all duration-500 ease-out opacity-100" />
+        </Button>
+      </div>
 
       {/* Logout Confirmation Modal */}
       {showLogoutConfirmation && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
-          <div className="w-full max-w-sm rounded-lg bg-card border border-border shadow-lg">
-            <div className="p-4 border-b border-border">
-              <h3 className="text-lg font-semibold">Konfirmasi Keluar</h3>
+        <div className="fixed inset-0 z-[60] flex items-center justify-center">
+          <div 
+            className="fixed inset-0 bg-black/60 backdrop-blur-sm transition-opacity duration-300"
+            onClick={cancelLogout}
+          />
+          <div className="relative bg-card border border-border rounded-lg shadow-2xl p-6 mx-4 max-w-md w-full 
+                         animate-in fade-in-0 zoom-in-95 duration-300 ease-out">
+            <div className="flex items-center space-x-3 mb-4">
+              <div className="w-10 h-10 bg-orange-100 dark:bg-orange-900/30 rounded-full flex items-center justify-center">
+                <AlertTriangle className="h-5 w-5 text-orange-600 dark:text-orange-400" />
+              </div>
+              <div>
+                <h3 className="text-lg font-semibold text-foreground">
+                  Konfirmasi Keluar
+                </h3>
+                <p className="text-sm text-muted-foreground mt-1">
+                  Apakah Anda yakin ingin keluar dari akun?
+                </p>
+              </div>
             </div>
-            <div className="p-4 text-sm text-muted-foreground">
-              Kamu yakin ingin keluar dari akun?
-            </div>
-            <div className="p-3 flex justify-end gap-2 border-t border-border">
-              <Button variant="ghost" onClick={cancelLogout}>Batal</Button>
-              <Button variant="destructive" onClick={confirmLogout}>Keluar</Button>
+            <div className="flex space-x-3 justify-end">
+              <Button 
+                variant="outline" 
+                onClick={cancelLogout}
+                className="px-4 py-2 transition-all duration-200 hover:scale-105"
+              >
+                Batal
+              </Button>
+              <Button 
+                variant="destructive" 
+                onClick={handleSignOut}
+                className="px-4 py-2 transition-all duration-200 hover:scale-105"
+              >
+                Ya, Keluar
+              </Button>
             </div>
           </div>
         </div>
       )}
 
-      {/* Splash / Loading overlay (opsional) */}
-      {isAppLoading && (
-        <div className={`fixed inset-0 z-[10000] grid place-items-center bg-background transition-opacity duration-400 ${isAppFading ? 'opacity-0' : 'opacity-100'}`}>
-          <div className="flex flex-col items-center gap-3">
-            <Loader2 className="h-8 w-8 animate-spin" />
-            <span className="text-sm text-muted-foreground">Memuat Adata…</span>
+      {/* Footer */}
+      <footer className="border-t bg-card">
+        <div className="px-4 sm:px-6 lg:px-8">
+          <div className="flex justify-center items-center h-16">
+            <div className="text-sm text-muted-foreground">
+              © 2025 Adata. Made With ♥ For RKS 3A.
+            </div>
           </div>
+        </div>
+      </footer>
+
+      {/* Loading Overlay */}
+      {isAppLoading && (
+        <div
+          className={`fixed inset-0 z-[70] flex items-center justify-center bg-background 
+                     transition-opacity duration-500 ease-out ${
+            isAppFading ? 'opacity-0 pointer-events-none' : 'opacity-100'
+          }`}
+        >
+          {/* @ts-ignore: web component */}
+          <lottie-player
+            src="/animations/loading.json"
+            background="transparent"
+            speed="1"
+            loop
+            autoplay
+            style={{ width: '160px', height: '160px' }}
+          />
         </div>
       )}
     </div>
