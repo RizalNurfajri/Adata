@@ -1,5 +1,4 @@
 import { useState, useEffect } from 'react'
-import { createPortal } from 'react-dom'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '@/hooks/useAuth'
 import { Button } from '@/components/ui/button'
@@ -20,65 +19,6 @@ import {
   ArrowUp
 } from 'lucide-react'
 import ThemeToggle from '@/components/ThemeToggle'
-
-/* ===== Sidebar helper: kunci scroll body saat sidebar terbuka ===== */
-function useLockBodyScroll(lock: boolean) {
-  useEffect(() => {
-    if (!lock) return
-    const prev = document.body.style.overflow
-    document.body.style.overflow = 'hidden'
-    return () => { document.body.style.overflow = prev }
-  }, [lock])
-}
-
-/* ===== Sidebar (versi aman): hanya dirender saat open, animasi transform/opacity) ===== */
-function Sidebar({
-  open,
-  onClose,
-  children,
-}: {
-  open: boolean
-  onClose: () => void
-  children: React.ReactNode
-}) {
-  if (!open) return null
-  useLockBodyScroll(true)
-
-  const [visible, setVisible] = useState(false)
-  const closeWithAnim = () => {
-    setVisible(false)
-    setTimeout(() => onClose(), 200)
-  }
-
-  useEffect(() => {
-    const t = setTimeout(() => setVisible(true), 0)
-    return () => clearTimeout(t)
-  }, [])
-
-  return createPortal(
-    <div
-      className="fixed inset-0 z-[1000]"
-      onMouseDown={(e) => { if (e.target === e.currentTarget) closeWithAnim() }}
-    >
-      <div
-        className={`absolute inset-0 bg-black transition-opacity duration-200 will-change-[opacity] ${
-          visible ? 'opacity-50' : 'opacity-0'
-        }`}
-      />
-      <div
-        role="dialog"
-        aria-modal="true"
-        className="absolute right-0 top-0 h-full w-[86vw] max-w-sm bg-card border-l border-border shadow-lg
-                   transition-transform duration-200 will-change-transform flex flex-col"
-        style={{ transform: visible ? 'translate3d(0,0,0)' : 'translate3d(100%,0,0)' }}
-        onMouseDown={(e) => e.stopPropagation()}
-      >
-        {children}
-      </div>
-    </div>,
-    document.body
-  )
-}
 
 export default function Layout({ children }: { children: React.ReactNode }) {
   const { user, profile, signOut } = useAuth()
@@ -196,7 +136,10 @@ export default function Layout({ children }: { children: React.ReactNode }) {
 
   const toggleSidebar = () => {
     setIsSidebarOpen(prev => !prev)
-    if (isProfileDropdownOpen) setIsProfileDropdownOpen(false)
+    // Close dropdown when toggling sidebar
+    if (isProfileDropdownOpen) {
+      setIsProfileDropdownOpen(false)
+    }
   }
 
   const closeSidebar = () => {
@@ -277,10 +220,10 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                   variant="ghost"
                   size="sm"
                   onClick={toggleSidebar}
-                  className="relative transition-all duration-300 hover:scale-105"
+                  className="relative transition-all duration-200 hover:scale-105 will-change-transform"
                 >
                   <Menu 
-                    className={`h-5 w-5 transition-transform duration-300 ease-in-out ${
+                    className={`h-5 w-5 transition-transform duration-200 ease-out will-change-transform ${
                       isSidebarOpen ? 'rotate-90' : 'rotate-0'
                     }`} 
                   />
@@ -298,93 +241,133 @@ export default function Layout({ children }: { children: React.ReactNode }) {
           {children}
         </main>
 
-        {/* ==== Right Sidebar (pakai block dari kamu) ==== */}
+        {/* Right Sidebar Overlay */}
         {user && (
-          <Sidebar open={isSidebarOpen} onClose={closeSidebar}>
-            {/* Sidebar Header */}
-            <div className="p-4 border-b border-border/40">
-              <div className="flex items-center justify-between">
-                <h2 className="text-lg font-semibold">Menu</h2>
-                <Button 
-                  variant="ghost" 
-                  size="sm" 
-                  onClick={closeSidebar}
-                  className="transition-transform duration-150 hover:scale-110"
-                >
-                  <X className="h-5 w-5" />
-                </Button>
-              </div>
-            </div>
-
-            {/* Navigation Section */}
-            <div className="flex-1 px-3 py-3 space-y-1 overflow-auto">
-              {navigationItems
-                .filter(item => item.show)
-                .map((item) => {
-                  const Icon = item.icon
-                  const active = isActive(item.path)
-                  return (
-                    <Link
-                      key={item.path}
-                      to={item.path}
-                      onClick={closeSidebar}
-                      className={`flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium
-                                  transition-colors duration-150
-                                  ${active
-                                    ? 'bg-primary text-primary-foreground shadow-sm'
-                                    : 'text-muted-foreground hover:text-foreground hover:bg-accent'
-                                  }`}
-                    >
-                      <Icon className="h-5 w-5" />
-                      <span>{item.name}</span>
-                    </Link>
-                  )
-                })}
-            </div>
-
-            {/* User Profile Section */}
-            <div className="mx-3 mb-3" data-profile-dropdown>
-              {isProfileDropdownOpen && (
-                <div className="mb-1 rounded-t-lg border border-border bg-card shadow">
+          <div 
+            className={`fixed inset-0 z-40 will-change-transform ${
+              isSidebarOpen 
+                ? 'opacity-100 pointer-events-auto' 
+                : 'opacity-0 pointer-events-none'
+            }`}
+            style={{
+              transition: 'opacity 250ms cubic-bezier(0.4, 0, 0.2, 1)'
+            }}
+          >
+            {/* Backdrop */}
+            <div 
+              className={`fixed inset-0 bg-black will-change-transform ${
+                isSidebarOpen ? 'bg-opacity-50' : 'bg-opacity-0'
+              }`}
+              style={{
+                transition: 'background-color 250ms cubic-bezier(0.4, 0, 0.2, 1)'
+              }}
+              onClick={closeSidebar} 
+            />
+            
+            {/* Sidebar */}
+            <aside 
+              className={`fixed right-0 top-0 w-full sm:w-96 md:w-80 bg-card h-full shadow-xl 
+                         flex flex-col will-change-transform`}
+              style={{
+                transform: isSidebarOpen ? 'translate3d(0, 0, 0)' : 'translate3d(100%, 0, 0)',
+                transition: 'transform 250ms cubic-bezier(0.4, 0, 0.2, 1)'
+              }}
+            >
+              {/* Sidebar Header */}
+              <div className="p-4 sm:p-6">
+                <div className="flex items-center justify-between">
+                  <h2 className="text-lg font-semibold">Menu</h2>
                   <Button 
                     variant="ghost" 
-                    className="w-full justify-start text-left px-4 py-3 rounded-t-lg hover:bg-accent/50" 
-                    onClick={handleLogoutClick}
+                    size="sm" 
+                    onClick={closeSidebar}
+                    className="transition-all duration-150 hover:scale-110 hover:rotate-90 will-change-transform"
                   >
-                    <LogOut className="h-4 w-4 mr-3" />
-                    Keluar dari Akun
+                    <X className="h-5 w-5" />
                   </Button>
                 </div>
-              )}
+              </div>
+              
+              {/* Navigation Section */}
+              <div className="flex-1 px-6 pt-2 pb-6 space-y-1">
+                {navigationItems
+                  .filter(item => item.show)
+                  .map((item) => {
+                    const Icon = item.icon
+                    return (
+                      <Link
+                        key={item.path}
+                        to={item.path}
+                        onClick={closeSidebar}
+                        className={`flex items-center space-x-3 px-4 py-3 rounded-lg text-sm font-medium 
+                                   transition-all duration-150 ease-out hover:scale-[1.02] will-change-transform ${
+                          isActive(item.path)
+                            ? 'bg-primary text-primary-foreground shadow-sm transform translate-x-1'
+                            : 'text-muted-foreground hover:text-foreground hover:bg-accent hover:translate-x-1'
+                        }`}
+                      >
+                        <Icon className="h-5 w-5" />
+                        <span>{item.name}</span>
+                      </Link>
+                    )
+                  })
+                }
+              </div>
 
-              <Button
-                variant="ghost"
-                className="w-full px-4 py-3 justify-between text-left h-auto hover:bg-accent/50 rounded-lg"
-                onClick={toggleProfileDropdown}
-              >
-                <div className="flex items-center gap-3">
-                  <div className="w-8 h-8 bg-primary rounded-full flex items-center justify-center 
-                                  text-primary-foreground text-sm font-medium">
-                    {user.email?.charAt(0).toUpperCase() || 'U'}
+              {/* User Profile Section */}
+              <div className="relative mx-3 mb-3" data-profile-dropdown>
+                {/* Dropdown Menu */}
+                {isProfileDropdownOpen && (
+                  <div className="absolute bottom-full left-0 right-0 bg-card shadow-lg border border-border 
+                                 rounded-t-lg mb-1"
+                       style={{
+                         animation: 'slideInFromBottom 150ms cubic-bezier(0.4, 0, 0.2, 1) forwards'
+                       }}>
+                    <Button 
+                      variant="ghost" 
+                      className="w-full justify-start text-left px-4 py-3 rounded-t-lg hover:bg-accent/50 
+                               transition-colors duration-150" 
+                      onClick={handleLogoutClick}
+                    >
+                      <LogOut className="h-4 w-4 mr-3" />
+                      Keluar dari Akun
+                    </Button>
                   </div>
-                  <div className="flex flex-col">
-                    <span className="text-sm font-medium text-foreground">
-                      {user.email?.split('@')[0] || 'User'}
-                    </span>
+                )}
+
+                {/* Profile Button */}
+                <Button
+                  variant="ghost"
+                  className="w-full px-4 py-3 justify-between text-left h-auto hover:bg-accent/50 
+                           rounded-lg transition-all duration-150 will-change-transform"
+                  onClick={toggleProfileDropdown}
+                >
+                  <div className="flex items-center space-x-3">
+                    <div className="w-8 h-8 bg-primary rounded-full flex items-center justify-center 
+                                   text-primary-foreground text-sm font-medium">
+                      {user.email?.charAt(0).toUpperCase() || 'U'}
+                    </div>
+                    <div className="flex flex-col">
+                      <span className="text-sm font-medium text-foreground">
+                        {user.email?.split('@')[0] || 'User'}
+                      </span>
+                    </div>
                   </div>
-                </div>
-                <div className={`transition-transform duration-150 ${isProfileDropdownOpen ? 'rotate-180' : ''}`}>
-                  <ChevronDown className="h-4 w-4 text-muted-foreground" />
-                </div>
-              </Button>
-            </div>
-          </Sidebar>
+                  <div className={`transition-transform duration-150 ease-out will-change-transform ${
+                    isProfileDropdownOpen ? 'rotate-180' : 'rotate-0'
+                  }`}>
+                    <ChevronDown className="h-4 w-4 text-muted-foreground" />
+                  </div>
+                </Button>
+              </div>
+            </aside>
+          </div>
         )}
       </div>
 
       {/* Back to Top Button */}
       <div
-        className={`fixed bottom-6 right-6 z-50 transition-all duration-500 ease-out ${
+        className={`fixed bottom-6 right-6 z-50 transition-all duration-300 ease-out will-change-transform ${
           showBackToTop 
             ? 'opacity-100 scale-100 translate-y-0' 
             : 'opacity-0 scale-75 translate-y-8 pointer-events-none'
@@ -393,35 +376,47 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         <Button
           data-back-to-top
           onClick={scrollToTop}
-          className="relative w-14 h-14 rounded-full shadow-2xl transition-all duration-300 ease-out
-                     bg-primary hover:bg-primary/90 
+          className="relative w-14 h-14 rounded-full shadow-2xl transition-all duration-200 ease-out
+                     bg-primary hover:bg-primary/90 will-change-transform
                      hover:scale-110 hover:shadow-xl hover:-translate-y-1
                      active:scale-95 active:translate-y-0
                      group overflow-hidden"
           size="sm"
         >
+          {/* Background animation effect */}
           <div className="absolute inset-0 bg-gradient-to-r from-primary/20 via-primary-foreground/10 to-primary/20 
-                          translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-700 ease-out" />
-          <ArrowUp className="h-6 w-6 relative z-10 transition-all duration-300 ease-out
+                          translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-500 ease-out will-change-transform" />
+          
+          {/* Arrow icon */}
+          <ArrowUp className="h-6 w-6 relative z-10 transition-all duration-200 ease-out will-change-transform
                             group-hover:scale-110 group-hover:-translate-y-0.5
                             group-active:scale-90" />
-          <div className="absolute inset-0 rounded-full bg-primary-foreground/20 scale-0 
+          
+          {/* Ripple effect */}
+          <div className="absolute inset-0 rounded-full bg-primary-foreground/20 scale-0 will-change-transform
                           group-hover:scale-100 group-hover:opacity-0 
-                          transition-all duration-500 ease-out opacity-100" />
+                          transition-all duration-300 ease-out opacity-100" />
         </Button>
       </div>
 
       {/* Logout Confirmation Modal */}
       {showLogoutConfirmation && (
         <div className="fixed inset-0 z-[60] flex items-center justify-center">
+          {/* Backdrop */}
           <div 
-            className="fixed inset-0 bg-black/60 backdrop-blur-sm transition-opacity duration-300"
+            className="fixed inset-0 bg-black/60 backdrop-blur-sm transition-opacity duration-200"
             onClick={cancelLogout}
           />
+          
+          {/* Modal */}
           <div className="relative bg-card border border-border rounded-lg shadow-2xl p-6 mx-4 max-w-md w-full 
-                         animate-in fade-in-0 zoom-in-95 duration-300 ease-out">
+                         will-change-transform"
+               style={{
+                 animation: 'modalFadeIn 200ms cubic-bezier(0.4, 0, 0.2, 1) forwards'
+               }}>
             <div className="flex items-center space-x-3 mb-4">
-              <div className="w-10 h-10 bg-orange-100 dark:bg-orange-900/30 rounded-full flex items-center justify-center">
+              <div className="w-10 h-10 bg-orange-100 dark:bg-orange-900/30 rounded-full 
+                             flex items-center justify-center">
                 <AlertTriangle className="h-5 w-5 text-orange-600 dark:text-orange-400" />
               </div>
               <div>
@@ -433,18 +428,19 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                 </p>
               </div>
             </div>
+            
             <div className="flex space-x-3 justify-end">
               <Button 
                 variant="outline" 
                 onClick={cancelLogout}
-                className="px-4 py-2 transition-all duration-200 hover:scale-105"
+                className="px-4 py-2 transition-all duration-150 hover:scale-105 will-change-transform"
               >
                 Batal
               </Button>
               <Button 
                 variant="destructive" 
                 onClick={handleSignOut}
-                className="px-4 py-2 transition-all duration-200 hover:scale-105"
+                className="px-4 py-2 transition-all duration-150 hover:scale-105 will-change-transform"
               >
                 Ya, Keluar
               </Button>
@@ -458,7 +454,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         <div className="px-4 sm:px-6 lg:px-8">
           <div className="flex justify-center items-center h-16">
             <div className="text-sm text-muted-foreground">
-              © 2025 Adata. Made With ♥ For RKS 3A.
+              Â© 2025 Adata. Made With â™¥ For RKS 3A.
             </div>
           </div>
         </div>
@@ -483,6 +479,31 @@ export default function Layout({ children }: { children: React.ReactNode }) {
           />
         </div>
       )}
+
+      {/* CSS Animation Keyframes */}
+      <style jsx>{`
+        @keyframes slideInFromBottom {
+          from {
+            opacity: 0;
+            transform: translateY(8px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+
+        @keyframes modalFadeIn {
+          from {
+            opacity: 0;
+            transform: scale(0.95);
+          }
+          to {
+            opacity: 1;
+            transform: scale(1);
+          }
+        }
+      `}</style>
     </div>
   )
 }
