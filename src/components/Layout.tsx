@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from 'react'
+import { useState, useEffect } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '@/hooks/useAuth'
 import { Button } from '@/components/ui/button'
@@ -28,10 +28,6 @@ export default function Layout({ children }: { children: React.ReactNode }) {
   const [isProfileDropdownOpen, setIsProfileDropdownOpen] = useState(false)
   const [showLogoutConfirmation, setShowLogoutConfirmation] = useState(false)
   const [showBackToTop, setShowBackToTop] = useState(false)
-  
-  // Optimized refs for direct DOM manipulation
-  const backToTopRef = useRef<HTMLButtonElement>(null)
-  const scrollTimeoutRef = useRef<NodeJS.Timeout>()
 
   // ====== Loading overlay state ======
   const [isAppLoading, setIsAppLoading] = useState<boolean>(() => {
@@ -46,31 +42,16 @@ export default function Layout({ children }: { children: React.ReactNode }) {
   })
   const [isAppFading, setIsAppFading] = useState(false)
 
-  // Optimized scroll handler with throttling
-  const handleScroll = useCallback(() => {
-    if (scrollTimeoutRef.current) return
-    
-    scrollTimeoutRef.current = setTimeout(() => {
-      const scrollTop = window.pageYOffset || document.documentElement.scrollTop
-      const shouldShow = scrollTop > 300
-      
-      if (shouldShow !== showBackToTop) {
-        setShowBackToTop(shouldShow)
-      }
-      scrollTimeoutRef.current = undefined
-    }, 16) // ~60fps throttling
-  }, [showBackToTop])
-
   // Handle scroll untuk back to top button
   useEffect(() => {
-    window.addEventListener('scroll', handleScroll, { passive: true })
-    return () => {
-      window.removeEventListener('scroll', handleScroll)
-      if (scrollTimeoutRef.current) {
-        clearTimeout(scrollTimeoutRef.current)
-      }
+    const handleScroll = () => {
+      const scrollTop = window.pageYOffset || document.documentElement.scrollTop
+      setShowBackToTop(scrollTop > 300)
     }
-  }, [handleScroll])
+
+    window.addEventListener('scroll', handleScroll, { passive: true })
+    return () => window.removeEventListener('scroll', handleScroll)
+  }, [])
 
   // ====== Loading simulation with smooth fade out ======
   useEffect(() => {
@@ -114,25 +95,26 @@ export default function Layout({ children }: { children: React.ReactNode }) {
     return () => window.removeEventListener('hashchange', handleHashChange)
   }, [navigate])
 
-  // Optimized scroll to top dengan haptic feedback
-  const scrollToTop = useCallback(() => {
-    const button = backToTopRef.current
+  // Smooth scroll to top with visual feedback
+  const scrollToTop = () => {
+    const button = document.querySelector('[data-back-to-top]')
     if (button) {
       button.classList.add('animate-pulse')
       setTimeout(() => {
         button.classList.remove('animate-pulse')
-      }, 300)
+      }, 400)
     }
     
     window.scrollTo({
       top: 0,
       behavior: 'smooth'
     })
-  }, [])
+  }
 
   const handleSignOut = async () => {
     try {
       await signOut()
+      // Reset all state
       setIsSidebarOpen(false)
       setIsProfileDropdownOpen(false)
       setShowLogoutConfirmation(false)
@@ -152,26 +134,27 @@ export default function Layout({ children }: { children: React.ReactNode }) {
 
   const isActive = (path: string) => location.pathname === path
 
-  const toggleSidebar = useCallback(() => {
+  const toggleSidebar = () => {
     setIsSidebarOpen(prev => !prev)
+    // Close dropdown when toggling sidebar
     if (isProfileDropdownOpen) {
       setIsProfileDropdownOpen(false)
     }
-  }, [isProfileDropdownOpen])
+  }
 
-  const closeSidebar = useCallback(() => {
+  const closeSidebar = () => {
     setIsSidebarOpen(false)
     setIsProfileDropdownOpen(false)
-  }, [])
+  }
 
-  const toggleProfileDropdown = useCallback(() => {
+  const toggleProfileDropdown = () => {
     setIsProfileDropdownOpen(prev => !prev)
-  }, [])
+  }
 
   // Close sidebar when route changes
   useEffect(() => {
     closeSidebar()
-  }, [location.pathname, closeSidebar])
+  }, [location.pathname])
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -183,7 +166,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
     }
 
     if (isProfileDropdownOpen) {
-      document.addEventListener('mousedown', handleClickOutside, { passive: true })
+      document.addEventListener('mousedown', handleClickOutside)
       return () => document.removeEventListener('mousedown', handleClickOutside)
     }
   }, [isProfileDropdownOpen])
@@ -231,18 +214,18 @@ export default function Layout({ children }: { children: React.ReactNode }) {
             <div className="flex items-center space-x-4">
               <ThemeToggle />
               
-              {/* Menu button - GPU Optimized */}
+              {/* Menu button */}
               {user && (
                 <Button
                   variant="ghost"
                   size="sm"
                   onClick={toggleSidebar}
-                  className="relative transform-gpu transition-transform duration-200 ease-out will-change-transform hover:scale-105"
+                  className="relative transition-all duration-300 hover:scale-105"
                 >
                   <Menu 
-                    className={`h-5 w-5 transform-gpu transition-transform duration-200 ease-out will-change-transform ${
+                    className={`h-5 w-5 transition-transform duration-200 ease-out ${
                       isSidebarOpen ? 'rotate-90' : 'rotate-0'
-                    }`}
+                    }`} 
                   />
                 </Button>
               )}
@@ -261,16 +244,16 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         {/* Right Sidebar Overlay */}
         {user && (
           <div 
-            className={`fixed inset-0 z-40 transform-gpu transition-all duration-200 ease-out ${
+            className={`fixed inset-0 z-40 transition-all duration-200 ease-out ${
               isSidebarOpen 
-                ? 'opacity-100 visible' 
-                : 'opacity-0 invisible'
+                ? 'opacity-100 pointer-events-auto' 
+                : 'opacity-0 pointer-events-none'
             }`}
           >
             {/* Backdrop */}
             <div 
-              className={`fixed inset-0 bg-black/50 backdrop-blur-sm transform-gpu transition-all duration-200 ease-out ${
-                isSidebarOpen ? 'opacity-100' : 'opacity-0'
+              className={`fixed inset-0 bg-black transition-opacity duration-200 ease-out ${
+                isSidebarOpen ? 'bg-opacity-50' : 'bg-opacity-0'
               }`}
               onClick={closeSidebar} 
             />
@@ -278,7 +261,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
             {/* Sidebar */}
             <aside 
               className={`fixed right-0 top-0 w-full sm:w-96 md:w-80 bg-card h-full shadow-xl 
-                         transform-gpu transition-transform duration-200 ease-out will-change-transform flex flex-col ${
+                         transform transition-transform duration-200 ease-out flex flex-col will-change-transform ${
                 isSidebarOpen 
                   ? 'translate-x-0' 
                   : 'translate-x-full'
@@ -292,7 +275,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                     variant="ghost" 
                     size="sm" 
                     onClick={closeSidebar}
-                    className="transform-gpu transition-all duration-200 ease-out will-change-transform hover:scale-110 hover:rotate-90"
+                    className="transition-all duration-200 hover:scale-110 hover:rotate-90"
                   >
                     <X className="h-5 w-5" />
                   </Button>
@@ -311,9 +294,9 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                         to={item.path}
                         onClick={closeSidebar}
                         className={`flex items-center space-x-3 px-4 py-3 rounded-lg text-sm font-medium 
-                                   transform-gpu transition-all duration-200 ease-out will-change-transform hover:scale-[1.02] ${
+                                   transition-all duration-200 ease-in-out hover:scale-[1.02] ${
                           isActive(item.path)
-                            ? 'bg-primary text-primary-foreground shadow-sm translate-x-1'
+                            ? 'bg-primary text-primary-foreground shadow-sm transform translate-x-1'
                             : 'text-muted-foreground hover:text-foreground hover:bg-accent hover:translate-x-1'
                         }`}
                       >
@@ -330,11 +313,11 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                 {/* Dropdown Menu */}
                 {isProfileDropdownOpen && (
                   <div className="absolute bottom-full left-0 right-0 bg-card shadow-lg border border-border 
-                                 rounded-t-lg mb-1 transform-gpu animate-in slide-in-from-bottom-2 duration-200">
+                                 rounded-t-lg mb-1 animate-in slide-in-from-bottom-2 duration-200">
                     <Button 
                       variant="ghost" 
-                      className="w-full justify-start text-left px-4 py-3 rounded-t-lg 
-                               transform-gpu transition-colors duration-200 hover:bg-accent/50" 
+                      className="w-full justify-start text-left px-4 py-3 rounded-t-lg hover:bg-accent/50 
+                               transition-colors duration-200" 
                       onClick={handleLogoutClick}
                     >
                       <LogOut className="h-4 w-4 mr-3" />
@@ -346,8 +329,8 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                 {/* Profile Button */}
                 <Button
                   variant="ghost"
-                  className="w-full px-4 py-3 justify-between text-left h-auto 
-                           rounded-lg transform-gpu transition-all duration-200 hover:bg-accent/50"
+                  className="w-full px-4 py-3 justify-between text-left h-auto hover:bg-accent/50 
+                           rounded-lg transition-all duration-200"
                   onClick={toggleProfileDropdown}
                 >
                   <div className="flex items-center space-x-3">
@@ -361,11 +344,11 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                       </span>
                     </div>
                   </div>
-                  <ChevronDown 
-                    className={`h-4 w-4 text-muted-foreground transform-gpu transition-transform duration-200 ease-out will-change-transform ${
-                      isProfileDropdownOpen ? 'rotate-180' : 'rotate-0'
-                    }`}
-                  />
+                  <div className={`transition-transform duration-200 ease-in-out ${
+                    isProfileDropdownOpen ? 'rotate-180' : 'rotate-0'
+                  }`}>
+                    <ChevronDown className="h-4 w-4 text-muted-foreground" />
+                  </div>
                 </Button>
               </div>
             </aside>
@@ -373,37 +356,37 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         )}
       </div>
 
-      {/* Back to Top Button - GPU Optimized */}
+      {/* Back to Top Button */}
       <div
-        className={`fixed bottom-6 right-6 z-50 transform-gpu transition-all duration-500 ease-out will-change-transform ${
+        className={`fixed bottom-6 right-6 z-50 transition-all duration-500 ease-out ${
           showBackToTop 
             ? 'opacity-100 scale-100 translate-y-0' 
             : 'opacity-0 scale-75 translate-y-8 pointer-events-none'
         }`}
       >
         <Button
-          ref={backToTopRef}
+          data-back-to-top
           onClick={scrollToTop}
-          className="relative w-14 h-14 rounded-full shadow-2xl bg-primary hover:bg-primary/90 
-                     transform-gpu transition-all duration-300 ease-out will-change-transform
+          className="relative w-14 h-14 rounded-full shadow-2xl transition-all duration-300 ease-out
+                     bg-primary hover:bg-primary/90 
                      hover:scale-110 hover:shadow-xl hover:-translate-y-1
-                     active:scale-95 active:translate-y-0 group overflow-hidden"
+                     active:scale-95 active:translate-y-0
+                     group overflow-hidden"
           size="sm"
         >
           {/* Background animation effect */}
           <div className="absolute inset-0 bg-gradient-to-r from-primary/20 via-primary-foreground/10 to-primary/20 
-                          transform-gpu -translate-x-full group-hover:translate-x-full 
-                          transition-transform duration-700 ease-out will-change-transform" />
+                          translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-700 ease-out" />
           
           {/* Arrow icon */}
-          <ArrowUp className="h-6 w-6 relative z-10 transform-gpu transition-all duration-300 ease-out will-change-transform
+          <ArrowUp className="h-6 w-6 relative z-10 transition-all duration-300 ease-out
                             group-hover:scale-110 group-hover:-translate-y-0.5
                             group-active:scale-90" />
           
           {/* Ripple effect */}
-          <div className="absolute inset-0 rounded-full bg-primary-foreground/20 
-                          transform-gpu scale-0 group-hover:scale-100 group-hover:opacity-0 
-                          transition-all duration-500 ease-out opacity-100 will-change-transform" />
+          <div className="absolute inset-0 rounded-full bg-primary-foreground/20 scale-0 
+                          group-hover:scale-100 group-hover:opacity-0 
+                          transition-all duration-500 ease-out opacity-100" />
         </Button>
       </div>
 
@@ -412,14 +395,13 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         <div className="fixed inset-0 z-[60] flex items-center justify-center">
           {/* Backdrop */}
           <div 
-            className="fixed inset-0 bg-black/60 backdrop-blur-sm transform-gpu 
-                       animate-in fade-in-0 duration-300"
+            className="fixed inset-0 bg-black/60 backdrop-blur-sm transition-opacity duration-300"
             onClick={cancelLogout}
           />
           
           {/* Modal */}
           <div className="relative bg-card border border-border rounded-lg shadow-2xl p-6 mx-4 max-w-md w-full 
-                         transform-gpu animate-in fade-in-0 zoom-in-95 duration-300 ease-out">
+                         animate-in fade-in-0 zoom-in-95 duration-300 ease-out">
             <div className="flex items-center space-x-3 mb-4">
               <div className="w-10 h-10 bg-orange-100 dark:bg-orange-900/30 rounded-full 
                              flex items-center justify-center">
@@ -439,14 +421,14 @@ export default function Layout({ children }: { children: React.ReactNode }) {
               <Button 
                 variant="outline" 
                 onClick={cancelLogout}
-                className="px-4 py-2 transform-gpu transition-transform duration-200 will-change-transform hover:scale-105"
+                className="px-4 py-2 transition-all duration-200 hover:scale-105"
               >
                 Batal
               </Button>
               <Button 
                 variant="destructive" 
                 onClick={handleSignOut}
-                className="px-4 py-2 transform-gpu transition-transform duration-200 will-change-transform hover:scale-105"
+                className="px-4 py-2 transition-all duration-200 hover:scale-105"
               >
                 Ya, Keluar
               </Button>
@@ -470,7 +452,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
       {isAppLoading && (
         <div
           className={`fixed inset-0 z-[70] flex items-center justify-center bg-background 
-                     transform-gpu transition-opacity duration-500 ease-out will-change-auto ${
+                     transition-opacity duration-500 ease-out ${
             isAppFading ? 'opacity-0 pointer-events-none' : 'opacity-100'
           }`}
         >
