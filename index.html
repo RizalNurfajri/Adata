@@ -27,17 +27,14 @@
     <meta property="og:image:alt" content="Adata — akses materi kuliah RKS 3A per semester" />
 
 
-    <!-- Preconnect penting (Supabase & font) -->
+    <!-- Preconnect penting -->
     <link rel="preconnect" href="https://bmshaduyqukvcdomsfsx.supabase.co" crossorigin>
     <link rel="preconnect" href="https://bmshaduyqukvcdomsfsx.supabase.co/auth/v1" crossorigin>
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 
-    <!-- Self-host font (letakkan di /public/fonts) -->
-    <!-- Preload hanya varian yang dipakai di above-the-fold -->
     <link rel="preload" as="font" type="font/woff2" href="/fonts/inter-var.woff2" crossorigin>
 
     <style>
-      /* Face minimal; pastikan file /public/fonts/inter-var.woff2 ada */
       @font-face {
         font-family: "Inter";
         src: url("/fonts/inter-var.woff2") format("woff2");
@@ -46,7 +43,6 @@
         font-display: swap;
       }
       :root { font-family: "Inter", system-ui, -apple-system, Segoe UI, Roboto, Arial, "Noto Sans", "Apple Color Emoji", "Segoe UI Emoji"; }
-      /* Hindari layout shift di awal */
       html, body, #root { height: 100%; }
       body { margin: 0; }
     </style>
@@ -61,7 +57,7 @@
   fetchpriority="high"
 />
 
-    <!-- Lottie Web Component CDN: non-blocking -->
+    <!-- Lottie Web Component CDN non-blocking -->
     <script defer src="https://unpkg.com/@lottiefiles/lottie-player@latest/dist/lottie-player.js"></script>
   </head>
 
