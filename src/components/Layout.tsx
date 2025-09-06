@@ -442,7 +442,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         <div className="px-4 sm:px-6 lg:px-8">
           <div className="flex justify-center items-center h-16">
             <div className="text-sm text-muted-foreground">
-              Â© 2025 Adata. Made With â™¥ For RKS 3A.
+               © 2025 Adata. Made With ♥ For RKS 3A.
             </div>
           </div>
         </div>
