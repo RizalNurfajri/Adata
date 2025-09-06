@@ -203,7 +203,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
       {/* Top Navigation Bar */}
       <nav className="border-b bg-card sticky top-0 z-50">
         {/* ➜ Tambah container + max width */}
-        <div className="mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8">
+        <div className="mx-auto w-full max-w-screen-2xl px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
             {/* Logo */}
             <Link to="/" className="flex items-center space-x-2">
