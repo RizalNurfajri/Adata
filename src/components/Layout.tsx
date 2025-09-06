@@ -220,10 +220,10 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                   variant="ghost"
                   size="sm"
                   onClick={toggleSidebar}
-                  className="relative transition-all duration-200 hover:scale-105 will-change-transform"
+                  className="relative transition-all duration-300 hover:scale-105"
                 >
                   <Menu 
-                    className={`h-5 w-5 transition-transform duration-200 ease-out will-change-transform ${
+                    className={`h-5 w-5 transition-transform duration-200 ease-out ${
                       isSidebarOpen ? 'rotate-90' : 'rotate-0'
                     }`} 
                   />
@@ -244,34 +244,28 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         {/* Right Sidebar Overlay */}
         {user && (
           <div 
-            className={`fixed inset-0 z-40 will-change-transform ${
+            className={`fixed inset-0 z-40 transition-all duration-200 ease-out ${
               isSidebarOpen 
                 ? 'opacity-100 pointer-events-auto' 
                 : 'opacity-0 pointer-events-none'
             }`}
-            style={{
-              transition: 'opacity 250ms cubic-bezier(0.4, 0, 0.2, 1)'
-            }}
           >
             {/* Backdrop */}
             <div 
-              className={`fixed inset-0 bg-black will-change-transform ${
+              className={`fixed inset-0 bg-black transition-opacity duration-200 ease-out ${
                 isSidebarOpen ? 'bg-opacity-50' : 'bg-opacity-0'
               }`}
-              style={{
-                transition: 'background-color 250ms cubic-bezier(0.4, 0, 0.2, 1)'
-              }}
               onClick={closeSidebar} 
             />
             
             {/* Sidebar */}
             <aside 
               className={`fixed right-0 top-0 w-full sm:w-96 md:w-80 bg-card h-full shadow-xl 
-                         flex flex-col will-change-transform`}
-              style={{
-                transform: isSidebarOpen ? 'translate3d(0, 0, 0)' : 'translate3d(100%, 0, 0)',
-                transition: 'transform 250ms cubic-bezier(0.4, 0, 0.2, 1)'
-              }}
+                         transform transition-transform duration-200 ease-out flex flex-col ${
+                isSidebarOpen 
+                  ? 'translate-x-0' 
+                  : 'translate-x-full'
+              }`}
             >
               {/* Sidebar Header */}
               <div className="p-4 sm:p-6">
@@ -281,7 +275,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                     variant="ghost" 
                     size="sm" 
                     onClick={closeSidebar}
-                    className="transition-all duration-150 hover:scale-110 hover:rotate-90 will-change-transform"
+                    className="transition-all duration-200 hover:scale-110 hover:rotate-90"
                   >
                     <X className="h-5 w-5" />
                   </Button>
@@ -300,7 +294,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                         to={item.path}
                         onClick={closeSidebar}
                         className={`flex items-center space-x-3 px-4 py-3 rounded-lg text-sm font-medium 
-                                   transition-all duration-150 ease-out hover:scale-[1.02] will-change-transform ${
+                                   transition-all duration-200 ease-in-out hover:scale-[1.02] ${
                           isActive(item.path)
                             ? 'bg-primary text-primary-foreground shadow-sm transform translate-x-1'
                             : 'text-muted-foreground hover:text-foreground hover:bg-accent hover:translate-x-1'
@@ -319,14 +313,11 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                 {/* Dropdown Menu */}
                 {isProfileDropdownOpen && (
                   <div className="absolute bottom-full left-0 right-0 bg-card shadow-lg border border-border 
-                                 rounded-t-lg mb-1"
-                       style={{
-                         animation: 'slideInFromBottom 150ms cubic-bezier(0.4, 0, 0.2, 1) forwards'
-                       }}>
+                                 rounded-t-lg mb-1 animate-in slide-in-from-bottom-2 duration-200">
                     <Button 
                       variant="ghost" 
                       className="w-full justify-start text-left px-4 py-3 rounded-t-lg hover:bg-accent/50 
-                               transition-colors duration-150" 
+                               transition-colors duration-200" 
                       onClick={handleLogoutClick}
                     >
                       <LogOut className="h-4 w-4 mr-3" />
@@ -339,7 +330,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                 <Button
                   variant="ghost"
                   className="w-full px-4 py-3 justify-between text-left h-auto hover:bg-accent/50 
-                           rounded-lg transition-all duration-150 will-change-transform"
+                           rounded-lg transition-all duration-200"
                   onClick={toggleProfileDropdown}
                 >
                   <div className="flex items-center space-x-3">
@@ -353,7 +344,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                       </span>
                     </div>
                   </div>
-                  <div className={`transition-transform duration-150 ease-out will-change-transform ${
+                  <div className={`transition-transform duration-200 ease-in-out ${
                     isProfileDropdownOpen ? 'rotate-180' : 'rotate-0'
                   }`}>
                     <ChevronDown className="h-4 w-4 text-muted-foreground" />
@@ -367,7 +358,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
 
       {/* Back to Top Button */}
       <div
-        className={`fixed bottom-6 right-6 z-50 transition-all duration-300 ease-out will-change-transform ${
+        className={`fixed bottom-6 right-6 z-50 transition-all duration-500 ease-out ${
           showBackToTop 
             ? 'opacity-100 scale-100 translate-y-0' 
             : 'opacity-0 scale-75 translate-y-8 pointer-events-none'
@@ -376,8 +367,8 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         <Button
           data-back-to-top
           onClick={scrollToTop}
-          className="relative w-14 h-14 rounded-full shadow-2xl transition-all duration-200 ease-out
-                     bg-primary hover:bg-primary/90 will-change-transform
+          className="relative w-14 h-14 rounded-full shadow-2xl transition-all duration-300 ease-out
+                     bg-primary hover:bg-primary/90 
                      hover:scale-110 hover:shadow-xl hover:-translate-y-1
                      active:scale-95 active:translate-y-0
                      group overflow-hidden"
@@ -385,17 +376,17 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         >
           {/* Background animation effect */}
           <div className="absolute inset-0 bg-gradient-to-r from-primary/20 via-primary-foreground/10 to-primary/20 
-                          translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-500 ease-out will-change-transform" />
+                          translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-700 ease-out" />
           
           {/* Arrow icon */}
-          <ArrowUp className="h-6 w-6 relative z-10 transition-all duration-200 ease-out will-change-transform
+          <ArrowUp className="h-6 w-6 relative z-10 transition-all duration-300 ease-out
                             group-hover:scale-110 group-hover:-translate-y-0.5
                             group-active:scale-90" />
           
           {/* Ripple effect */}
-          <div className="absolute inset-0 rounded-full bg-primary-foreground/20 scale-0 will-change-transform
+          <div className="absolute inset-0 rounded-full bg-primary-foreground/20 scale-0 
                           group-hover:scale-100 group-hover:opacity-0 
-                          transition-all duration-300 ease-out opacity-100" />
+                          transition-all duration-500 ease-out opacity-100" />
         </Button>
       </div>
 
@@ -404,16 +395,13 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         <div className="fixed inset-0 z-[60] flex items-center justify-center">
           {/* Backdrop */}
           <div 
-            className="fixed inset-0 bg-black/60 backdrop-blur-sm transition-opacity duration-200"
+            className="fixed inset-0 bg-black/60 backdrop-blur-sm transition-opacity duration-300"
             onClick={cancelLogout}
           />
           
           {/* Modal */}
           <div className="relative bg-card border border-border rounded-lg shadow-2xl p-6 mx-4 max-w-md w-full 
-                         will-change-transform"
-               style={{
-                 animation: 'modalFadeIn 200ms cubic-bezier(0.4, 0, 0.2, 1) forwards'
-               }}>
+                         animate-in fade-in-0 zoom-in-95 duration-300 ease-out">
             <div className="flex items-center space-x-3 mb-4">
               <div className="w-10 h-10 bg-orange-100 dark:bg-orange-900/30 rounded-full 
                              flex items-center justify-center">
@@ -433,14 +421,14 @@ export default function Layout({ children }: { children: React.ReactNode }) {
               <Button 
                 variant="outline" 
                 onClick={cancelLogout}
-                className="px-4 py-2 transition-all duration-150 hover:scale-105 will-change-transform"
+                className="px-4 py-2 transition-all duration-200 hover:scale-105"
               >
                 Batal
               </Button>
               <Button 
                 variant="destructive" 
                 onClick={handleSignOut}
-                className="px-4 py-2 transition-all duration-150 hover:scale-105 will-change-transform"
+                className="px-4 py-2 transition-all duration-200 hover:scale-105"
               >
                 Ya, Keluar
               </Button>
@@ -479,31 +467,6 @@ export default function Layout({ children }: { children: React.ReactNode }) {
           />
         </div>
       )}
-
-      {/* CSS Animation Keyframes */}
-      <style jsx>{`
-        @keyframes slideInFromBottom {
-          from {
-            opacity: 0;
-            transform: translateY(8px);
-          }
-          to {
-            opacity: 1;
-            transform: translateY(0);
-          }
-        }
-
-        @keyframes modalFadeIn {
-          from {
-            opacity: 0;
-            transform: scale(0.95);
-          }
-          to {
-            opacity: 1;
-            transform: scale(1);
-          }
-        }
-      `}</style>
     </div>
   )
 }
