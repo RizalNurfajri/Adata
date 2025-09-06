@@ -26,23 +26,19 @@
     <meta property="og:image:height" content="630" />
     <meta property="og:image:alt" content="Adata — akses materi kuliah RKS 3A per semester" />
 
-
     <!-- Preconnect penting -->
     <link rel="preconnect" href="https://bmshaduyqukvcdomsfsx.supabase.co" crossorigin>
     <link rel="preconnect" href="https://bmshaduyqukvcdomsfsx.supabase.co/auth/v1" crossorigin>
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="preconnect" href="https://fonts.googleapis.com" crossorigin>
 
-    <link rel="preload" as="font" type="font/woff2" href="/fonts/inter-var.woff2" crossorigin>
+    <!-- Google Fonts Inter -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@100..900&display=swap" rel="stylesheet">
 
     <style>
-      @font-face {
-        font-family: "Inter";
-        src: url("/fonts/inter-var.woff2") format("woff2");
-        font-weight: 100 900;
-        font-style: normal;
-        font-display: swap;
+      :root {
+        font-family: "Inter", system-ui, -apple-system, "Segoe UI", Roboto, Arial, "Noto Sans", "Apple Color Emoji", "Segoe UI Emoji";
       }
-      :root { font-family: "Inter", system-ui, -apple-system, Segoe UI, Roboto, Arial, "Noto Sans", "Apple Color Emoji", "Segoe UI Emoji"; }
       html, body, #root { height: 100%; }
       body { margin: 0; }
     </style>
@@ -50,7 +46,7 @@
     <!-- Preload LCP image -->
     <link
       rel="preload"
-      s="image"
+      as="image"
       href="/logo.webp"
       imagesrcset="/logo-640.webp 640w, /logo-1280.webp 1280w, /logo-1920.webp 1920w"
       imagesizes="(max-width: 640px) 100vw, (max-width: 1280px) 100vw, 1280px"
