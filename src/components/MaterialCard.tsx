@@ -30,263 +30,165 @@ export default memo(function MaterialCard({ material, onDeleted }: MaterialCardP
   const [isDeleting, setIsDeleting] = useState(false)
   const [isDownloading, setIsDownloading] = useState(false)
 
-  // Memoize functions to prevent unnecessary re-renders
   const handleDelete = useCallback(async () => {
     if (!confirm('Apakah Anda yakin ingin menghapus materi ini?')) return
-
     setIsDeleting(true)
     try {
       if (material.link) {
         const deleted = await deleteFromStorageEnhanced(material.link)
-
         if (!deleted) {
           toast({
             title: 'Peringatan',
-            description: 'File berhasil dihapus dari database tetapi mungkin masih tersisa di storage. Periksa console untuk detail.',
+            description:
+              'File berhasil dihapus dari database tetapi mungkin masih tersisa di storage. Periksa console untuk detail.',
             variant: 'destructive',
           })
         }
       }
-
-      const { error } = await supabase
-        .from('materials')
-        .delete()
-        .eq('id', material.id)
-
+      const { error } = await supabase.from('materials').delete().eq('id', material.id)
       if (error) throw error
-
-      toast({
-        title: 'Berhasil',
-        description: 'Materi berhasil dihapus',
-      })
-
+      toast({ title: 'Berhasil', description: 'Materi berhasil dihapus' })
       onDeleted?.()
-    } catch (error) {
-      toast({
-        title: 'Error',
-        description: 'Gagal menghapus materi',
-        variant: 'destructive',
-      })
+    } catch {
+      toast({ title: 'Error', description: 'Gagal menghapus materi', variant: 'destructive' })
     } finally {
       setIsDeleting(false)
     }
   }, [material.id, material.link, onDeleted])
 
-  // Optimized download function with preconnect hint and better error handling
   const handleDownload = useCallback(async (fileUrl: string, filename: string) => {
-    if (isDownloading) return // Prevent multiple downloads
-
+    if (isDownloading) return
     setIsDownloading(true)
 
-    // Add preconnect hint for better performance
     const preconnectLink = document.createElement('link')
     preconnectLink.rel = 'preconnect'
     preconnectLink.href = new URL(fileUrl).origin
     document.head.appendChild(preconnectLink)
 
     try {
-      // Create abort controller for timeout
       const controller = new AbortController()
-      const timeoutId = setTimeout(() => controller.abort(), 30000) // 30 second timeout
+      const timeoutId = setTimeout(() => controller.abort(), 30000)
+      toast({ title: 'Memulai download...', description: `Mendownload ${filename}` })
 
-      // Show loading toast
-      toast({
-        title: 'Memulai download...',
-        description: `Mendownload ${filename}`,
-      })
-
-      // Fetch with timeout and optimized headers
       const response = await fetch(fileUrl, {
         signal: controller.signal,
-        headers: {
-          'Cache-Control': 'no-cache',
-          'Accept': 'application/octet-stream,*/*',
-        },
+        headers: { 'Cache-Control': 'no-cache', Accept: 'application/octet-stream,*/*' },
         mode: 'cors',
-        credentials: 'omit'
+        credentials: 'omit',
       })
-
       clearTimeout(timeoutId)
+      if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`)
 
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`)
-      }
-
-      // Get file size if available
-      const contentLength = response.headers.get('Content-Length')
-      const fileSize = contentLength ? parseInt(contentLength) : null
-
-      // Convert to blob with progress tracking
       const blob = await response.blob()
+      if (blob.size === 0) throw new Error('File kosong atau tidak dapat didownload')
 
-      // Validate blob
-      if (blob.size === 0) {
-        throw new Error('File kosong atau tidak dapat didownload')
+      const downloadFallback = (blob: Blob, filename: string) => {
+        const url = window.URL.createObjectURL(blob)
+        const a = document.createElement('a')
+        a.style.display = 'none'
+        a.href = url
+        a.download = filename
+        a.target = '_blank'
+        document.body.appendChild(a)
+        requestAnimationFrame(() => {
+          a.click()
+          setTimeout(() => {
+            window.URL.revokeObjectURL(url)
+            if (document.body.contains(a)) document.body.removeChild(a)
+          }, 100)
+        })
       }
 
-      // Create optimized download using modern APIs
       if ('showSaveFilePicker' in window) {
         try {
           const fileHandle = await (window as any).showSaveFilePicker({
             suggestedName: filename,
-            types: [{
-              description: 'PDF files',
-              accept: { 'application/pdf': ['.pdf'] }
-            }]
+            types: [{ description: 'PDF files', accept: { 'application/pdf': ['.pdf'] } }],
           })
           const writable = await fileHandle.createWritable()
           await writable.write(blob)
           await writable.close()
-        } catch (fsError) {
-          // Fallback to traditional download
+        } catch {
           downloadFallback(blob, filename)
         }
       } else {
-        // Traditional download method
         downloadFallback(blob, filename)
       }
 
-      // Success toast
       toast({
         title: 'Berhasil!',
-        description: `File "${filename}" berhasil didownload${fileSize ? ` (${(fileSize / (1024 * 1024)).toFixed(2)} MB)` : ''}`,
+        description: `File "${filename}" berhasil didownload`,
       })
-
     } catch (error: any) {
       console.error('Download error:', error)
+      let msg = 'Gagal mendownload file'
+      if (error.name === 'AbortError') msg = 'Download timeout - file terlalu besar atau koneksi lambat'
+      else if (error.message?.includes('HTTP error')) msg = 'File tidak dapat diakses atau sudah tidak tersedia'
+      else if (error.message?.includes('Failed to fetch')) msg = 'Masalah koneksi internet'
 
-      let errorMessage = 'Gagal mendownload file'
+      toast({ title: 'Download Gagal', description: msg, variant: 'destructive' })
 
-      if (error.name === 'AbortError') {
-        errorMessage = 'Download timeout - file terlalu besar atau koneksi lambat'
-      } else if (error.message.includes('HTTP error')) {
-        errorMessage = 'File tidak dapat diakses atau sudah tidak tersedia'
-      } else if (error.message.includes('Failed to fetch')) {
-        errorMessage = 'Masalah koneksi internet'
-      }
-
-      toast({
-        title: 'Download Gagal',
-        description: errorMessage,
-        variant: 'destructive',
-      })
-
-      // Fallback - try opening in new tab
       if (fileUrl) {
         try {
           window.open(fileUrl, '_blank', 'noopener,noreferrer')
-          toast({
-            title: 'Membuka di tab baru',
-            description: 'Silakan download manual dari tab yang terbuka',
-          })
+          toast({ title: 'Membuka di tab baru', description: 'Silakan download manual dari tab yang terbuka' })
         } catch {
-          // Final fallback - copy to clipboard
           if (navigator.clipboard) {
             try {
               await navigator.clipboard.writeText(fileUrl)
-              toast({
-                title: 'Link disalin',
-                description: 'Link file telah disalin ke clipboard',
-              })
-            } catch {
-              console.error('Failed to copy to clipboard')
-            }
+              toast({ title: 'Link disalin', description: 'Link file telah disalin ke clipboard' })
+            } catch {}
           }
         }
       }
     } finally {
       setIsDownloading(false)
-      // Clean up preconnect link
       setTimeout(() => {
-        if (preconnectLink.parentNode) {
-          document.head.removeChild(preconnectLink)
-        }
+        if (preconnectLink.parentNode) document.head.removeChild(preconnectLink)
       }, 1000)
     }
   }, [isDownloading])
 
-  // Helper function for traditional download
-  const downloadFallback = useCallback((blob: Blob, filename: string) => {
-    const url = window.URL.createObjectURL(blob)
-    const a = document.createElement('a')
-
-    // Set download attributes
-    a.style.display = 'none'
-    a.href = url
-    a.download = filename
-    a.target = '_blank' // Open in new tab as fallback
-
-    // Append to body and trigger download
-    document.body.appendChild(a)
-
-    // Use requestAnimationFrame for better performance
-    requestAnimationFrame(() => {
-      a.click()
-
-      // Cleanup with slight delay
-      setTimeout(() => {
-        window.URL.revokeObjectURL(url)
-        if (document.body.contains(a)) {
-          document.body.removeChild(a)
-        }
-      }, 100)
-    })
-  }, [])
-
-  // Memoized filename extraction with better sanitization
   const getFilename = useCallback((url: string, title: string) => {
     try {
-      const urlParts = url.split('/')
-      const rawFilename = urlParts[urlParts.length - 1]
-
-      if (rawFilename && rawFilename.includes('.')) {
-        return decodeURIComponent(rawFilename)
-      }
-
-      // Sanitize title for filename with improved logic
-      const sanitizedTitle = title
-        .replace(/[<>:"/\\|?*\x00-\x1f]/g, '')
-        .replace(/\s+/g, ' ')
-        .replace(/\.+$/, '')
-        .trim()
-        .substring(0, 100)
-
-      return `${sanitizedTitle || 'document'}.pdf`
+      const parts = url.split('/')
+      const last = parts[parts.length - 1]
+      if (last && last.includes('.')) return decodeURIComponent(last)
+      return `${title || 'document'}.pdf`
     } catch {
-      return `${title.substring(0, 50).replace(/[<>:"/\\|?*]/g, '') || 'document'}.pdf`
+      return `${title.substring(0, 50) || 'document'}.pdf`
     }
   }, [])
 
-  // Memoized date formatting
   const formatDate = useCallback((dateString: string) => {
     try {
       return new Date(dateString).toLocaleDateString('id-ID', {
         year: 'numeric',
         month: 'long',
-        day: 'numeric'
+        day: 'numeric',
       })
     } catch {
       return 'Tanggal tidak valid'
     }
   }, [])
 
-  // Optimize Google Docs viewer URL
   const getViewerUrl = useCallback((link: string) => {
-    const encodedUrl = encodeURIComponent(link)
-    return `https://docs.google.com/gview?url=${encodedUrl}&embedded=true`
+    const encoded = encodeURIComponent(link)
+    return `https://docs.google.com/gview?url=${encoded}&embedded=true`
   }, [])
 
   return (
-    <Card className="transition-all duration-200 hover:shadow-md will-change-transform flex flex-col">
+    <Card className="h-full transition-all duration-200 hover:shadow-md will-change-transform flex flex-col">
       <CardHeader className="pb-3">
-        {/* Stack di mobile, sejajar di ≥sm */}
         <div className="flex flex-col gap-2 sm:flex-row sm:justify-between sm:items-start">
           <div className="flex-1 min-w-0">
-            {/* Mobile: tanpa clamp; ≥sm: clamp 2 baris */}
-            <CardTitle className="text-base sm:text-lg mb-2 line-clamp-none sm:line-clamp-2 break-words break-all">
+            <CardTitle
+              title={material.judul}
+              className="text-base sm:text-lg mb-2 sm:line-clamp-2 break-words hyphens-auto"
+            >
               {material.judul}
             </CardTitle>
-            <div className="flex items-center space-x-2 text-sm text-muted-foreground">
+            <div className="flex items-center gap-2 text-sm text-muted-foreground">
               <Calendar className="h-4 w-4 flex-shrink-0" />
               <span>{formatDate(material.created_at)}</span>
             </div>
@@ -301,68 +203,67 @@ export default memo(function MaterialCard({ material, onDeleted }: MaterialCardP
         </div>
       </CardHeader>
 
-      <CardContent className="flex-1 flex flex-col justify-between">
+      <CardContent className="flex-1 flex flex-col">
         {material.deskripsi && (
-          <p className="text-sm text-muted-foreground mb-4 line-clamp-3">
+          <p className="text-sm text-muted-foreground mb-4 line-clamp-3 break-words">
             {material.deskripsi}
           </p>
         )}
 
-{/* Tombol: selalu ngumpul di kanan, tetap bisa wrap rapi */}
-<div className="mt-auto flex flex-wrap items-center gap-2 justify-end sm:flex-nowrap">
-  {material.link && (
-    <>
-      <Button asChild variant="outline" size="sm" className="shrink-0">
-        <a
-          href={getViewerUrl(material.link)}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="flex items-center"
-        >
-          <ExternalLink className="h-4 w-4 mr-1" />
-          Lihat
-        </a>
-      </Button>
+        <div className="mt-auto flex flex-wrap items-center gap-2 gap-x-3 justify-between sm:justify-end">
+          {material.link && (
+            <>
+              <Button
+                asChild
+                variant="outline"
+                size="sm"
+                className="w-full sm:w-auto shrink-0"
+              >
+                <a href={getViewerUrl(material.link)} target="_blank" rel="noopener noreferrer" className="flex items-center">
+                  <ExternalLink className="h-4 w-4 mr-1" />
+                  Lihat
+                </a>
+              </Button>
 
-      <Button
-        variant="outline"
-        size="sm"
-        onClick={() => handleDownload(material.link!, getFilename(material.link!, material.judul))}
-        disabled={isDownloading}
-        className="flex items-center shrink-0"
-      >
-        {isDownloading ? (
-          <Loader2 className="h-4 w-4 mr-1 animate-spin" />
-        ) : (
-          <Download className="h-4 w-4 mr-1" />
-        )}
-        {isDownloading ? 'Downloading...' : 'Download'}
-      </Button>
-    </>
-  )}
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => handleDownload(material.link!, getFilename(material.link!, material.judul))}
+                disabled={isDownloading}
+                className="w-full sm:w-auto shrink-0"
+              >
+                {isDownloading ? (
+                  <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+                ) : (
+                  <Download className="h-4 w-4 mr-1" />
+                )}
+                {isDownloading ? 'Downloading...' : 'Download'}
+              </Button>
+            </>
+          )}
 
-  {profile?.role === 'admin' && (
-    <>
-      <Button asChild variant="outline" size="sm" className="shrink-0">
-        <Link to={`/edit/${material.id}`}>
-          <Edit className="h-4 w-4 mr-1" />
-          Edit
-        </Link>
-      </Button>
+          {profile?.role === 'admin' && (
+            <>
+              <Button asChild variant="outline" size="sm" className="w-full sm:w-auto shrink-0">
+                <Link to={`/edit/${material.id}`}>
+                  <Edit className="h-4 w-4 mr-1" />
+                  Edit
+                </Link>
+              </Button>
 
-      <Button
-        variant="destructive"
-        size="sm"
-        onClick={handleDelete}
-        disabled={isDeleting || isDownloading}
-        className="shrink-0"
-      >
-        <Trash2 className="h-4 w-4 mr-1" />
-        {isDeleting ? 'Menghapus...' : 'Hapus'}
-      </Button>
-    </>
-  )}
-</div>
+              <Button
+                variant="destructive"
+                size="sm"
+                onClick={handleDelete}
+                disabled={isDeleting || isDownloading}
+                className="w-full sm:w-auto shrink-0"
+              >
+                <Trash2 className="h-4 w-4 mr-1" />
+                {isDeleting ? 'Menghapus...' : 'Hapus'}
+              </Button>
+            </>
+          )}
+        </div>
       </CardContent>
     </Card>
   )
