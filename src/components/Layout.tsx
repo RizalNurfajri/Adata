@@ -31,8 +31,6 @@ export default function Layout({ children }: { children: React.ReactNode }) {
   
   // Optimized refs for direct DOM manipulation
   const backToTopRef = useRef<HTMLButtonElement>(null)
-  const sidebarRef = useRef<HTMLDivElement>(null)
-  const backdropRef = useRef<HTMLDivElement>(null)
   const scrollTimeoutRef = useRef<NodeJS.Timeout>()
 
   // ====== Loading overlay state ======
@@ -116,20 +114,14 @@ export default function Layout({ children }: { children: React.ReactNode }) {
     return () => window.removeEventListener('hashchange', handleHashChange)
   }, [navigate])
 
-  // Optimized scroll to top with GPU acceleration
+  // Optimized scroll to top dengan haptic feedback
   const scrollToTop = useCallback(() => {
     const button = backToTopRef.current
     if (button) {
-      // Direct style manipulation untuk performa terbaik
-      button.style.transform = 'translate3d(0, 0, 0) scale(0.95)'
-      button.style.transition = 'transform 0.15s cubic-bezier(0.4, 0, 0.2, 1)'
-      
+      button.classList.add('animate-pulse')
       setTimeout(() => {
-        button.style.transform = 'translate3d(0, 0, 0) scale(1.05)'
-        setTimeout(() => {
-          button.style.transform = 'translate3d(0, 0, 0) scale(1)'
-        }, 150)
-      }, 150)
+        button.classList.remove('animate-pulse')
+      }, 300)
     }
     
     window.scrollTo({
@@ -141,7 +133,6 @@ export default function Layout({ children }: { children: React.ReactNode }) {
   const handleSignOut = async () => {
     try {
       await signOut()
-      // Reset all state
       setIsSidebarOpen(false)
       setIsProfileDropdownOpen(false)
       setShowLogoutConfirmation(false)
@@ -161,31 +152,8 @@ export default function Layout({ children }: { children: React.ReactNode }) {
 
   const isActive = (path: string) => location.pathname === path
 
-  // Optimized sidebar toggle with GPU acceleration
   const toggleSidebar = useCallback(() => {
-    setIsSidebarOpen(prev => {
-      const newState = !prev
-      
-      // Prepare GPU layers sebelum animation
-      if (sidebarRef.current && backdropRef.current) {
-        if (newState) {
-          sidebarRef.current.style.willChange = 'transform'
-          backdropRef.current.style.willChange = 'opacity'
-        } else {
-          // Cleanup will-change setelah animation selesai
-          setTimeout(() => {
-            if (sidebarRef.current && backdropRef.current) {
-              sidebarRef.current.style.willChange = 'auto'
-              backdropRef.current.style.willChange = 'auto'
-            }
-          }, 250)
-        }
-      }
-      
-      return newState
-    })
-    
-    // Close dropdown when toggling sidebar
+    setIsSidebarOpen(prev => !prev)
     if (isProfileDropdownOpen) {
       setIsProfileDropdownOpen(false)
     }
@@ -263,33 +231,18 @@ export default function Layout({ children }: { children: React.ReactNode }) {
             <div className="flex items-center space-x-4">
               <ThemeToggle />
               
-              {/* Menu button - Optimized untuk GPU */}
+              {/* Menu button - GPU Optimized */}
               {user && (
                 <Button
                   variant="ghost"
                   size="sm"
                   onClick={toggleSidebar}
-                  className="relative"
-                  style={{
-                    transition: 'transform 0.25s cubic-bezier(0.4, 0, 0.2, 1)',
-                    willChange: 'transform'
-                  }}
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.transform = 'translate3d(0, 0, 0) scale(1.05)'
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.transform = 'translate3d(0, 0, 0) scale(1)'
-                  }}
+                  className="relative transform-gpu transition-transform duration-200 ease-out will-change-transform hover:scale-105"
                 >
                   <Menu 
-                    className="h-5 w-5"
-                    style={{
-                      transition: 'transform 0.25s cubic-bezier(0.4, 0, 0.2, 1)',
-                      transform: isSidebarOpen 
-                        ? 'rotate3d(0, 0, 1, 90deg)' 
-                        : 'rotate3d(0, 0, 1, 0deg)',
-                      willChange: 'transform'
-                    }}
+                    className={`h-5 w-5 transform-gpu transition-transform duration-200 ease-out will-change-transform ${
+                      isSidebarOpen ? 'rotate-90' : 'rotate-0'
+                    }`}
                   />
                 </Button>
               )}
@@ -305,39 +258,31 @@ export default function Layout({ children }: { children: React.ReactNode }) {
           {children}
         </main>
 
-        {/* Right Sidebar Overlay - GPU Optimized */}
+        {/* Right Sidebar Overlay */}
         {user && (
           <div 
-            className="fixed inset-0 z-40 pointer-events-none"
-            style={{
-              opacity: isSidebarOpen ? 1 : 0,
-              transition: 'opacity 0.25s cubic-bezier(0.4, 0, 0.2, 1)',
-              pointerEvents: isSidebarOpen ? 'auto' : 'none'
-            }}
+            className={`fixed inset-0 z-40 transform-gpu transition-all duration-200 ease-out ${
+              isSidebarOpen 
+                ? 'opacity-100 visible' 
+                : 'opacity-0 invisible'
+            }`}
           >
-            {/* Backdrop - GPU Optimized */}
+            {/* Backdrop */}
             <div 
-              ref={backdropRef}
-              className="fixed inset-0"
-              style={{
-                backgroundColor: `rgba(0, 0, 0, ${isSidebarOpen ? '0.5' : '0'})`,
-                transition: 'background-color 0.25s cubic-bezier(0.4, 0, 0.2, 1)',
-                backdropFilter: isSidebarOpen ? 'blur(4px)' : 'blur(0px)'
-              }}
+              className={`fixed inset-0 bg-black/50 backdrop-blur-sm transform-gpu transition-all duration-200 ease-out ${
+                isSidebarOpen ? 'opacity-100' : 'opacity-0'
+              }`}
               onClick={closeSidebar} 
             />
             
-            {/* Sidebar - GPU Optimized */}
+            {/* Sidebar */}
             <aside 
-              ref={sidebarRef}
-              className="fixed right-0 top-0 w-full sm:w-96 md:w-80 bg-card h-full shadow-xl flex flex-col"
-              style={{
-                transform: isSidebarOpen 
-                  ? 'translate3d(0, 0, 0)' 
-                  : 'translate3d(100%, 0, 0)',
-                transition: 'transform 0.25s cubic-bezier(0.4, 0, 0.2, 1)',
-                willChange: isSidebarOpen ? 'transform' : 'auto'
-              }}
+              className={`fixed right-0 top-0 w-full sm:w-96 md:w-80 bg-card h-full shadow-xl 
+                         transform-gpu transition-transform duration-200 ease-out will-change-transform flex flex-col ${
+                isSidebarOpen 
+                  ? 'translate-x-0' 
+                  : 'translate-x-full'
+              }`}
             >
               {/* Sidebar Header */}
               <div className="p-4 sm:p-6">
@@ -347,17 +292,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                     variant="ghost" 
                     size="sm" 
                     onClick={closeSidebar}
-                    className="relative"
-                    style={{
-                      transition: 'transform 0.25s cubic-bezier(0.4, 0, 0.2, 1)',
-                      willChange: 'transform'
-                    }}
-                    onMouseEnter={(e) => {
-                      e.currentTarget.style.transform = 'translate3d(0, 0, 0) scale(1.1) rotate3d(0, 0, 1, 90deg)'
-                    }}
-                    onMouseLeave={(e) => {
-                      e.currentTarget.style.transform = 'translate3d(0, 0, 0) scale(1) rotate3d(0, 0, 1, 0deg)'
-                    }}
+                    className="transform-gpu transition-all duration-200 ease-out will-change-transform hover:scale-110 hover:rotate-90"
                   >
                     <X className="h-5 w-5" />
                   </Button>
@@ -370,34 +305,17 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                   .filter(item => item.show)
                   .map((item) => {
                     const Icon = item.icon
-                    const active = isActive(item.path)
-                    
                     return (
                       <Link
                         key={item.path}
                         to={item.path}
                         onClick={closeSidebar}
                         className={`flex items-center space-x-3 px-4 py-3 rounded-lg text-sm font-medium 
-                                   block relative overflow-hidden ${
-                          active
-                            ? 'bg-primary text-primary-foreground shadow-sm'
-                            : 'text-muted-foreground hover:text-foreground hover:bg-accent'
+                                   transform-gpu transition-all duration-200 ease-out will-change-transform hover:scale-[1.02] ${
+                          isActive(item.path)
+                            ? 'bg-primary text-primary-foreground shadow-sm translate-x-1'
+                            : 'text-muted-foreground hover:text-foreground hover:bg-accent hover:translate-x-1'
                         }`}
-                        style={{
-                          transition: 'all 0.25s cubic-bezier(0.4, 0, 0.2, 1)',
-                          transform: active ? 'translate3d(4px, 0, 0)' : 'translate3d(0, 0, 0)',
-                          willChange: 'transform'
-                        }}
-                        onMouseEnter={(e) => {
-                          if (!active) {
-                            e.currentTarget.style.transform = 'translate3d(4px, 0, 0) scale(1.02)'
-                          }
-                        }}
-                        onMouseLeave={(e) => {
-                          if (!active) {
-                            e.currentTarget.style.transform = 'translate3d(0, 0, 0) scale(1)'
-                          }
-                        }}
                       >
                         <Icon className="h-5 w-5" />
                         <span>{item.name}</span>
@@ -409,29 +327,15 @@ export default function Layout({ children }: { children: React.ReactNode }) {
 
               {/* User Profile Section */}
               <div className="relative mx-3 mb-3" data-profile-dropdown>
-                {/* Dropdown Menu - GPU Optimized */}
+                {/* Dropdown Menu */}
                 {isProfileDropdownOpen && (
-                  <div 
-                    className="absolute bottom-full left-0 right-0 bg-card shadow-lg border border-border rounded-t-lg mb-1"
-                    style={{
-                      animation: 'slideInFromBottom 0.25s cubic-bezier(0.4, 0, 0.2, 1)',
-                      transform: 'translate3d(0, 0, 0)',
-                      willChange: 'transform'
-                    }}
-                  >
+                  <div className="absolute bottom-full left-0 right-0 bg-card shadow-lg border border-border 
+                                 rounded-t-lg mb-1 transform-gpu animate-in slide-in-from-bottom-2 duration-200">
                     <Button 
                       variant="ghost" 
-                      className="w-full justify-start text-left px-4 py-3 rounded-t-lg"
-                      style={{
-                        transition: 'background-color 0.25s cubic-bezier(0.4, 0, 0.2, 1)'
-                      }}
+                      className="w-full justify-start text-left px-4 py-3 rounded-t-lg 
+                               transform-gpu transition-colors duration-200 hover:bg-accent/50" 
                       onClick={handleLogoutClick}
-                      onMouseEnter={(e) => {
-                        e.currentTarget.style.backgroundColor = 'hsl(var(--accent))'
-                      }}
-                      onMouseLeave={(e) => {
-                        e.currentTarget.style.backgroundColor = 'transparent'
-                      }}
                     >
                       <LogOut className="h-4 w-4 mr-3" />
                       Keluar dari Akun
@@ -442,17 +346,9 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                 {/* Profile Button */}
                 <Button
                   variant="ghost"
-                  className="w-full px-4 py-3 justify-between text-left h-auto rounded-lg"
+                  className="w-full px-4 py-3 justify-between text-left h-auto 
+                           rounded-lg transform-gpu transition-all duration-200 hover:bg-accent/50"
                   onClick={toggleProfileDropdown}
-                  style={{
-                    transition: 'background-color 0.25s cubic-bezier(0.4, 0, 0.2, 1)'
-                  }}
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.backgroundColor = 'hsl(var(--accent) / 0.5)'
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.backgroundColor = 'transparent'
-                  }}
                 >
                   <div className="flex items-center space-x-3">
                     <div className="w-8 h-8 bg-primary rounded-full flex items-center justify-center 
@@ -466,14 +362,9 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                     </div>
                   </div>
                   <ChevronDown 
-                    className="h-4 w-4 text-muted-foreground"
-                    style={{
-                      transition: 'transform 0.25s cubic-bezier(0.4, 0, 0.2, 1)',
-                      transform: isProfileDropdownOpen 
-                        ? 'rotate3d(0, 0, 1, 180deg)' 
-                        : 'rotate3d(0, 0, 1, 0deg)',
-                      willChange: 'transform'
-                    }}
+                    className={`h-4 w-4 text-muted-foreground transform-gpu transition-transform duration-200 ease-out will-change-transform ${
+                      isProfileDropdownOpen ? 'rotate-180' : 'rotate-0'
+                    }`}
                   />
                 </Button>
               </div>
@@ -484,97 +375,51 @@ export default function Layout({ children }: { children: React.ReactNode }) {
 
       {/* Back to Top Button - GPU Optimized */}
       <div
-        className="fixed bottom-6 right-6 z-50"
-        style={{
-          opacity: showBackToTop ? 1 : 0,
-          transform: showBackToTop 
-            ? 'translate3d(0, 0, 0) scale(1)' 
-            : 'translate3d(0, 32px, 0) scale(0.75)',
-          transition: 'all 0.5s cubic-bezier(0.4, 0, 0.2, 1)',
-          pointerEvents: showBackToTop ? 'auto' : 'none',
-          willChange: 'transform, opacity'
-        }}
+        className={`fixed bottom-6 right-6 z-50 transform-gpu transition-all duration-500 ease-out will-change-transform ${
+          showBackToTop 
+            ? 'opacity-100 scale-100 translate-y-0' 
+            : 'opacity-0 scale-75 translate-y-8 pointer-events-none'
+        }`}
       >
         <Button
           ref={backToTopRef}
           onClick={scrollToTop}
-          className="relative w-14 h-14 rounded-full shadow-2xl bg-primary hover:bg-primary/90 group overflow-hidden"
+          className="relative w-14 h-14 rounded-full shadow-2xl bg-primary hover:bg-primary/90 
+                     transform-gpu transition-all duration-300 ease-out will-change-transform
+                     hover:scale-110 hover:shadow-xl hover:-translate-y-1
+                     active:scale-95 active:translate-y-0 group overflow-hidden"
           size="sm"
-          style={{
-            transition: 'all 0.25s cubic-bezier(0.4, 0, 0.2, 1)',
-            willChange: 'transform'
-          }}
-          onMouseEnter={(e) => {
-            e.currentTarget.style.transform = 'translate3d(0, -4px, 0) scale(1.1)'
-            e.currentTarget.style.boxShadow = '0 25px 50px -12px rgba(0, 0, 0, 0.25)'
-          }}
-          onMouseLeave={(e) => {
-            e.currentTarget.style.transform = 'translate3d(0, 0, 0) scale(1)'
-            e.currentTarget.style.boxShadow = '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)'
-          }}
         >
           {/* Background animation effect */}
-          <div 
-            className="absolute inset-0 bg-gradient-to-r from-primary/20 via-primary-foreground/10 to-primary/20"
-            style={{
-              transform: 'translate3d(-100%, 0, 0)',
-              transition: 'transform 0.7s cubic-bezier(0.4, 0, 0.2, 1)',
-              willChange: 'transform'
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.transform = 'translate3d(100%, 0, 0)'
-            }}
-          />
+          <div className="absolute inset-0 bg-gradient-to-r from-primary/20 via-primary-foreground/10 to-primary/20 
+                          transform-gpu -translate-x-full group-hover:translate-x-full 
+                          transition-transform duration-700 ease-out will-change-transform" />
           
           {/* Arrow icon */}
-          <ArrowUp 
-            className="h-6 w-6 relative z-10"
-            style={{
-              transition: 'transform 0.25s cubic-bezier(0.4, 0, 0.2, 1)',
-              willChange: 'transform'
-            }}
-          />
+          <ArrowUp className="h-6 w-6 relative z-10 transform-gpu transition-all duration-300 ease-out will-change-transform
+                            group-hover:scale-110 group-hover:-translate-y-0.5
+                            group-active:scale-90" />
           
           {/* Ripple effect */}
-          <div 
-            className="absolute inset-0 rounded-full bg-primary-foreground/20"
-            style={{
-              transform: 'scale(0)',
-              opacity: 1,
-              transition: 'all 0.5s cubic-bezier(0.4, 0, 0.2, 1)',
-              willChange: 'transform, opacity'
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.transform = 'scale(1)'
-              e.currentTarget.style.opacity = '0'
-            }}
-          />
+          <div className="absolute inset-0 rounded-full bg-primary-foreground/20 
+                          transform-gpu scale-0 group-hover:scale-100 group-hover:opacity-0 
+                          transition-all duration-500 ease-out opacity-100 will-change-transform" />
         </Button>
       </div>
 
-      {/* Logout Confirmation Modal - GPU Optimized */}
+      {/* Logout Confirmation Modal */}
       {showLogoutConfirmation && (
         <div className="fixed inset-0 z-[60] flex items-center justify-center">
           {/* Backdrop */}
           <div 
-            className="fixed inset-0"
-            style={{
-              backgroundColor: 'rgba(0, 0, 0, 0.6)',
-              backdropFilter: 'blur(8px)',
-              animation: 'fadeIn 0.3s cubic-bezier(0.4, 0, 0.2, 1)'
-            }}
+            className="fixed inset-0 bg-black/60 backdrop-blur-sm transform-gpu 
+                       animate-in fade-in-0 duration-300"
             onClick={cancelLogout}
           />
           
           {/* Modal */}
-          <div 
-            className="relative bg-card border border-border rounded-lg shadow-2xl p-6 mx-4 max-w-md w-full"
-            style={{
-              animation: 'modalIn 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-              transform: 'translate3d(0, 0, 0)',
-              willChange: 'transform'
-            }}
-          >
+          <div className="relative bg-card border border-border rounded-lg shadow-2xl p-6 mx-4 max-w-md w-full 
+                         transform-gpu animate-in fade-in-0 zoom-in-95 duration-300 ease-out">
             <div className="flex items-center space-x-3 mb-4">
               <div className="w-10 h-10 bg-orange-100 dark:bg-orange-900/30 rounded-full 
                              flex items-center justify-center">
@@ -594,34 +439,14 @@ export default function Layout({ children }: { children: React.ReactNode }) {
               <Button 
                 variant="outline" 
                 onClick={cancelLogout}
-                className="px-4 py-2"
-                style={{
-                  transition: 'transform 0.25s cubic-bezier(0.4, 0, 0.2, 1)',
-                  willChange: 'transform'
-                }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.transform = 'translate3d(0, 0, 0) scale(1.05)'
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.transform = 'translate3d(0, 0, 0) scale(1)'
-                }}
+                className="px-4 py-2 transform-gpu transition-transform duration-200 will-change-transform hover:scale-105"
               >
                 Batal
               </Button>
               <Button 
                 variant="destructive" 
                 onClick={handleSignOut}
-                className="px-4 py-2"
-                style={{
-                  transition: 'transform 0.25s cubic-bezier(0.4, 0, 0.2, 1)',
-                  willChange: 'transform'
-                }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.transform = 'translate3d(0, 0, 0) scale(1.05)'
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.transform = 'translate3d(0, 0, 0) scale(1)'
-                }}
+                className="px-4 py-2 transform-gpu transition-transform duration-200 will-change-transform hover:scale-105"
               >
                 Ya, Keluar
               </Button>
@@ -644,12 +469,10 @@ export default function Layout({ children }: { children: React.ReactNode }) {
       {/* Loading Overlay */}
       {isAppLoading && (
         <div
-          className="fixed inset-0 z-[70] flex items-center justify-center bg-background"
-          style={{
-            opacity: isAppFading ? 0 : 1,
-            transition: 'opacity 0.5s cubic-bezier(0.4, 0, 0.2, 1)',
-            pointerEvents: isAppFading ? 'none' : 'auto'
-          }}
+          className={`fixed inset-0 z-[70] flex items-center justify-center bg-background 
+                     transform-gpu transition-opacity duration-500 ease-out will-change-auto ${
+            isAppFading ? 'opacity-0 pointer-events-none' : 'opacity-100'
+          }`}
         >
           {/* @ts-ignore: web component */}
           <lottie-player
@@ -662,40 +485,6 @@ export default function Layout({ children }: { children: React.ReactNode }) {
           />
         </div>
       )}
-
-      {/* CSS Animations */}
-      <style jsx>{`
-        @keyframes slideInFromBottom {
-          from {
-            opacity: 0;
-            transform: translate3d(0, 8px, 0);
-          }
-          to {
-            opacity: 1;
-            transform: translate3d(0, 0, 0);
-          }
-        }
-
-        @keyframes fadeIn {
-          from {
-            opacity: 0;
-          }
-          to {
-            opacity: 1;
-          }
-        }
-
-        @keyframes modalIn {
-          from {
-            opacity: 0;
-            transform: translate3d(0, 0, 0) scale(0.95);
-          }
-          to {
-            opacity: 1;
-            transform: translate3d(0, 0, 0) scale(1);
-          }
-        }
-      `}</style>
     </div>
   )
 }
