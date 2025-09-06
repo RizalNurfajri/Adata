@@ -202,7 +202,8 @@ export default function Layout({ children }: { children: React.ReactNode }) {
     <div className="min-h-screen bg-background flex flex-col">
       {/* Top Navigation Bar */}
       <nav className="border-b bg-card sticky top-0 z-50">
-        <div className="px-4 sm:px-6 lg:px-8">
+        {/* ➜ Tambah container + max width */}
+        <div className="mx-auto w-full max-w-screen-xl px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
             {/* Logo */}
             <Link to="/" className="flex items-center space-x-2">
@@ -237,8 +238,11 @@ export default function Layout({ children }: { children: React.ReactNode }) {
       {/* Content Wrapper */}
       <div className="flex flex-1">
         {/* Main Content */}
-        <main className="flex-1 p-4 sm:p-6 lg:p-8">
-          {children}
+        {/* ➜ Bungkus children dengan container + max width */}
+        <main className="flex-1">
+          <div className="mx-auto w-full max-w-screen-xl px-4 sm:px-6 lg:px-8 py-4 sm:py-6 lg:py-8">
+            {children}
+          </div>
         </main>
 
         {/* Right Sidebar Overlay */}
@@ -439,7 +443,8 @@ export default function Layout({ children }: { children: React.ReactNode }) {
 
       {/* Footer */}
       <footer className="border-t bg-card">
-        <div className="px-4 sm:px-6 lg:px-8">
+        {/* ➜ Tambah container + max width */}
+        <div className="mx-auto w-full max-w-screen-xl px-4 sm:px-6 lg:px-8">
           <div className="flex justify-center items-center h-16">
             <div className="text-sm text-muted-foreground">
               © 2025 Adata. Made With ♥ For RKS 3A.
